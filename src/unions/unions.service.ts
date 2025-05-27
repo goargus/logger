@@ -22,7 +22,10 @@ export class UnionsService {
   }
 
   findOne(id: string) {
-    return this.unionRepo.findOneBy({ id });
+    return this.unionRepo.findOne({
+      where: { id },
+      relations: ['associations'],
+    });
   }
 
   async update(id: string, dto: UpdateUnionDto) {

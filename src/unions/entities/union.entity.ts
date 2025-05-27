@@ -4,7 +4,9 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { Association } from '../../associations/associations/entities/association.entity';
 
 @Entity()
 export class Union {
@@ -19,4 +21,7 @@ export class Union {
 
   @UpdateDateColumn()
   updated_at!: Date;
+
+  @OneToMany(() => Association, (association) => association.union)
+  associations!: Association[];
 }
