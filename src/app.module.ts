@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UnionsModule } from './unions/unions.module';
+import { AssociationsModule } from './associations/associations/associations.module'; 
 
 @Module({
   imports: [
@@ -16,9 +17,10 @@ import { UnionsModule } from './unions/unions.module';
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
       autoLoadEntities: true,
-      synchronize: false,
+      synchronize: true,
     }),
     UnionsModule,
+    AssociationsModule,
   ],
 })
 export class AppModule {}
