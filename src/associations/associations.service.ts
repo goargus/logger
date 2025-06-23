@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { Association } from './entities/association.entity';
 import { CreateAssociationDto } from './dto/create-association.dto';
 import { UpdateAssociationDto } from './dto/update-association.dto';
-import { Union } from '../../unions/entities/union.entity';
+import { Union } from '../unions/entities/union.entity';
 
 @Injectable()
 export class AssociationsService {
@@ -16,8 +16,7 @@ export class AssociationsService {
   async create(createDto: CreateAssociationDto) {
     const association = this.associationRepo.create({
       name: createDto.name,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-      union: { id: createDto.unionId } as Union, // 🔗 vincula la relación
+      union: { id: createDto.unionId } as Union,
     });
 
     return this.associationRepo.save(association);

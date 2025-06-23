@@ -8,6 +8,6 @@ import { Association } from './entities/association.entity';
   imports: [TypeOrmModule.forFeature([Association])],
   controllers: [AssociationsController],
   providers: [AssociationsService],
-  exports: [TypeOrmModule], // Exporta si otros módulos (como Union) necesitan usar esta entidad
+  exports: [TypeOrmModule],
 })
 export class AssociationsModule {}

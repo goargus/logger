@@ -1,5 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
-import { Union } from '../../../unions/entities/union.entity';
+import { Union } from '../../unions/entities/union.entity';
 
 @Entity()
 export class Association {
