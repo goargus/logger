@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UnionsModule } from './unions/unions.module';
-import { AssociationsModule } from './associations/associations/associations.module'; 
+import { AssociationsModule } from './associations/associations.module';
 
 @Module({
   imports: [

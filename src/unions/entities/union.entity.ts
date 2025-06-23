@@ -6,7 +6,7 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from 'typeorm';
-import { Association } from '../../associations/associations/entities/association.entity';
+import { Association } from '../../associations/entities/association.entity';
 
 @Entity()
 export class Union {
