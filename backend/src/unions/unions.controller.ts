@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Patch,
-  Delete,
-  Param,
-  Body,
-} from '@nestjs/common';
+import { Controller, Post, Get, Patch, Delete, Param, Body } from '@nestjs/common';
 import { UnionsService } from './unions.service';
 import { CreateUnionDto } from './dto/create-union.dto';
 import { UpdateUnionDto } from './dto/update-union.dto';
