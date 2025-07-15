@@ -1,8 +1,7 @@
-import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { UnionsModule } from './unions/unions.module';
-import { AssociationsModule } from './associations/associations.module';
+import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+import { TypeOrmModule } from "@nestjs/typeorm";
+import { EntitiesModule } from "./entities/entities.module";
 
 @Module({
   imports: [
@@ -10,7 +9,7 @@ import { AssociationsModule } from './associations/associations.module';
       isGlobal: true,
     }),
     TypeOrmModule.forRoot({
-      type: 'postgres',
+      type: "postgres",
       host: process.env.DB_HOST,
       port: +(process.env.DB_PORT ?? 5432),
       username: process.env.DB_USERNAME,
@@ -19,8 +18,7 @@ import { AssociationsModule } from './associations/associations.module';
       autoLoadEntities: true,
       synchronize: true,
     }),
-    UnionsModule,
-    AssociationsModule,
+    EntitiesModule,
   ],
 })
 export class AppModule {}
