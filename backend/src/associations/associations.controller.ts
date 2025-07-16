@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { AssociationsService } from './associations.service';
 import { CreateAssociationDto } from './dto/create-association.dto';
 import { UpdateAssociationDto } from './dto/update-association.dto';
