@@ -10,9 +10,9 @@ exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const typeorm_1 = require("@nestjs/typeorm");
-const unions_module_1 = require("./unions/unions.module");
-const associations_module_1 = require("./associations/associations/associations.module");
-const churches_module_1 = require("./churches/churches.module");
+const entities_module_1 = require("./entities/entities.module");
+const auth_module_1 = require("./auth/auth.module");
+const private_controller_1 = require("./private/private.controller");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -32,10 +32,10 @@ exports.AppModule = AppModule = __decorate([
                 autoLoadEntities: true,
                 synchronize: true,
             }),
-            unions_module_1.UnionsModule,
-            associations_module_1.AssociationsModule,
-            churches_module_1.ChurchesModule,
+            entities_module_1.EntitiesModule,
+            auth_module_1.AuthModule,
         ],
+        controllers: [private_controller_1.PrivateController],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map
