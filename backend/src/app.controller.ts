@@ -1,15 +1,14 @@
-import { Controller, Get } from "@nestjs/common";
-import { AppService } from "./app.service";
+import { Controller, Get } from '@nestjs/common';
 
 @Controller()
 export class AppController {
-  getHello(): any {
-    throw new Error("Method not implemented.");
-  }
-  constructor(private readonly appService: AppService) {}
-
   @Get()
-  getRootMessage(): string {
-    return this.appService.getHello();
+  getRootMessage() {
+    return {
+      status: 'ok',
+      message: 'Argus API is running',
+      timestamp: new Date().toISOString(),
+      env: process.env.NODE_ENV || 'development',
+    };
   }
 }

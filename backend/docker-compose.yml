@@ -14,5 +14,29 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: backend
+    restart: always
+    depends_on:
+      - db
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    command: npm run start:dev 
+    environment:
+      PORT: 3000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: churchdb
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      AUTH0_DOMAIN: your-tenant.auth0.com
+      AUTH0_AUDIENCE: https://api.argus.local
+
 volumes:
   postgres_data:
