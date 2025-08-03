@@ -6,7 +6,7 @@ export class AppController {
   getRootMessage() {
     return {
       status: 'ok',
-      message: 'Argus API is running',
+      message: 'API is running',
       timestamp: new Date().toISOString(),
       env: process.env.NODE_ENV || 'development',
     };

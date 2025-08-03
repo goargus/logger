@@ -1,12 +1,18 @@
-FROM node:20
+FROM node:20 AS base
 
 WORKDIR /app
-
-COPY package*.json ./
-RUN npm install
-
 COPY . .
-
+RUN npm install
 RUN npm run build
 
+############################
+FROM base AS dev
+USER node
+COPY --from=base /app/dist ./dist
+CMD ["npm", "run", "start:dev"]
+
+############################
+FROM base AS prod
+USER node
+COPY --from=base /app/dist ./dist
 CMD ["node", "dist/main.js"]

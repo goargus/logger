@@ -10,6 +10,7 @@ import { AppService } from './app.service';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      load: [databaseConfig],
     }),
     AuthModule,
     TypeOrmModule.forRoot({
