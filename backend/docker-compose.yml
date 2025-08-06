@@ -44,7 +44,6 @@ services:
       AUTH0_DOMAIN: dev-ohuspam6fnmh4tgt.us.auth0.com
       AUTH0_AUDIENCE: logger
       AUTH0_ISSUER: https://dev-ohuspam6fnmh4tgt.us.auth0.com/
-      JWT_SECRET: "your_jwt"
 
 volumes:
   postgres_data:
