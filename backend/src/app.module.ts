@@ -6,11 +6,13 @@ import { EntitiesModule } from './entities/entities.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AdminModule } from './admin/admin.module';
+import authConfig from './config/auth.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      load: [authConfig],
     }),
     AuthModule,
     TypeOrmModule.forRoot({
