@@ -9,6 +9,6 @@ export class AdminController {
   @Roles('read:admin_dashboard')
   @Get('dashboard')
   getDashboard() {
-    return { message: 'Welcome to the3 admin dashboard' };
+    return { message: 'Welcome Admin' };
   }
 }
