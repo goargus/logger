@@ -10,19 +10,23 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      audience: configService.get('AUTH0_AUDIENCE'),
-      issuer: configService.get('AUTH0_ISSUER'),
+      audience: configService.get<string>('auth.audience'),
+      issuer: configService.get<string>('auth.issuer'),
       algorithms: ['RS256'],
       secretOrKeyProvider: jwksRsa.passportJwtSecret({
         cache: true,
         rateLimit: true,
         jwksRequestsPerMinute: 5,
-        jwksUri: `${configService.get('AUTH0_ISSUER')}.well-known/jwks.json`,
+        jwksUri: `${configService.get<string>('auth.issuer')}.well-known/jwks.json`,
       }),
     });
   }
 
   async validate(payload: any) {
-    return { userId: payload.sub, ...payload };
+    return {
+      userId: payload.sub,
+      email: payload.email,
+      roles: payload.permissions,
+    };
   }
 }
