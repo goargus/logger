@@ -23,7 +23,7 @@ export class RolesGuard implements CanActivate {
     );
 
     if (!hasPermission) {
-      throw new ForbiddenException('Admin role required');
+      throw new ForbiddenException('Admin permissions required');
     }
 
     return true;
