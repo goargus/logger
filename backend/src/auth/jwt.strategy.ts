@@ -6,27 +6,43 @@ import * as jwksRsa from 'jwks-rsa';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(configService: ConfigService) {
+  constructor(private readonly configService: ConfigService) {
+    const issuer = configService.get<string>('auth.issuer');
+    const audience = configService.get<string>('auth.audience');
+
+    if (!issuer || !audience) {
+      throw new Error(`Auth config missing. Got issuer="${issuer}", audience="${audience}".`);
+    }
+
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ignoreExpiration: false,
-      audience: configService.get<string>('auth.audience'),
-      issuer: configService.get<string>('auth.issuer'),
-      algorithms: ['RS256'],
       secretOrKeyProvider: jwksRsa.passportJwtSecret({
         cache: true,
         rateLimit: true,
         jwksRequestsPerMinute: 5,
-        jwksUri: `${configService.get<string>('auth.issuer')}.well-known/jwks.json`,
-      }),
+        jwksUri: `${issuer}.well-known/jwks.json`,
+      }) as any,
+      audience,
+      issuer,
+      algorithms: ['RS256'],
+      ignoreExpiration: false,
     });
   }
 
   async validate(payload: any) {
+    const permissions: string[] = Array.isArray(payload?.permissions)
+      ? payload.permissions
+      : typeof payload?.scope === 'string'
+        ? payload.scope.split(' ').filter(Boolean)
+        : [];
+
+    const roles: string[] = Array.isArray(payload?.roles) ? payload.roles : [];
+
     return {
       userId: payload.sub,
       email: payload.email,
-      roles: payload.permissions,
+      permissions,
+      roles,
     };
   }
 }
