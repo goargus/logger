@@ -6,22 +6,19 @@ import * as jwksRsa from 'jwks-rsa';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private readonly configService: ConfigService) {
-    const domain = configService.get<string>('auth.domain');
-    const audience = configService.get<string>('auth.audience');
-    const issuer = configService.get<string>('auth.issuer');
-
+  constructor(configService: ConfigService) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ignoreExpiration: false,
+      audience: configService.get<string>('auth.audience'),
+      issuer: configService.get<string>('auth.issuer'),
+      algorithms: ['RS256'],
       secretOrKeyProvider: jwksRsa.passportJwtSecret({
         cache: true,
         rateLimit: true,
         jwksRequestsPerMinute: 5,
-        jwksUri: `https://${domain}/.well-known/jwks.json`,
+        jwksUri: `${configService.get<string>('auth.issuer')}.well-known/jwks.json`,
       }),
-      issuer,
-      audience,
-      algorithms: ['RS256'],
     });
   }
 
@@ -29,6 +26,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     return {
       userId: payload.sub,
       email: payload.email,
+      roles: payload.permissions,
     };
   }
 }

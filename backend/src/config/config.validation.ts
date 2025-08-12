@@ -9,8 +9,7 @@ export const configValidationSchema = Joi.object({
     .message('"AUTH0_ISSUER" must end with a trailing slash')
     .required(),
 
-  AUTH0_AUDIENCE: Joi.string()
-    .required(),
+  AUTH0_AUDIENCE: Joi.string().required(),
 
   DB_HOST: Joi.string().required(),
   DB_PORT: Joi.number().default(5432),
