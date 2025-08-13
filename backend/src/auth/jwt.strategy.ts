@@ -6,12 +6,20 @@ import * as jwksRsa from 'jwks-rsa';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(private readonly configService: ConfigService) {
-    const issuer = configService.get<string>('auth.issuer');
-    const audience = configService.get<string>('auth.audience');
+  constructor(config: ConfigService) {
+    const issuerCfg = config.get<string>('auth.issuer');
+    const audienceCfg = config.get<string>('auth.audience');
+    const issuerEnv = process.env.AUTH0_ISSUER;
+    const audienceEnv = process.env.AUTH0_AUDIENCE;
 
-    if (!issuer || !audience) {
-      throw new Error(`Auth config missing. Got issuer="${issuer}", audience="${audience}".`);
+    const issuer = issuerCfg ?? issuerEnv ?? '';
+    const audience = audienceCfg ?? audienceEnv ?? '';
+
+    if (!issuer) {
+      throw new Error('JWT issuer is missing. Set auth.issuer or AUTH0_ISSUER.');
+    }
+    if (!audience) {
+      throw new Error('JWT audience is missing. Set auth.audience or AUTH0_AUDIENCE.');
     }
 
     super({
@@ -30,19 +38,29 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    const permissions: string[] = Array.isArray(payload?.permissions)
-      ? payload.permissions
-      : typeof payload?.scope === 'string'
-        ? payload.scope.split(' ').filter(Boolean)
-        : [];
+    let permissions: string[] = [];
+    if (Array.isArray(payload?.permissions)) {
+      permissions = payload.permissions.filter((p) => typeof p === 'string');
+    } else if (typeof payload?.scope === 'string') {
+      permissions = payload.scope.split(' ').filter(Boolean);
+    }
 
-    const roles: string[] = Array.isArray(payload?.roles) ? payload.roles : [];
+    let roles: string[] = [];
+    if (Array.isArray(payload?.roles)) {
+      roles = payload.roles.filter((r) => typeof r === 'string');
+    } else if (typeof payload?.roles === 'string') {
+      roles = payload.roles
+        .split(',')
+        .map((r) => r.trim())
+        .filter(Boolean);
+    }
 
     return {
-      userId: payload.sub,
-      email: payload.email,
+      userId: payload?.sub ?? payload?.userId ?? payload?.id ?? null,
+      email: typeof payload?.email === 'string' ? payload.email : null,
       permissions,
       roles,
+      ...payload,
     };
   }
 }
