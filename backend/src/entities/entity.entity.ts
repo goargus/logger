@@ -2,42 +2,36 @@ import {
   Entity as OrmEntity,
   PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
   CreateDateColumn,
   UpdateDateColumn,
-} from "typeorm";
-import { IsEnum, IsOptional, IsString } from "class-validator";
+  Unique,
+} from 'typeorm';
 
 export enum EntityType {
-  UNION = "UNION",
-  ASSOCIATION = "ASSOCIATION",
-  FIELD = "FIELD",
+  UNION = 'UNION',
+  ASSOCIATION = 'ASSOCIATION',
+  FIELD = 'FIELD',
 }
 
-@OrmEntity("entity")
+@OrmEntity('entities')
+@Unique(['name', 'type'])
 export class Entity {
-  @PrimaryGeneratedColumn("uuid")
+  @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Column()
-  @IsString()
+  @Column({ length: 80 })
   name!: string;
 
-  @Column({ type: "enum", enum: EntityType })
-  @IsEnum(EntityType)
+  @Column({ type: 'enum', enum: EntityType })
   type!: EntityType;
 
-  @ManyToOne(() => Entity, { nullable: true })
-  parent!: Entity | null;
+  @Column({ length: 6, nullable: true })
+  code?: string;
 
-  @Column({ unique: true, nullable: true })
-  @IsOptional()
-  @IsString()
-  code!: string;
+  @Column({ length: 500, nullable: true })
+  description?: string;
 
-  @Column({ nullable: true })
-  @IsOptional()
-  @IsString()
+  @Column({ length: 255, nullable: true })
   location?: string;
 
   @Column({ default: true })

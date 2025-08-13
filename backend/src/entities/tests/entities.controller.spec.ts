@@ -1,87 +1,117 @@
-import { Test, TestingModule } from "@nestjs/testing";
-import { EntitiesController } from "../entities.controller";
-import { EntitiesService } from "../entities.service";
-import { EntityType, Entity } from "../entity.entity";
-import { NotFoundException } from "@nestjs/common";
-import { CreateEntityDto } from "../dto/create-entity.dto";
+import { Test, TestingModule } from '@nestjs/testing';
+import { EntitiesController } from '../entities.controller';
+import { EntitiesService } from '../entities.service';
+import { EntityType, Entity } from '../entity.entity';
+import { ConflictException } from '@nestjs/common';
+import { CreateEntityDto } from '../dto/create-entity.dto';
+import { UpdateEntityDto } from '../dto/update-entity.dto';
 
-describe("EntitiesController", () => {
+describe('EntitiesController', () => {
   let controller: EntitiesController;
+  let service: jest.Mocked<EntitiesService>;
 
   const mockEntity: Entity = {
-    id: "1",
-    name: "Union Central",
+    id: '11111111-1111-1111-1111-111111111111',
+    name: 'Unión Hondureña',
     type: EntityType.UNION,
-    parent: null,
-    code: "UC001",
-    location: "Honduras",
+    code: 'UH',
+    description: 'Cobertura nacional',
+    location: 'Honduras',
     is_active: true,
-    created_at: new Date(),
-    updated_at: new Date(),
-  };
-
-  const mockEntitiesService = {
-    create: jest.fn(),
-    findAll: jest.fn(),
-    findOne: jest.fn(),
-    update: jest.fn(),
-    remove: jest.fn(),
+    created_at: new Date('2025-08-12T17:34:14.503Z') as never,
+    updated_at: new Date('2025-08-12T17:34:14.503Z') as never,
   };
 
   beforeEach(async () => {
+    const mockService: Partial<jest.Mocked<EntitiesService>> = {
+      create: jest.fn(),
+      findAll: jest.fn(),
+      findOne: jest.fn(),
+      update: jest.fn(),
+      remove: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [EntitiesController],
       providers: [
         {
           provide: EntitiesService,
-          useValue: mockEntitiesService,
+          useValue: mockService,
         },
       ],
     }).compile();
 
     controller = module.get<EntitiesController>(EntitiesController);
+    service = module.get(EntitiesService) as jest.Mocked<EntitiesService>;
   });
 
-  it("should be defined", () => {
+  it('should be defined', () => {
     expect(controller).toBeDefined();
   });
 
-  it("should create a new entity", async () => {
-    mockEntitiesService.create.mockResolvedValue(mockEntity);
+  describe('createAny', () => {
+    it('forces type from route param and calls service.create', async () => {
+      const dto: CreateEntityDto = {
+        name: 'Unión Hondureña',
+        type: EntityType.ASSOCIATION,
+        code: 'UH',
+        description: 'Cobertura nacional',
+        location: 'Honduras',
+        is_active: true,
+      } as never;
 
-    const dto: CreateEntityDto = {
-      name: "Union Central",
-      type: EntityType.UNION,
-      parentId: null,
-    };
+      service.create.mockResolvedValue(mockEntity);
 
-    const result = await controller.create(dto);
-    expect(result).toEqual(mockEntity);
+      const result = await controller.createAny('union', dto);
+      expect(service.create).toHaveBeenCalledWith({
+        ...dto,
+        type: EntityType.UNION,
+      });
+      expect(result).toEqual(mockEntity);
+    });
+
+    it('maps unique violation (23505) to ConflictException', async () => {
+      const dto: CreateEntityDto = { name: 'Unión Hondureña', type: EntityType.UNION } as never;
+      const pgError = Object.assign(new Error('duplicate key'), { code: '23505' });
+      service.create.mockRejectedValue(pgError);
+
+      await expect(controller.createAny('union', dto)).rejects.toBeInstanceOf(ConflictException);
+    });
   });
 
-  it("should return all entities", async () => {
-    mockEntitiesService.findAll.mockResolvedValue([mockEntity]);
-    expect(await controller.findAll()).toEqual([mockEntity]);
+  describe('findAll', () => {
+    it('returns all entities', async () => {
+      service.findAll.mockResolvedValue([mockEntity]);
+      await expect(controller.findAll()).resolves.toEqual([mockEntity]);
+    });
   });
 
-  it("should return one entity by ID", async () => {
-    mockEntitiesService.findOne.mockResolvedValue(mockEntity);
-    expect(await controller.findOne("1")).toEqual(mockEntity);
+  describe('findOne', () => {
+    it('returns one entity by id', async () => {
+      service.findOne.mockResolvedValue(mockEntity);
+      await expect(controller.findOne('11111111-1111-1111-1111-111111111111')).resolves.toEqual(
+        mockEntity,
+      );
+    });
   });
 
-  it("should throw if entity not found", async () => {
-    mockEntitiesService.findOne.mockRejectedValue(new NotFoundException());
-    await expect(controller.findOne("999")).rejects.toThrow(NotFoundException);
+  describe('update', () => {
+    it('updates an entity', async () => {
+      const patch: UpdateEntityDto = { name: 'Unión HN' } as never;
+      const updated = { ...mockEntity, name: 'Unión HN' };
+      service.update.mockResolvedValue(updated);
+      await expect(
+        controller.update('11111111-1111-1111-1111-111111111111', patch),
+      ).resolves.toEqual(updated);
+    });
   });
 
-  it("should update an entity", async () => {
-    const updated = { ...mockEntity, name: "Updated" };
-    mockEntitiesService.update.mockResolvedValue(updated);
-    expect(await controller.update("1", { name: "Updated" })).toEqual(updated);
-  });
-
-  it("should delete an entity", async () => {
-    mockEntitiesService.remove.mockResolvedValue({ deleted: true });
-    expect(await controller.remove("1")).toEqual({ deleted: true });
+  describe('remove', () => {
+    it('removes an entity', async () => {
+      service.remove.mockResolvedValue({ affected: 1 } as never);
+      await expect(controller.remove('11111111-1111-1111-1111-111111111111')).resolves.toEqual({
+        affected: 1,
+      });
+    });
   });
 });

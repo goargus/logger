@@ -1,46 +1,71 @@
 import {
-  Controller,
-  Get,
-  Post,
+  BadRequestException,
   Body,
-  Param,
-  Patch,
+  ConflictException,
+  Controller,
   Delete,
-} from "@nestjs/common";
-import { EntitiesService } from "./entities.service";
-import { Entity } from "./entity.entity";
-import { UpdateEntityDto } from "./dto/update-entity.dto";
-import { CreateEntityDto } from "./dto/create-entity.dto";
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+import { Roles } from '../auth/roles.decorator';
+import { RolesGuard } from '../auth/roles.guard';
+import { EntitiesService } from './entities.service';
+import { CreateEntityDto } from './dto/create-entity.dto';
+import { UpdateEntityDto } from './dto/update-entity.dto';
+import { EntityType } from './entity.entity';
 
-@Controller("entities")
+@Controller('entities')
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 export class EntitiesController {
   constructor(private readonly entitiesService: EntitiesService) {}
 
-  @Post()
-  create(@Body() body: CreateEntityDto): Promise<Entity> {
-    return this.entitiesService.create(body);
+  private parseType(typeStr: string): EntityType {
+    const upper = (typeStr || '').toUpperCase();
+    const allowed = Object.values(EntityType) as string[];
+    if (!allowed.includes(upper)) {
+      throw new BadRequestException(`Invalid type. Allowed: ${allowed.join(', ')}`);
+    }
+    return upper as EntityType;
+  }
+
+  @Post(':type')
+  @Roles('admin')
+  async createAny(@Param('type') typeStr: string, @Body() dto: CreateEntityDto) {
+    const type = this.parseType(typeStr);
+    try {
+      return await this.entitiesService.create({ ...dto, type });
+    } catch (e: any) {
+      if (e?.code === '23505') {
+        throw new ConflictException(`An entity with this name already exists for type ${type}`);
+      }
+      throw e;
+    }
   }
 
   @Get()
-  findAll(): Promise<Entity[]> {
+  async findAll() {
     return this.entitiesService.findAll();
   }
 
-  @Get(":id")
-  findOne(@Param("id") id: string): Promise<Entity> {
+  @Get(':id')
+  async findOne(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.entitiesService.findOne(id);
   }
 
-  @Patch(":id")
-  update(
-    @Param("id") id: string,
-    @Body() updateDto: UpdateEntityDto,
-  ): Promise<Entity> {
-    return this.entitiesService.update(id, updateDto);
+  @Patch(':id')
+  @Roles('admin')
+  async update(@Param('id', new ParseUUIDPipe()) id: string, @Body() dto: UpdateEntityDto) {
+    return this.entitiesService.update(id, dto);
   }
 
-  @Delete(":id")
-  remove(@Param("id") id: string): Promise<{ deleted: boolean }> {
+  @Delete(':id')
+  @Roles('admin')
+  async remove(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.entitiesService.remove(id);
   }
 }

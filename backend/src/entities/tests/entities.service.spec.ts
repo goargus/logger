@@ -1,49 +1,50 @@
-import { Test, TestingModule } from "@nestjs/testing";
-import { EntitiesService } from "../entities.service";
-import { Entity, EntityType } from "../entity.entity";
-import { getRepositoryToken } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
-import { NotFoundException } from "@nestjs/common";
+import { Test, TestingModule } from '@nestjs/testing';
+import { ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { ObjectLiteral, Repository } from 'typeorm';
+import { EntitiesService } from '../entities.service';
+import { Entity, EntityType } from '../entity.entity';
+import { CreateEntityDto } from '../dto/create-entity.dto';
+import { UpdateEntityDto } from '../dto/update-entity.dto';
 
-describe("EntitiesService - Hierarchy Rules", () => {
-  let service: EntitiesService;
-  let mockEntityRepo: jest.Mocked<Repository<Entity>>;
+type MockRepo<T extends ObjectLiteral = never> = Partial<Record<keyof Repository<T>, jest.Mock>>;
 
-  const union: Entity = {
-    id: "1",
-    name: "Union A",
-    type: EntityType.UNION,
-    parent: null,
-    code: "U1",
-    location: "X",
-    is_active: true,
-    created_at: new Date(),
-    updated_at: new Date(),
+function createRepoMock<T extends ObjectLiteral>(): MockRepo<T> {
+  return {
+    exists: jest.fn(),
+    create: jest.fn(),
+    save: jest.fn(),
+    find: jest.fn(),
+    findOne: jest.fn(),
+    delete: jest.fn(),
   };
+}
 
-  const association: Entity = {
-    id: "2",
-    name: "Association A",
-    type: EntityType.ASSOCIATION,
-    parent: union,
-    code: "A1",
-    location: "Y",
+describe('EntitiesService', () => {
+  let service: EntitiesService;
+  let repo: MockRepo<Entity>;
+
+  const baseEntity: Entity = {
+    id: '11111111-1111-1111-1111-111111111111',
+    name: 'Unión Hondureña',
+    type: EntityType.UNION,
+    code: 'UH',
+    description: 'Cobertura nacional',
+    location: 'Honduras',
     is_active: true,
-    created_at: new Date(),
-    updated_at: new Date(),
+    created_at: new Date('2025-08-12T17:34:14.503Z') as never,
+    updated_at: new Date('2025-08-12T17:34:14.503Z') as never,
   };
 
   beforeEach(async () => {
-    mockEntityRepo = {
-      findOne: jest.fn(),
-    } as unknown as jest.Mocked<Repository<Entity>>;
+    repo = createRepoMock<Entity>();
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         EntitiesService,
         {
           provide: getRepositoryToken(Entity),
-          useValue: mockEntityRepo,
+          useValue: repo,
         },
       ],
     }).compile();
@@ -51,51 +52,102 @@ describe("EntitiesService - Hierarchy Rules", () => {
     service = module.get<EntitiesService>(EntitiesService);
   });
 
-  it("should throw if parentId is provided but entity not found", async () => {
-    mockEntityRepo.findOne.mockResolvedValue(null);
-    await expect(
-      service.validateHierarchy(EntityType.ASSOCIATION, "999"),
-    ).rejects.toThrow(NotFoundException);
+  afterEach(() => {
+    jest.resetAllMocks();
   });
 
-  it("should throw if UNION has a parentId", async () => {
-    mockEntityRepo.findOne.mockResolvedValue(union);
-    await expect(
-      service.validateHierarchy(EntityType.UNION, union.id),
-    ).rejects.toThrow("A UNION cannot have a parent");
+  describe('create', () => {
+    it('creates an entity, trimming name and enforcing uniqueness by (name,type)', async () => {
+      const dto: CreateEntityDto = {
+        name: '  Unión Hondureña  ',
+        type: EntityType.UNION,
+        code: 'UH',
+        description: 'Cobertura nacional',
+        location: 'Honduras',
+        is_active: true,
+      } as never;
+
+      repo.exists?.mockResolvedValue(false);
+      repo.create?.mockReturnValue({ ...baseEntity, name: 'Unión Hondureña' });
+      repo.save?.mockResolvedValue({ ...baseEntity, name: 'Unión Hondureña' });
+
+      const result = await service.create(dto);
+      expect(repo.exists).toHaveBeenCalled();
+      expect(repo.create).toHaveBeenCalledWith({ ...dto, name: 'Unión Hondureña' });
+      expect(result).toEqual({ ...baseEntity, name: 'Unión Hondureña' });
+    });
+
+    it('throws ConflictException when (name,type) already exists', async () => {
+      const dto: CreateEntityDto = { name: 'Unión Hondureña', type: EntityType.UNION } as never;
+      repo.exists?.mockResolvedValue(true);
+
+      await expect(service.create(dto)).rejects.toBeInstanceOf(ConflictException);
+    });
+
+    it('throws BadRequest when name becomes empty after trim', async () => {
+      const dto: CreateEntityDto = { name: '   ', type: EntityType.UNION } as never;
+      await expect(service.create(dto)).rejects.toBeInstanceOf(BadRequestException);
+    });
   });
 
-  it("should throw if ASSOCIATION parent is not UNION", async () => {
-    mockEntityRepo.findOne.mockResolvedValue(association);
-    await expect(
-      service.validateHierarchy(EntityType.ASSOCIATION, association.id),
-    ).rejects.toThrow("An ASSOCIATION must have a UNION as parent");
+  describe('findAll', () => {
+    it('returns all entities', async () => {
+      repo.find?.mockResolvedValue([baseEntity]);
+      await expect(service.findAll()).resolves.toEqual([baseEntity]);
+    });
   });
 
-  it("should throw if FIELD parent is not ASSOCIATION", async () => {
-    mockEntityRepo.findOne.mockResolvedValue(union);
-    await expect(
-      service.validateHierarchy(EntityType.FIELD, union.id),
-    ).rejects.toThrow("A FIELD must have an ASSOCIATION as parent");
+  describe('findOne', () => {
+    it('returns one by id', async () => {
+      repo.findOne?.mockResolvedValue(baseEntity);
+      await expect(service.findOne(baseEntity.id)).resolves.toEqual(baseEntity);
+    });
+
+    it('throws NotFound when missing', async () => {
+      repo.findOne?.mockResolvedValue(null);
+      await expect(service.findOne(baseEntity.id)).rejects.toBeInstanceOf(NotFoundException);
+    });
   });
 
-  it("should allow valid UNION (no parent)", async () => {
-    await expect(
-      service.validateHierarchy(EntityType.UNION, null),
-    ).resolves.toBeNull();
+  describe('update', () => {
+    it('updates entity when no conflict and trims name if provided', async () => {
+      const patch: UpdateEntityDto = { name: '  Unión HN  ' } as never;
+      repo.findOne?.mockResolvedValue(baseEntity);
+      repo.exists?.mockResolvedValue(false);
+      const saved = { ...baseEntity, name: 'Unión HN' };
+      repo.save?.mockResolvedValue(saved);
+
+      await expect(service.update(baseEntity.id, patch)).resolves.toEqual(saved);
+      expect(repo.save).toHaveBeenCalledWith(expect.objectContaining({ name: 'Unión HN' }));
+    });
+
+    it('throws ConflictException when changing to duplicate (name,type)', async () => {
+      const patch: UpdateEntityDto = { name: 'Otra', type: EntityType.UNION } as never;
+      repo.findOne?.mockResolvedValue(baseEntity);
+      repo.exists?.mockResolvedValue(true);
+
+      await expect(service.update(baseEntity.id, patch)).rejects.toBeInstanceOf(ConflictException);
+    });
+
+    it('throws BadRequest when setting empty name', async () => {
+      const patch: UpdateEntityDto = { name: '   ' } as never;
+      repo.findOne?.mockResolvedValue(baseEntity);
+
+      await expect(service.update(baseEntity.id, patch)).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    });
   });
 
-  it("should allow valid ASSOCIATION with UNION parent", async () => {
-    mockEntityRepo.findOne.mockResolvedValue(union);
-    await expect(
-      service.validateHierarchy(EntityType.ASSOCIATION, union.id),
-    ).resolves.toEqual(union);
-  });
+  describe('remove', () => {
+    it('removes by id', async () => {
+      repo.delete?.mockResolvedValue({ affected: 1 });
+      await expect(service.remove(baseEntity.id)).resolves.toEqual({ affected: 1 });
+    });
 
-  it("should allow valid FIELD with ASSOCIATION parent", async () => {
-    mockEntityRepo.findOne.mockResolvedValue(association);
-    await expect(
-      service.validateHierarchy(EntityType.FIELD, association.id),
-    ).resolves.toEqual(association);
+    it('throws NotFound when nothing deleted', async () => {
+      repo.delete?.mockResolvedValue({ affected: 0 });
+      await expect(service.remove(baseEntity.id)).rejects.toBeInstanceOf(NotFoundException);
+    });
   });
 });

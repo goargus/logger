@@ -1,112 +1,87 @@
 import {
+  BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
-  BadRequestException,
-} from "@nestjs/common";
-import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
-import { Entity, EntityType } from "./entity.entity";
-import { UpdateEntityDto } from "./dto/update-entity.dto";
-import { CreateEntityDto } from "./dto/create-entity.dto";
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { ILike, Not, Repository } from 'typeorm';
+import { Entity, EntityType } from './entity.entity';
+import { CreateEntityDto } from './dto/create-entity.dto';
+import { UpdateEntityDto } from './dto/update-entity.dto';
 
 @Injectable()
 export class EntitiesService {
+  constructor(
+    @InjectRepository(Entity)
+    private readonly repo: Repository<Entity>,
+  ) {}
+
   async create(dto: CreateEntityDto): Promise<Entity> {
-    const parent = await this.validateHierarchy(dto.type, dto.parentId);
+    const name = (dto.name ?? '').trim();
+    if (!name) {
+      throw new BadRequestException('name is required');
+    }
 
-    const entity = this.entityRepository.create({
-      ...dto,
-      parent,
-      is_active: true,
+    const exists = await this.repo.exists({
+      where: { name: ILike(name), type: dto.type },
     });
+    if (exists) {
+      throw new ConflictException('Entity name already exists for this type');
+    }
 
-    return this.entityRepository.save(entity);
+    const entity = this.repo.create({ ...dto, name });
+    return this.repo.save(entity);
   }
 
   async findAll(): Promise<Entity[]> {
-    return this.entityRepository.find({
-      relations: ["parent"],
-      order: { created_at: "DESC" },
-    });
+    return this.repo.find();
   }
+
   async findOne(id: string): Promise<Entity> {
-    const entity = await this.entityRepository.findOne({
-      where: { id },
-      relations: ["parent"],
-    });
-
-    if (!entity) {
-      throw new NotFoundException(`Entity with id '${id}' not found`);
-    }
-
-    return entity;
+    const found = await this.repo.findOne({ where: { id } });
+    if (!found) throw new NotFoundException('Entity not found');
+    return found;
   }
+
   async update(id: string, dto: UpdateEntityDto): Promise<Entity> {
-    const entity = await this.entityRepository.findOne({ where: { id } });
+    const current = await this.findOne(id);
 
-    if (!entity) {
-      throw new NotFoundException(`Entity with id '${id}' not found`);
+    const nextName = dto.name !== undefined ? (dto.name ?? '').trim() : current.name;
+    const nextType = (dto.type ?? current.type) as EntityType;
+
+    if (dto.name !== undefined && !nextName) {
+      throw new BadRequestException('name cannot be empty');
     }
 
-    if (dto.type && dto.parentId !== undefined) {
-      const parent = await this.validateHierarchy(dto.type, dto.parentId);
-      entity.parent = parent;
+    if (nextName !== current.name || nextType !== current.type) {
+      const conflict = await this.repo.exists({
+        where: { id: Not(current.id), name: ILike(nextName), type: nextType },
+      });
+      if (conflict) {
+        throw new ConflictException('Entity name already exists for this type');
+      }
     }
 
-    Object.assign(entity, dto);
-    return this.entityRepository.save(entity);
+    const toSave: Entity = {
+      ...current,
+      ...dto,
+      name: nextName,
+      type: nextType,
+    } as Entity;
+
+    return this.repo.save(toSave);
   }
 
-  async remove(id: string): Promise<{ deleted: boolean }> {
-    const entity = await this.entityRepository.findOne({ where: { id } });
-
-    if (!entity) {
-      throw new NotFoundException(`Entity with id '${id}' not found`);
+  async remove(id: string): Promise<{ affected: number }> {
+    const res = await this.repo.delete(id);
+    if (!res.affected) {
+      throw new NotFoundException('Entity not found');
     }
-
-    await this.entityRepository.remove(entity);
-
-    return { deleted: true };
+    return { affected: res.affected };
   }
 
-  constructor(
-    @InjectRepository(Entity)
-    private readonly entityRepository: Repository<Entity>,
-  ) {}
-
-  async validateHierarchy(
-    type: EntityType,
-    parentId: string | null,
-  ): Promise<Entity | null> {
-    let parent: Entity | null = null;
-
-    if (parentId) {
-      parent = await this.entityRepository.findOne({ where: { id: parentId } });
-      if (!parent) {
-        throw new NotFoundException("Parent entity not found");
-      }
-    }
-
-    if (type === EntityType.UNION && parent !== null) {
-      throw new BadRequestException("A UNION cannot have a parent");
-    }
-
-    if (type === EntityType.ASSOCIATION) {
-      if (!parent || parent.type !== EntityType.UNION) {
-        throw new BadRequestException(
-          "An ASSOCIATION must have a UNION as parent",
-        );
-      }
-    }
-
-    if (type === EntityType.FIELD) {
-      if (!parent || parent.type !== EntityType.ASSOCIATION) {
-        throw new BadRequestException(
-          "A FIELD must have an ASSOCIATION as parent",
-        );
-      }
-    }
-
-    return parent;
+  async findAllByType(type: EntityType): Promise<Entity[]> {
+    return this.repo.find({ where: { type } });
   }
 }
