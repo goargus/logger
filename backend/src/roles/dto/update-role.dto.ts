@@ -4,7 +4,7 @@ export class UpdateRoleDto {
   @IsString()
   @IsOptional()
   @MaxLength(80)
-  name?: string;
+  name!: string;
 
   @IsString()
   @IsOptional()
