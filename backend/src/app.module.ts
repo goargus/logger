@@ -6,6 +6,7 @@ import { EntitiesModule } from './entities/entities.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AdminModule } from './admin/admin.module';
+import { RolesModule } from './roles/roles.module';
 import authConfig from './config/auth.config';
 
 @Module({
@@ -27,6 +28,7 @@ import authConfig from './config/auth.config';
     }),
     EntitiesModule,
     AdminModule,
+    RolesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
