@@ -5,7 +5,9 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Unique,
+  OneToMany,
 } from 'typeorm';
+import { User } from '../users/user.entity';
 
 export enum EntityType {
   UNION = 'UNION',
@@ -42,4 +44,7 @@ export class Entity {
 
   @UpdateDateColumn()
   updated_at!: Date;
+
+  @OneToMany(() => User, (user) => user.entity)
+  users!: User[];
 }
