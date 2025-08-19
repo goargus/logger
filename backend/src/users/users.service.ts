@@ -46,7 +46,6 @@ export class UsersService {
   }
 
   async create(dto: CreateUserDto): Promise<User> {
-    // Evitar duplicado por email
     const dup = await this.usersRepo.findOne({ where: { email: dto.email } });
     if (dup) throw new BadRequestException('A user with this email already exists.');
 
