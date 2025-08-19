@@ -9,5 +9,6 @@ import { RolesController } from './roles.controller';
   imports: [TypeOrmModule.forFeature([Role, User])],
   controllers: [RolesController],
   providers: [RolesService],
+  exports: [RolesService],
 })
 export class RolesModule {}
