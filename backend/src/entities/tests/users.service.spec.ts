@@ -69,7 +69,7 @@ describe('UsersService (create & update)', () => {
   });
 
   describe('create', () => {
-    it('crea usuario exitosamente', async () => {
+    it('creates a user successfully', async () => {
       const dto: CreateUserDto = {
         username: 'jdoe',
         email: 'jdoe@example.com',
@@ -102,7 +102,7 @@ describe('UsersService (create & update)', () => {
       expect(result.status).toBe(UserStatus.ACTIVE);
     });
 
-    it('falla si email ya existe', async () => {
+    it('fails if email already exists', async () => {
       const dto: CreateUserDto = {
         username: 'jdoe',
         email: 'taken@example.com',
@@ -120,7 +120,7 @@ describe('UsersService (create & update)', () => {
       expect(entitiesRepo.findOne).not.toHaveBeenCalled();
     });
 
-    it('falla si role_id no existe', async () => {
+    it('fails if role_id does not exist', async () => {
       const dto: CreateUserDto = {
         username: 'jdoe',
         email: 'jdoe@example.com',
@@ -138,7 +138,7 @@ describe('UsersService (create & update)', () => {
       expect(entitiesRepo.findOne).not.toHaveBeenCalled();
     });
 
-    it('falla si entity_id no existe', async () => {
+    it('fails if entity_id does not exist', async () => {
       const dto: CreateUserDto = {
         username: 'jdoe',
         email: 'jdoe@example.com',
@@ -157,7 +157,7 @@ describe('UsersService (create & update)', () => {
   });
 
   describe('update', () => {
-    it('actualiza campos simples (username/email/full_name)', async () => {
+    it('updates simple fields (username/email/full_name)', async () => {
       usersRepo.findOne?.mockImplementation(async (opts: any) => {
         if (opts?.where?.id === 'u-1') return { ...baseUser };
         if (opts?.where?.email === 'new@example.com') return null;
@@ -182,7 +182,7 @@ describe('UsersService (create & update)', () => {
       expect(updated.full_name).toBe('Johnny Doe');
     });
 
-    it('falla si nuevo email pertenece a otro usuario', async () => {
+    it('fails if new email belongs to another user', async () => {
       usersRepo.findOne?.mockImplementation(async (opts: any) => {
         if (opts?.where?.id === 'u-1') return { ...baseUser };
         if (opts?.where?.email === 'taken@example.com') return { id: 'u-2' } as User;
@@ -196,7 +196,7 @@ describe('UsersService (create & update)', () => {
       );
     });
 
-    it('actualiza role_id si el rol existe', async () => {
+    it('updates role_id if the role exists', async () => {
       usersRepo.findOne?.mockResolvedValue({ ...baseUser });
       rolesRepo.findOne?.mockResolvedValue({ id: 'r-2', name: 'pastor' } as Role);
       usersRepo.save?.mockImplementation(async (u) => ({ ...baseUser, ...u }));
@@ -208,7 +208,7 @@ describe('UsersService (create & update)', () => {
       expect(updated.role_id).toBe('r-2');
     });
 
-    it('falla al cambiar role_id si rol no existe', async () => {
+    it('fails to change role_id if role does not exist', async () => {
       usersRepo.findOne?.mockResolvedValue({ ...baseUser });
       rolesRepo.findOne?.mockResolvedValue(null);
 
@@ -219,7 +219,7 @@ describe('UsersService (create & update)', () => {
       );
     });
 
-    it('actualiza entity_id si la entidad existe', async () => {
+    it('updates entity_id if the entity exists', async () => {
       usersRepo.findOne?.mockResolvedValue({ ...baseUser });
       entitiesRepo.findOne?.mockResolvedValue({ id: 'e-2' } as OrgEntity);
       usersRepo.save?.mockImplementation(async (u) => ({ ...baseUser, ...u }));
@@ -231,7 +231,7 @@ describe('UsersService (create & update)', () => {
       expect(updated.entity_id).toBe('e-2');
     });
 
-    it('falla al cambiar entity_id si entidad no existe', async () => {
+    it('fails to change entity_id if entity does not exist', async () => {
       usersRepo.findOne?.mockResolvedValue({ ...baseUser });
       entitiesRepo.findOne?.mockResolvedValue(null);
 
@@ -242,7 +242,7 @@ describe('UsersService (create & update)', () => {
       );
     });
 
-    it('bloquea cambios en usuario archivado (rol/entidad/reactivar)', async () => {
+    it('blocks changes on an archived user (role/entity/reactivation)', async () => {
       const archivedUser: User = {
         ...baseUser,
         status: UserStatus.ARCHIVED,
@@ -260,7 +260,7 @@ describe('UsersService (create & update)', () => {
       );
     });
 
-    it('lanza NotFound si el usuario no existe', async () => {
+    it('throws NotFound if the user does not exist', async () => {
       usersRepo.findOne?.mockResolvedValue(null);
 
       await expect(service.update('nope', {})).rejects.toThrow(

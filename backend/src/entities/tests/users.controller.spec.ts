@@ -43,13 +43,13 @@ describe('UsersController (create & update)', () => {
     }).compile();
 
     controller = module.get<UsersController>(UsersController);
-    service = module.get(UsersService);
+    service = module.get(UsersService) as jest.Mocked<UsersService>;
 
     jest.clearAllMocks();
   });
 
   describe('create', () => {
-    it('devuelve wrapper con mensaje y user', async () => {
+    it('returns wrapper with message and user', async () => {
       const dto: CreateUserDto = {
         username: 'jdoe',
         email: 'jdoe@example.com',
@@ -70,7 +70,7 @@ describe('UsersController (create & update)', () => {
   });
 
   describe('update', () => {
-    it('devuelve wrapper con mensaje y user', async () => {
+    it('returns wrapper with message and user', async () => {
       const dto: UpdateUserDto = { username: 'johnny' };
       const updated = { ...userMock, username: 'johnny' };
 
