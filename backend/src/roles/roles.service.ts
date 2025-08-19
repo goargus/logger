@@ -5,16 +5,19 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Raw } from 'typeorm';
+import { Raw, Repository } from 'typeorm';
 import { Role } from './role.entity';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
+import { User } from '../users/user.entity';
 
 @Injectable()
 export class RolesService {
   constructor(
     @InjectRepository(Role)
     private readonly rolesRepo: Repository<Role>,
+    @InjectRepository(User)
+    private readonly usersRepo: Repository<User>,
   ) {}
 
   async create(dto: CreateRoleDto): Promise<Role> {
@@ -83,10 +86,17 @@ export class RolesService {
   }
 
   async remove(id: string): Promise<{ deleted: boolean }> {
-    const result = await this.rolesRepo.delete(id);
-    if (result.affected === 0) {
-      throw new NotFoundException('Role not found.');
+    const role = await this.rolesRepo.findOne({ where: { id } });
+    if (!role) throw new NotFoundException('Role not found.');
+
+    const inUse = await this.usersRepo.count({ where: { role_id: id } });
+    if (inUse > 0) {
+      throw new BadRequestException(
+        'Cannot delete role: it is currently assigned to one or more users.',
+      );
     }
+
+    await this.rolesRepo.delete(id);
     return { deleted: true };
   }
 }
