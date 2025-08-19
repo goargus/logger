@@ -1,42 +1,54 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { UserStatus } from './user-status.enum';
+
 import { User } from './user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { Role } from '../roles/role.entity';
-import { Entity as OrgEntity } from '../entities/entity.entity';
+import { UserStatus } from './user-status.enum';
+
+import { EntitiesService } from '../entities/entities.service';
+import { RolesService } from '../roles/roles.service';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User) private readonly usersRepo: Repository<User>,
-    @InjectRepository(Role) private readonly rolesRepo: Repository<Role>,
-    @InjectRepository(OrgEntity) private readonly entitiesRepo: Repository<OrgEntity>,
+    private readonly entitiesService: EntitiesService,
+    private readonly rolesService: RolesService,
   ) {}
 
-  private async assertRoleExists(role_id: string): Promise<Role> {
-    const role = await this.rolesRepo.findOne({ where: { id: role_id } });
-    if (!role) throw new BadRequestException('Invalid role_id: role does not exist.');
-    return role;
+  private async assertRoleExists(role_id: string): Promise<void> {
+    try {
+      await this.rolesService.findOne(role_id);
+    } catch (e) {
+      if (e instanceof NotFoundException) {
+        throw new BadRequestException('Invalid role_id: role does not exist.');
+      }
+      throw e;
+    }
   }
 
-  private async assertEntityExists(entity_id: string): Promise<OrgEntity> {
-    const ent = await this.entitiesRepo.findOne({ where: { id: entity_id } });
-    if (!ent) throw new BadRequestException('Invalid entity_id: entity does not exist.');
-    return ent;
+  private async assertEntityExists(entity_id: string): Promise<void> {
+    try {
+      await this.entitiesService.findOne(entity_id);
+    } catch (e) {
+      if (e instanceof NotFoundException) {
+        throw new BadRequestException('Invalid entity_id: entity does not exist.');
+      }
+      throw e;
+    }
   }
 
   async create(dto: CreateUserDto): Promise<User> {
-    // no duplicados por email
-    const exists = await this.usersRepo.findOne({ where: { email: dto.email } });
-    if (exists) throw new BadRequestException('A user with this email already exists.');
+    // Evitar duplicado por email
+    const dup = await this.usersRepo.findOne({ where: { email: dto.email } });
+    if (dup) throw new BadRequestException('A user with this email already exists.');
 
     await this.assertRoleExists(dto.role_id);
     await this.assertEntityExists(dto.entity_id);
@@ -53,8 +65,7 @@ export class UsersService {
       archived_at: null,
     });
 
-    const saved = await this.usersRepo.save(user);
-    return saved;
+    return this.usersRepo.save(user);
   }
 
   async findAll(): Promise<User[]> {
@@ -89,7 +100,6 @@ export class UsersService {
       await this.assertRoleExists(dto.role_id);
       user.role_id = dto.role_id;
     }
-
     if (dto.entity_id) {
       await this.assertEntityExists(dto.entity_id);
       user.entity_id = dto.entity_id;
