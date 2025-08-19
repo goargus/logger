@@ -34,6 +34,7 @@ describe('EntitiesService', () => {
     is_active: true,
     created_at: new Date('2025-08-12T17:34:14.503Z') as never,
     updated_at: new Date('2025-08-12T17:34:14.503Z') as never,
+    users: [],
   };
 
   beforeEach(async () => {

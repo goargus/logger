@@ -1,0 +1,87 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { UsersController } from '../../users/users.controller';
+import { UsersService } from '../../users/users.service';
+import { CreateUserDto } from '../../users/dto/create-user.dto';
+import { UpdateUserDto } from '../../users/dto/update-user.dto';
+import { UserStatus } from '../../users/user-status.enum';
+
+describe('UsersController (create & update)', () => {
+  let controller: UsersController;
+  let service: jest.Mocked<UsersService>;
+
+  const now = new Date();
+
+  const userMock = {
+    id: 'u-1',
+    username: 'jdoe',
+    email: 'jdoe@example.com',
+    status: UserStatus.ACTIVE,
+    created_at: now,
+    updated_at: now,
+    archived_at: null,
+    full_name: 'John Doe',
+    first_name: 'John',
+    family_name: 'Doe',
+    role_id: 'r-1',
+    entity_id: 'e-1',
+    role: { id: 'r-1', name: 'missionary' },
+    entity: { id: 'e-1', name: 'Union A' },
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [UsersController],
+      providers: [
+        {
+          provide: UsersService,
+          useValue: {
+            create: jest.fn(),
+            update: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    controller = module.get<UsersController>(UsersController);
+    service = module.get(UsersService) as jest.Mocked<UsersService>;
+
+    jest.clearAllMocks();
+  });
+
+  describe('create', () => {
+    it('returns wrapper with message and user', async () => {
+      const dto: CreateUserDto = {
+        username: 'jdoe',
+        email: 'jdoe@example.com',
+        role_id: 'r-1',
+        entity_id: 'e-1',
+        full_name: 'John Doe',
+      };
+
+      service.create.mockResolvedValue(userMock as any);
+
+      const res = await controller.create(dto);
+      expect(service.create).toHaveBeenCalledWith(dto);
+      expect(res).toEqual({
+        message: 'User created successfully',
+        user: userMock,
+      });
+    });
+  });
+
+  describe('update', () => {
+    it('returns wrapper with message and user', async () => {
+      const dto: UpdateUserDto = { username: 'johnny' };
+      const updated = { ...userMock, username: 'johnny' };
+
+      service.update.mockResolvedValue(updated as any);
+
+      const res = await controller.update('u-1', dto);
+      expect(service.update).toHaveBeenCalledWith('u-1', dto);
+      expect(res).toEqual({
+        message: 'User updated successfully',
+        user: updated,
+      });
+    });
+  });
+});

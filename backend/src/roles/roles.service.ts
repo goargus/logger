@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Raw } from 'typeorm';
+import { Raw, Repository } from 'typeorm';
 import { Role } from './role.entity';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
@@ -83,10 +83,19 @@ export class RolesService {
   }
 
   async remove(id: string): Promise<{ deleted: boolean }> {
-    const result = await this.rolesRepo.delete(id);
-    if (result.affected === 0) {
-      throw new NotFoundException('Role not found.');
+    const role = await this.rolesRepo.findOne({ where: { id } });
+    if (!role) throw new NotFoundException('Role not found.');
+
+    try {
+      await this.rolesRepo.delete(id);
+      return { deleted: true };
+    } catch (e: any) {
+      if (e?.code === '23503') {
+        throw new BadRequestException(
+          'Cannot delete role: it is currently assigned to one or more users.',
+        );
+      }
+      throw e;
     }
-    return { deleted: true };
   }
 }

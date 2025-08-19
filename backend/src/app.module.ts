@@ -8,6 +8,7 @@ import { AppService } from './app.service';
 import { AdminModule } from './admin/admin.module';
 import { RolesModule } from './roles/roles.module';
 import authConfig from './config/auth.config';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import authConfig from './config/auth.config';
     EntitiesModule,
     AdminModule,
     RolesModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

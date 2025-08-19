@@ -24,9 +24,10 @@ describe('RolesService', () => {
   const role: Role = {
     id: 'uuid-1',
     name: 'Admin',
-    description: 'Rol administrador',
+    description: 'Admin role',
     created_at: now,
     updated_at: now,
+    users: [] as never,
   };
 
   beforeEach(async () => {
@@ -41,31 +42,31 @@ describe('RolesService', () => {
   afterEach(() => jest.clearAllMocks());
 
   describe('create', () => {
-    it('crea un rol cuando el nombre no existe (case-insensitive)', async () => {
+    it('creates a role when the name does not exist (case-insensitive)', async () => {
       repo.exist?.mockResolvedValue(false);
       repo.create?.mockReturnValue(role);
       repo.save?.mockResolvedValue(role);
 
-      const result = await service.create({ name: 'Admin', description: 'Rol administrador' });
+      const result = await service.create({ name: 'Admin', description: 'Admin role' });
       expect(repo.exist).toHaveBeenCalledWith({
         where: { name: expect.any(Object) },
       });
       expect(repo.create).toHaveBeenCalledWith({
         name: 'Admin',
-        description: 'Rol administrador',
+        description: 'Admin role',
       });
       expect(repo.save).toHaveBeenCalledWith(role);
       expect(result).toEqual(role);
     });
 
-    it('lanza 409 si el nombre ya existe (case-insensitive)', async () => {
+    it('throws 409 if the name already exists (case-insensitive)', async () => {
       repo.exist?.mockResolvedValue(true);
       await expect(service.create({ name: 'ADMIN', description: '' })).rejects.toBeInstanceOf(
         ConflictException,
       );
     });
 
-    it('lanza 400 si el name viene vacío o espacios', async () => {
+    it('throws 400 if name is empty or only spaces', async () => {
       await expect(service.create({ name: '   ', description: '' })).rejects.toBeInstanceOf(
         BadRequestException,
       );
@@ -73,7 +74,7 @@ describe('RolesService', () => {
   });
 
   describe('findAll', () => {
-    it('retorna lista de roles', async () => {
+    it('returns roles list', async () => {
       repo.find?.mockResolvedValue([role]);
       const result = await service.findAll();
       expect(repo.find).toHaveBeenCalledWith({ order: { name: 'ASC' } });
@@ -82,33 +83,33 @@ describe('RolesService', () => {
   });
 
   describe('findOne', () => {
-    it('retorna rol existente', async () => {
+    it('returns existing role', async () => {
       repo.findOne?.mockResolvedValue(role);
       const result = await service.findOne('uuid-1');
       expect(repo.findOne).toHaveBeenCalledWith({ where: { id: 'uuid-1' } });
       expect(result).toEqual(role);
     });
 
-    it('lanza 404 si no existe', async () => {
+    it('throws 404 if not found', async () => {
       repo.findOne?.mockResolvedValue(null);
       await expect(service.findOne('nope')).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 
   describe('update', () => {
-    it('actualiza nombre y description (sin duplicar)', async () => {
+    it('updates name and description (no duplication)', async () => {
       repo.findOne?.mockResolvedValue({ ...role });
       repo.exist?.mockResolvedValue(false);
-      repo.save?.mockResolvedValue({ ...role, name: 'Supervisor', description: 'Nuevo' });
+      repo.save?.mockResolvedValue({ ...role, name: 'Supervisor', description: 'New' });
 
-      const result = await service.update('uuid-1', { name: 'Supervisor', description: 'Nuevo' });
+      const result = await service.update('uuid-1', { name: 'Supervisor', description: 'New' });
       expect(repo.exist).toHaveBeenCalledWith({
         where: { name: expect.any(Object) },
       });
-      expect(result).toMatchObject({ name: 'Supervisor', description: 'Nuevo' });
+      expect(result).toMatchObject({ name: 'Supervisor', description: 'New' });
     });
 
-    it('lanza 409 si intenta cambiar a nombre duplicado (case-insensitive)', async () => {
+    it('throws 409 if attempting to change to a duplicate name (case-insensitive)', async () => {
       repo.findOne?.mockResolvedValue({ ...role });
       repo.exist?.mockResolvedValue(true);
 
@@ -117,30 +118,33 @@ describe('RolesService', () => {
       );
     });
 
-    it('lanza 400 si manda name vacío en update', async () => {
+    it('throws 400 if name is empty in update', async () => {
       repo.findOne?.mockResolvedValue({ ...role });
       await expect(service.update('uuid-1', { name: '   ' })).rejects.toBeInstanceOf(
         BadRequestException,
       );
     });
 
-    it('lanza 404 si el rol a actualizar no existe', async () => {
+    it('throws 404 if the role to update does not exist', async () => {
       repo.findOne?.mockResolvedValue(null);
       await expect(service.update('nope', { name: 'X' })).rejects.toBeInstanceOf(NotFoundException);
     });
 
-    it('actualiza solo description si no envía name', async () => {
+    it('updates only description if name is not provided', async () => {
       repo.findOne?.mockResolvedValue({ ...role });
-      repo.save?.mockResolvedValue({ ...role, description: 'Solo desc' });
+      repo.save?.mockResolvedValue({ ...role, description: 'Description only' });
 
-      const result = await service.update('uuid-1', { description: 'Solo desc' });
+      const result = await service.update('uuid-1', {
+        description: 'Description only',
+        name: '',
+      });
       expect(repo.exist).not.toHaveBeenCalled();
-      expect(result.description).toBe('Solo desc');
+      expect(result.description).toBe('Description only');
     });
   });
 
   describe('remove', () => {
-    it('elimina existente', async () => {
+    it('deletes existing', async () => {
       const del: DeleteResult = { affected: 1, raw: undefined as unknown };
       repo.delete?.mockResolvedValue(del);
 
@@ -149,7 +153,7 @@ describe('RolesService', () => {
       expect(result).toEqual({ deleted: true });
     });
 
-    it('lanza 404 si no existe', async () => {
+    it('throws 404 if not found', async () => {
       const del: DeleteResult = { affected: 0, raw: undefined as unknown };
       repo.delete?.mockResolvedValue(del);
       await expect(service.remove('nope')).rejects.toBeInstanceOf(NotFoundException);

@@ -17,13 +17,17 @@ export class EntitiesService {
     private readonly repo: Repository<Entity>,
   ) {}
 
+  private normalizeName(name?: string) {
+    return (name ?? '').trim();
+  }
+
   async create(dto: CreateEntityDto): Promise<Entity> {
-    const name = (dto.name ?? '').trim();
+    const name = this.normalizeName(dto.name);
     if (!name) {
       throw new BadRequestException('name is required');
     }
 
-    const exists = await this.repo.exists({
+    const exists = await this.repo.exist({
       where: { name: ILike(name), type: dto.type },
     });
     if (exists) {
@@ -35,7 +39,7 @@ export class EntitiesService {
   }
 
   async findAll(): Promise<Entity[]> {
-    return this.repo.find();
+    return this.repo.find({ order: { name: 'ASC' } });
   }
 
   async findOne(id: string): Promise<Entity> {
@@ -44,10 +48,14 @@ export class EntitiesService {
     return found;
   }
 
+  async existsById(id: string): Promise<boolean> {
+    return this.repo.exist({ where: { id } });
+  }
+
   async update(id: string, dto: UpdateEntityDto): Promise<Entity> {
     const current = await this.findOne(id);
 
-    const nextName = dto.name !== undefined ? (dto.name ?? '').trim() : current.name;
+    const nextName = dto.name !== undefined ? this.normalizeName(dto.name) : current.name;
     const nextType = (dto.type ?? current.type) as EntityType;
 
     if (dto.name !== undefined && !nextName) {
@@ -55,7 +63,7 @@ export class EntitiesService {
     }
 
     if (nextName !== current.name || nextType !== current.type) {
-      const conflict = await this.repo.exists({
+      const conflict = await this.repo.exist({
         where: { id: Not(current.id), name: ILike(nextName), type: nextType },
       });
       if (conflict) {
@@ -74,14 +82,23 @@ export class EntitiesService {
   }
 
   async remove(id: string): Promise<{ affected: number }> {
-    const res = await this.repo.delete(id);
-    if (!res.affected) {
-      throw new NotFoundException('Entity not found');
+    try {
+      const res = await this.repo.delete(id);
+      if (!res.affected) {
+        throw new NotFoundException('Entity not found');
+      }
+      return { affected: res.affected };
+    } catch (e: any) {
+      if (e?.code === '23503') {
+        throw new BadRequestException(
+          'Cannot delete entity: it is currently referenced by other records (e.g., users).',
+        );
+      }
+      throw e;
     }
-    return { affected: res.affected };
   }
 
   async findAllByType(type: EntityType): Promise<Entity[]> {
-    return this.repo.find({ where: { type } });
+    return this.repo.find({ where: { type }, order: { name: 'ASC' } });
   }
 }
