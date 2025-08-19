@@ -27,6 +27,7 @@ describe('RolesService', () => {
     description: 'Rol administrador',
     created_at: now,
     updated_at: now,
+    users: [] as never,
   };
 
   beforeEach(async () => {
@@ -133,7 +134,10 @@ describe('RolesService', () => {
       repo.findOne?.mockResolvedValue({ ...role });
       repo.save?.mockResolvedValue({ ...role, description: 'Solo desc' });
 
-      const result = await service.update('uuid-1', { description: 'Solo desc' });
+      const result = await service.update('uuid-1', {
+        description: 'Solo desc',
+        name: '',
+      });
       expect(repo.exist).not.toHaveBeenCalled();
       expect(result.description).toBe('Solo desc');
     });

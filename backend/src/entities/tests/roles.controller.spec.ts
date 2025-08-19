@@ -14,6 +14,7 @@ describe('RolesController', () => {
     description: 'Rol administrador',
     created_at: now,
     updated_at: now,
+    users: [] as never,
   };
 
   const mockService = {
