@@ -42,22 +42,32 @@ export class User {
   full_name?: string | null;
 
   @Column({ type: 'text', nullable: true })
-  first_name!: string | null;
+  first_name?: string | null;
 
   @Column({ type: 'text', nullable: true })
-  family_name!: string | null;
+  family_name?: string | null;
 
-  @ManyToOne(() => Role, (r) => r.users, { nullable: false, eager: true })
+  @ManyToOne(() => Role, (r) => r.users, {
+    nullable: false,
+    eager: true,
+    onDelete: 'RESTRICT',
+  })
   @JoinColumn({ name: 'role_id' })
   role!: Role;
 
+  @Index('idx_user_role_id')
   @Column({ type: 'uuid' })
   role_id!: string;
 
-  @ManyToOne(() => OrgEntity, (e) => e.users, { nullable: false, eager: true })
+  @ManyToOne(() => OrgEntity, (e) => e.users, {
+    nullable: false,
+    eager: true,
+    onDelete: 'RESTRICT',
+  })
   @JoinColumn({ name: 'entity_id' })
   entity!: OrgEntity;
 
+  @Index('idx_user_entity_id')
   @Column({ type: 'uuid' })
   entity_id!: string;
 }
