@@ -9,6 +9,7 @@ import { AdminModule } from './admin/admin.module';
 import { RolesModule } from './roles/roles.module';
 import authConfig from './config/auth.config';
 import { UsersModule } from './users/users.module';
+import { ActivityTypesModule } from './activities-type/activity-types.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { UsersModule } from './users/users.module';
     AdminModule,
     RolesModule,
     UsersModule,
+    ActivityTypesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
