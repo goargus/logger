@@ -7,7 +7,10 @@ class Routes {
   static const reports = '/reports';
 }
 
-final Map<String, WidgetBuilder> appRoutes = {
-  Routes.dashboardMissionary: (_) => const DashboardMissionaryPage(),
-  Routes.reports: (_) => const ReportsViewPage(),
-};
+Map<String, WidgetBuilder> appRoutes(String userName) {
+  return {
+    Routes.dashboardMissionary: (_) =>
+        DashboardMissionaryPage(userName: userName),
+    Routes.reports: (_) => const ReportsViewPage(),
+  };
+}
