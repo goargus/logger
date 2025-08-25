@@ -9,7 +9,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
+  flutter_localizations:
+    sdk: flutter
+
   auth0_flutter: ^1.6.0
+  intl: ^0.20.0
+  file_picker: ^8.0.0
 
 dev_dependencies:
   flutter_lints: ^5.0.0
