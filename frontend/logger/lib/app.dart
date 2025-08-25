@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'routes.dart';
 import 'theme/ app_theme.dart';
 
 class MissionaryApp extends StatelessWidget {
-  const MissionaryApp({super.key});
+  final String userName;
+  const MissionaryApp({super.key, required this.userName});
 
   @override
   Widget build(BuildContext context) {
@@ -11,7 +13,19 @@ class MissionaryApp extends StatelessWidget {
       title: 'Missionary App',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-      routes: appRoutes,
+
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('es'),
+        Locale('en'),
+      ],
+      locale: const Locale('es'),
+
+      routes: appRoutes(userName),
       initialRoute: Routes.dashboardMissionary,
     );
   }
