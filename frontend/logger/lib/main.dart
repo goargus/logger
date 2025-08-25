@@ -40,15 +40,14 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-Future<void> _logout() async {
-  try {
-    await auth0.logout();
-    setState(() => _credentials = null);
-  } catch (e) {
-    setState(() => _lastError = '$e');
+  Future<void> _logout() async {
+    try {
+      await auth0.logout();
+      setState(() => _credentials = null);
+    } catch (e) {
+      setState(() => _lastError = '$e');
+    }
   }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -70,8 +69,8 @@ Future<void> _logout() async {
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 520),
                     child: Text('Error: $_lastError',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(color: Colors.red)),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.red)),
                   )
                 ],
               ],
@@ -81,16 +80,20 @@ Future<void> _logout() async {
       );
     }
 
+    final userName =
+        _credentials!.user.name ?? _credentials!.user.nickname ?? 'Usuario';
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Stack(
         children: [
-          const MissionaryApp(),
+          MissionaryApp(userName: userName),
           Positioned(
-            right: 16, top: 16,
+            right: 16,
+            top: 16,
             child: FilledButton.tonal(
               onPressed: _logout,
-              child: Text('Salir (${_credentials!.user.name ?? "Usuario"})'),
+              child: Text('Salir (${_credentials!.user.email ?? userName})'),
             ),
           ),
         ],
