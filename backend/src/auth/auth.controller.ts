@@ -43,7 +43,6 @@ export class AuthController {
     if (dto.user_id !== req.user.id) {
       throw new ForbiddenException('You can only link your own identity.');
     }
-    // aquí podrías reutilizar un método service.linkIdentityToUser(...) si lo implementas
     return { message: 'Stub: implement linkIdentityToUser or use admin flow' };
   }
 }
