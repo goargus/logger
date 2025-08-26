@@ -1,66 +1,54 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy } from 'passport-jwt';
+import { ExtractJwt, Strategy, StrategyOptions } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
+import { AuthService } from './auth.service';
 import * as jwksRsa from 'jwks-rsa';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(config: ConfigService) {
-    const issuerCfg = config.get<string>('auth.issuer');
-    const audienceCfg = config.get<string>('auth.audience');
-    const issuerEnv = process.env.AUTH0_ISSUER;
-    const audienceEnv = process.env.AUTH0_AUDIENCE;
+  constructor(
+    private readonly config: ConfigService,
+    private readonly auth: AuthService,
+  ) {
+    const issuerFromEnv = config.get<string>('auth.issuer') || process.env.AUTH_ISSUER || '';
+    const audienceFromEnv = config.get<string>('auth.audience') || process.env.AUTH_AUDIENCE || '';
 
-    const issuer = issuerCfg ?? issuerEnv ?? '';
-    const audience = audienceCfg ?? audienceEnv ?? '';
+    const issuer = issuerFromEnv.endsWith('/') ? issuerFromEnv : `${issuerFromEnv}/`;
+    const jwksUri = `${issuer}.well-known/jwks.json`;
 
-    if (!issuer) {
-      throw new Error('JWT issuer is missing. Set auth.issuer or AUTH0_ISSUER.');
-    }
-    if (!audience) {
-      throw new Error('JWT audience is missing. Set auth.audience or AUTH0_AUDIENCE.');
-    }
-
-    super({
+    const opts: StrategyOptions = {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ignoreExpiration: false,
       secretOrKeyProvider: jwksRsa.passportJwtSecret({
         cache: true,
+        cacheMaxEntries: 5,
+        cacheMaxAge: 10 * 60 * 1000,
         rateLimit: true,
-        jwksRequestsPerMinute: 5,
-        jwksUri: `${issuer}.well-known/jwks.json`,
-      }) as any,
-      audience,
-      issuer,
+        jwksRequestsPerMinute: 10,
+        jwksUri,
+      }),
       algorithms: ['RS256'],
-      ignoreExpiration: false,
-    });
+      issuer,
+      audience: audienceFromEnv || undefined,
+    };
+
+    super(opts);
   }
 
   async validate(payload: any) {
-    let permissions: string[] = [];
-    if (Array.isArray(payload?.permissions)) {
-      permissions = payload.permissions.filter((p) => typeof p === 'string');
-    } else if (typeof payload?.scope === 'string') {
-      permissions = payload.scope.split(' ').filter(Boolean);
-    }
+    const provider = 'auth0' as const;
 
-    let roles: string[] = [];
-    if (Array.isArray(payload?.roles)) {
-      roles = payload.roles.filter((r) => typeof r === 'string');
-    } else if (typeof payload?.roles === 'string') {
-      roles = payload.roles
-        .split(',')
-        .map((r) => r.trim())
-        .filter(Boolean);
-    }
+    const { user, username } = await this.auth.resolveUserFromJwt(payload, provider, {
+      allowAutoLinkByVerifiedEmail: true,
+    });
 
     return {
-      userId: payload?.sub ?? payload?.userId ?? payload?.id ?? null,
-      email: typeof payload?.email === 'string' ? payload.email : null,
-      permissions,
-      roles,
-      ...payload,
+      id: user.id,
+      username,
+      email: (user as any).email ?? null,
+      roles: (user as any).roles ?? [],
+      permissions: (user as any).permissions ?? [],
     };
   }
 }
