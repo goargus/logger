@@ -12,12 +12,17 @@ class PrimaryActionButton extends StatelessWidget {
     required this.onPressed,
   });
 
+static const bgcolor = Color(0xFF391A7C);
+
   @override
   Widget build(BuildContext context) {
     return FilledButton.icon(
       onPressed: onPressed,
       icon: Icon(icon),
       label: Text(label),
+      style: FilledButton.styleFrom(
+        backgroundColor: bgcolor,
+      ),
     );
   }
 }
