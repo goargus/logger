@@ -5,7 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtStrategy } from './jwt.strategy';
 import { AuthService } from './auth.service';
-import { IdpIdentity } from './idp_identity.entity';
+import { IdpIdentitiesModule } from '../idp-identities/idp-identities.module';
 import { User } from '../users/user.entity';
 
 @Module({
@@ -13,7 +13,8 @@ import { User } from '../users/user.entity';
     ConfigModule,
     PassportModule,
     JwtModule.register({}),
-    TypeOrmModule.forFeature([IdpIdentity, User]),
+    TypeOrmModule.forFeature([User]),
+    IdpIdentitiesModule,
   ],
   providers: [JwtStrategy, AuthService],
   exports: [AuthService],

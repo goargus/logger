@@ -11,13 +11,50 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  init:
+    image: node:20
+    container_name: backend_init
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: >
+      sh -c "
+        npm install &&
+        npm run admin:bootstrap
+      "
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: churchdb
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      AUTH0_DOMAIN: dev-ohuspam6fnmh4tgt.us.auth0.com
+      AUTH0_AUDIENCE: logger
+      AUTH0_ISSUER: https://dev-ohuspam6fnmh4tgt.us.auth0.com/
+      ADMIN_EMAIL: hndoss@gmail.com
+      ADMIN_USERNAME: "hndoss"
+      ADMIN_IDP_ISSUER: https://dev-ohuspam6fnmh4tgt.us.auth0.com/
+      ADMIN_IDP_SUBJECT: auth0|688c59c6ec2186db091c74eb
+    restart: "no"
 
   backend:
     image: node:20
     container_name: backend
     restart: always
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      init:
+        condition: service_completed_successfully
     ports:
       - "3000:3000"
     volumes:
@@ -44,6 +81,10 @@ services:
       AUTH0_DOMAIN: dev-ohuspam6fnmh4tgt.us.auth0.com
       AUTH0_AUDIENCE: logger
       AUTH0_ISSUER: https://dev-ohuspam6fnmh4tgt.us.auth0.com/
+      ADMIN_EMAIL: hndoss@gmail.com
+      ADMIN_USERNAME: "hndoss"
+      ADMIN_IDP_ISSUER: https://dev-ohuspam6fnmh4tgt.us.auth0.com/
+      ADMIN_IDP_SUBJECT: auth0|688c59c6ec2186db091c74eb
 
 volumes:
   postgres_data:

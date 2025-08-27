@@ -10,6 +10,7 @@ import { RolesModule } from './roles/roles.module';
 import authConfig from './config/auth.config';
 import { UsersModule } from './users/users.module';
 import { ActivityTypesModule } from './activities-type/activity-types.module';
+import { IdpIdentitiesModule } from './idp-identities/idp-identities.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { ActivityTypesModule } from './activities-type/activity-types.module';
     RolesModule,
     UsersModule,
     ActivityTypesModule,
+    IdpIdentitiesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
