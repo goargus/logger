@@ -1,7 +1,8 @@
 import { Injectable, ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { IdpIdentity } from './idp_identity.entity';
+import { IdpIdentity } from '../idp-identities/idp-identity.entity';
+import { IdpIdentitiesService } from '../idp-identities/idp-identities.service';
 import { User } from '../users/user.entity';
 import { UserStatus } from '../users/user-status.enum';
 
@@ -20,7 +21,7 @@ export type ProviderHint = 'auth0' | 'google' | 'azuread' | 'generic';
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectRepository(IdpIdentity) private readonly idpRepo: Repository<IdpIdentity>,
+    private readonly idpIdentitiesService: IdpIdentitiesService,
     @InjectRepository(User) private readonly userRepo: Repository<User>,
   ) {}
 
@@ -40,13 +41,10 @@ export class AuthService {
       throw new UnauthorizedException('Token missing required iss/sub.');
     }
 
-    let identity = await this.idpRepo.findOne({
-      where: { issuer, subject },
-      relations: { user: true },
-    });
+    let identity = await this.idpIdentitiesService.findByIssuerAndSubject(issuer, subject);
     if (identity) {
       identity.last_seen_at = new Date();
-      await this.idpRepo.save(identity);
+      await this.idpIdentitiesService.save(identity);
 
       if (identity.user?.status !== UserStatus.ACTIVE) {
         throw new ForbiddenException('Your account is not active.');
@@ -61,7 +59,7 @@ export class AuthService {
       });
       if (candidates.length === 1) {
         const user = candidates[0];
-        identity = this.idpRepo.create({
+        identity = await this.idpIdentitiesService.create({
           user_id: user.id,
           provider,
           issuer,
@@ -72,7 +70,6 @@ export class AuthService {
           name,
           last_seen_at: new Date(),
         });
-        await this.idpRepo.save(identity);
         return { user, username: user.username };
       }
     }
