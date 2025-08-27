@@ -10,6 +10,7 @@ import {
 import { User } from '../users/user.entity';
 
 export enum EntityType {
+  PLATFORM = 'PLATFORM',
   UNION = 'UNION',
   ASSOCIATION = 'ASSOCIATION',
   FIELD = 'FIELD',
