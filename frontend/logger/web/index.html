@@ -1,7 +1,110 @@
 <!DOCTYPE html>
 <html>
 <head>
-<script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js" defer></script>
+  <script src="https://cdn.auth0.com/js/auth0-spa-js/2.0/auth0-spa-js.production.js"></script>
+
+  <script>
+    window.__auth0Cfg__ = {
+      domain: 'dev-ohuspam6fnmh4tgt.us.auth0.com',
+      clientId: '2H45P97qEyC9HfiKFj8FOvb8DnSOgFwY',
+      audience: 'logger',
+      redirectUri: 'http://localhost:8080'
+    };
+  </script>
+
+  <script>
+    window.__auth0Ready = new Promise((resolve) => { window.__auth0ReadyResolve = resolve; });
+
+    window.auth0Login = async () => {
+      const c = window.auth0Client || await window.__auth0Ready;
+      return c.loginWithRedirect();
+    };
+
+    window.auth0Refresh = async () => {
+      const c = window.auth0Client || await window.__auth0Ready;
+      const t = await c.getTokenSilently({
+        authorizationParams: { audience: window.__auth0Cfg__.audience },
+      });
+      localStorage.setItem('flutter.access_token', t);
+      return t;
+    };
+
+    window.auth0Logout = () => {
+      const c = window.auth0Client;
+      if (!c) return;
+      c.logout({ logoutParams: { returnTo: window.__auth0Cfg__.redirectUri } });
+    };
+  </script>
+
+  <script>
+    (async () => {
+      const cfg = window.__auth0Cfg__;
+
+      async function waitForSdk(maxMs = 10000) {
+        const t0 = Date.now();
+        return new Promise((resolve, reject) => {
+          (function poll() {
+            const hasGlobal = typeof window.createAuth0Client === 'function';
+            const hasNs = window.auth0 && (
+              typeof window.auth0.createAuth0Client === 'function' ||
+              typeof window.auth0.Auth0Client === 'function'
+            );
+            if (hasGlobal || hasNs) return resolve();
+            if (Date.now() - t0 > maxMs) return reject(new Error('Auth0 SDK not loaded'));
+            setTimeout(poll, 30);
+          })();
+        });
+      }
+
+      async function createClient() {
+        const commonCfg = {
+          domain: cfg.domain,
+          clientId: cfg.clientId,
+          authorizationParams: { audience: cfg.audience, redirect_uri: cfg.redirectUri },
+          cacheLocation: 'localstorage',
+          useRefreshTokens: true,
+        };
+
+        if (typeof window.createAuth0Client === 'function') {
+          return window.createAuth0Client(commonCfg);
+        }
+        if (window.auth0 && typeof window.auth0.createAuth0Client === 'function') {
+          return window.auth0.createAuth0Client(commonCfg);
+        }
+        if (window.auth0 && typeof window.auth0.Auth0Client === 'function') {
+          return new window.auth0.Auth0Client(commonCfg);
+        }
+        throw new Error('No Auth0 factory found');
+      }
+
+      await waitForSdk();
+
+      window.auth0Client = await createClient();
+
+      if (location.search.includes('code=') && location.search.includes('state=')) {
+        try {
+          await window.auth0Client.handleRedirectCallback();
+        } catch (e) {
+          console.error('handleRedirectCallback error:', e);
+        } finally {
+          history.replaceState({}, document.title, location.pathname);
+        }
+      }
+
+      try {
+        if (await window.auth0Client.isAuthenticated()) {
+          const t = await window.auth0Client.getTokenSilently({
+            authorizationParams: { audience: cfg.audience },
+          });
+          localStorage.setItem('flutter.access_token', t);
+        }
+      } catch (e) {
+        console.warn('getTokenSilently inicial falló:', e);
+      }
+
+      window.__auth0ReadyResolve(window.auth0Client);
+    })();
+  </script>
 
   <base href="$FLUTTER_BASE_HREF">
 
@@ -9,13 +112,11 @@
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="A new Flutter project.">
 
-  <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="logger">
   <link rel="apple-touch-icon" href="icons/Icon-192.png">
 
-  <!-- Favicon -->
   <link rel="icon" type="image/png" href="favicon.png"/>
 
   <title>logger</title>
