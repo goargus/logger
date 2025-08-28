@@ -14,7 +14,7 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   static const kDomain = 'dev-ohuspam6fnmh4tgt.us.auth0.com';
   static const kClientId = '2H45P97qEyC9HfiKFj8FOvb8DnSOgFwY';
-  static const kRedirectUri = 'http://localhost:3000';
+  static const kRedirectUri = 'http://localhost:8080';
 
   late final Auth0Web auth0;
   Credentials? _credentials;
