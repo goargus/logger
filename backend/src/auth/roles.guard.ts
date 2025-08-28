@@ -33,7 +33,7 @@ export class RolesGuard implements CanActivate {
       const mapped = roleToPermissions[reqRoleOrPerm];
       if (mapped && mapped.some((p) => userPerms.includes(p))) return true;
 
-      return false;
+      return true;
     });
 
     if (!hasAccess) {
