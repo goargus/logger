@@ -15,6 +15,9 @@ import '../widgets/buttons/primary_action_button.dart';
 import '../widgets/lists/ activities_table.dart';
 import '../widgets/dialogs/create_activity_dialog.dart';
 
+import '../auth/session.dart';
+import '../auth/auth0_web.dart';
+
 class DashboardMissionaryPage extends StatefulWidget {
   final String userName;
   const DashboardMissionaryPage({super.key, required this.userName});
@@ -25,6 +28,19 @@ class DashboardMissionaryPage extends StatefulWidget {
 }
 
 class _DashboardMissionaryPageState extends State<DashboardMissionaryPage> {
+  static const String _apiBaseUrl = 'http://localhost:3000';
+
+  Future<String?> _getAccessTokenEnsured() async {
+    var t = await Session.instance.getAccessToken();
+    if (t == null || t.isEmpty) {
+      t = await Auth0Web.refreshTokenSilently();
+      if (t != null && t.isNotEmpty) {
+        await Session.instance.setAccessToken(t);
+      }
+    }
+    return t;
+  }
+
   final DashboardConfig _cfg = const DashboardConfig(
     visits: 15,
     bibleStudies: 10,
@@ -56,18 +72,34 @@ class _DashboardMissionaryPageState extends State<DashboardMissionaryPage> {
   ];
 
   Future<void> _openCreateDialog() async {
-    final created = await showDialog<Activity>(
+    final token = await _getAccessTokenEnsured();
+    if (token == null || token.isEmpty) {
+      Auth0Web.login();
+      return;
+    }
+
+    final created = await showDialog<CreatedActivityResult>(
       context: context,
       barrierDismissible: false,
-      builder: (_) => const CreateActivityDialog(),
+      builder: (_) => CreateActivityDialog(
+        baseUrl: _apiBaseUrl,
+        getAccessToken: _getAccessTokenEnsured,
+        onRequireLogin: () {
+          Auth0Web.login();
+        },
+      ),
     );
+
     if (created != null) {
-      setState(() {
-        _recent.insert(0, created);
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Actividad creada.')),
+      final activity = Activity(
+        date: created.date,
+        category: created.type.name,
+        description: created.description ?? '',
+        expense: 0,
       );
+      setState(() => _recent.insert(0, activity));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Actividad creada.')));
     }
   }
 
