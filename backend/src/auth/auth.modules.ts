@@ -7,6 +7,8 @@ import { JwtStrategy } from './jwt.strategy';
 import { AuthService } from './auth.service';
 import { IdpIdentitiesModule } from '../idp-identities/idp-identities.module';
 import { User } from '../users/user.entity';
+import { AuthController } from './auth.controller';
+import { IdpIdentity } from '../idp-identities/idp-identity.entity';
 
 @Module({
   imports: [
@@ -15,7 +17,9 @@ import { User } from '../users/user.entity';
     JwtModule.register({}),
     TypeOrmModule.forFeature([User]),
     IdpIdentitiesModule,
+    TypeOrmModule.forFeature([IdpIdentity, User]),
   ],
+  controllers: [AuthController],
   providers: [JwtStrategy, AuthService],
   exports: [AuthService],
 })
