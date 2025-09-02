@@ -1,54 +1,96 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy, StrategyOptions } from 'passport-jwt';
-import { ConfigService } from '@nestjs/config';
-import { AuthService } from './auth.service';
 import * as jwksRsa from 'jwks-rsa';
+import { ConfigService } from '@nestjs/config';
+
+export interface JwtValidatedUser {
+  sub: string;
+  iss?: string;
+  aud?: string | string[];
+  roles: string[];
+  permissions: string[];
+  [k: string]: any;
+}
+
+function ensureTrailingSlash(url?: string): string | undefined {
+  if (!url) return undefined;
+  return url.endsWith('/') ? url : `${url}/`;
+}
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor(
-    private readonly config: ConfigService,
-    private readonly auth: AuthService,
-  ) {
-    const issuerFromEnv = config.get<string>('auth.issuer') || process.env.AUTH_ISSUER || '';
-    const audienceFromEnv = config.get<string>('auth.audience') || process.env.AUTH_AUDIENCE || '';
+  private readonly rolesClaimKeys: string[];
+  private readonly permsClaimKeys: string[];
 
-    const issuer = issuerFromEnv.endsWith('/') ? issuerFromEnv : `${issuerFromEnv}/`;
+  constructor(private readonly config: ConfigService) {
+    const domain = config.get<string>('auth.domain');
+    const audience = config.get<string>('auth.audience');
+    let issuer = config.get<string>('auth.issuer');
+    if (!issuer && domain) issuer = `https://${domain}`;
+    issuer = ensureTrailingSlash(issuer);
+
+    if (!issuer) {
+      throw new Error(
+        'auth.issuer (o auth.domain) no está configurado. Define AUTH0_ISSUER o AUTH0_DOMAIN en tu config.',
+      );
+    }
+
     const jwksUri = `${issuer}.well-known/jwks.json`;
 
     const opts: StrategyOptions = {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ignoreExpiration: false,
+      algorithms: ['RS256'],
       secretOrKeyProvider: jwksRsa.passportJwtSecret({
+        jwksUri,
         cache: true,
-        cacheMaxEntries: 5,
-        cacheMaxAge: 10 * 60 * 1000,
         rateLimit: true,
         jwksRequestsPerMinute: 10,
-        jwksUri,
       }),
-      algorithms: ['RS256'],
       issuer,
-      audience: audienceFromEnv || undefined,
+      audience,
+      ignoreExpiration: false,
     };
 
     super(opts);
+
+    const ns = this.config.get<string>('auth.claimsNamespace');
+    this.rolesClaimKeys = [ns ? `${ns}/roles` : '', 'roles'].filter(Boolean);
+    this.permsClaimKeys = [ns ? `${ns}/permissions` : '', 'permissions', 'perm'].filter(Boolean);
   }
 
-  async validate(payload: any) {
-    const provider = 'auth0' as const;
+  private readArrayClaim(payload: any, keys: string[]): string[] {
+    for (const k of keys) {
+      const v = payload?.[k];
+      if (Array.isArray(v)) return v.map(String);
+      if (typeof v === 'string' && (k === 'permissions' || k.endsWith('/permissions'))) {
+        return v
+          .split(' ')
+          .map((s) => s.trim())
+          .filter(Boolean);
+      }
+    }
+    if (typeof payload?.scope === 'string') {
+      return payload.scope
+        .split(' ')
+        .map((s: string) => s.trim())
+        .filter(Boolean);
+    }
+    return [];
+  }
 
-    const { user, username } = await this.auth.resolveUserFromJwt(payload, provider, {
-      allowAutoLinkByVerifiedEmail: true,
-    });
+  async validate(payload: any): Promise<JwtValidatedUser> {
+    const sub = payload?.sub ?? payload?.subject;
+    if (!sub) {
+      throw new UnauthorizedException('Token has no sub.');
+    }
 
     return {
-      id: user.id,
-      username,
-      email: (user as any).email ?? null,
-      roles: (user as any).roles ?? [],
-      permissions: (user as any).permissions ?? [],
+      sub,
+      iss: payload?.iss,
+      aud: payload?.aud,
+      roles: this.readArrayClaim(payload, this.rolesClaimKeys),
+      permissions: this.readArrayClaim(payload, this.permsClaimKeys),
     };
   }
 }
