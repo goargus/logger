@@ -8,4 +8,4 @@ import { IdpIdentitiesService } from './idp-identities.service';
   providers: [IdpIdentitiesService],
   exports: [IdpIdentitiesService, TypeOrmModule],
 })
-export class IdpIdentitiesModule { }
+export class IdpIdentitiesModule {}

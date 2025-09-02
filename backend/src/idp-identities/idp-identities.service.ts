@@ -8,7 +8,7 @@ export class IdpIdentitiesService {
   constructor(
     @InjectRepository(IdpIdentity)
     private readonly idpIdentityRepo: Repository<IdpIdentity>,
-  ) { }
+  ) {}
 
   async findByIssuerAndSubject(issuer: string, subject: string): Promise<IdpIdentity | null> {
     return this.idpIdentityRepo.findOne({
