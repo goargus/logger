@@ -1,21 +1,11 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 
-import 'calendar_dialog.dart';
+import '../dialogs/calendar_dialog.dart';
 import '../../models/activity_type.dart';
 import '../../services/activity_type_service.dart';
-
-class CreatedActivityResult {
-  final ActivityType type;
-  final DateTime date;
-  final String? description;
-
-  CreatedActivityResult({
-    required this.type,
-    required this.date,
-    this.description,
-  });
-}
 
 class CreateActivityDialog extends StatefulWidget {
   final String baseUrl;
@@ -49,7 +39,11 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
 
   final TextEditingController _descCtrl = TextEditingController();
 
+  bool _hasExpense = false;
+  final TextEditingController _amountCtrl = TextEditingController();
+
   bool _submitting = false;
+  String? _error;
 
   @override
   void initState() {
@@ -67,6 +61,7 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
   void dispose() {
     _dateCtrl.dispose();
     _descCtrl.dispose();
+    _amountCtrl.dispose();
     super.dispose();
   }
 
@@ -90,15 +85,66 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _submitting = true);
+    final t = await widget.getAccessToken();
+    if (t == null || t.isEmpty) {
+      widget.onRequireLogin?.call();
+      setState(() => _error = 'No estás autenticado.');
+      return;
+    }
+
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+
     try {
-      Navigator.of(context).pop(
-        CreatedActivityResult(
-          type: _selectedType!,
-          date: _selectedDate,
-          description: _descCtrl.text.trim().isEmpty ? null : _descCtrl.text.trim(),
-        ),
+      final iso = _selectedDate.toUtc().toIso8601String();
+      final typeId = _selectedType!.id;
+      final desc = _descCtrl.text.trim();
+      final hasExp = _hasExpense;
+      final amount = (hasExp ? _amountCtrl.text.trim() : null);
+
+      final payload = <String, dynamic>{
+        'activity_type_id': typeId,
+        'type_id': typeId,
+        'activityTypeId': typeId,
+        'typeId': typeId,
+
+        'activity_date': iso,
+        'date': iso,
+        'activityDate': iso,
+
+        if (desc.isNotEmpty) 'description': desc,
+
+        'hasExpense': hasExp,
+        'has_expense': hasExp,
+        if (hasExp) ...{
+          'expenseAmount': amount,
+          'expense_amount': amount,
+        },
+      };
+
+      print('CreateActivity payload => ${jsonEncode(payload)}');
+
+      final resp = await http.post(
+        Uri.parse('${widget.baseUrl}/activities'),
+        headers: {
+          'Authorization': 'Bearer $t',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(payload),
       );
+
+      if (resp.statusCode == 201 || resp.statusCode == 200) {
+        final created = jsonDecode(resp.body) as Map<String, dynamic>;
+        if (!mounted) return;
+        Navigator.of(context).pop(created);
+        return;
+      }
+
+      setState(() => _error = 'Error ${resp.statusCode}: ${resp.body}');
+    } catch (e) {
+      setState(() => _error = e.toString());
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
@@ -121,12 +167,14 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                 children: [
                   Text(
                     'Crear actividad',
-                    style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w600),
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                   const Spacer(),
                   IconButton(
                     tooltip: 'Cerrar',
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: _submitting ? null : () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.close),
                   ),
                 ],
@@ -135,16 +183,32 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
               Divider(height: 1, color: theme.dividerColor),
               const SizedBox(height: 12),
 
+              if (_error != null) ...[
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.error.withOpacity(0.08),
+                    border: Border.all(color: theme.colorScheme.error.withOpacity(0.3)),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    _error!,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.error,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+
               Form(
                 key: _formKey,
                 child: Column(
                   children: [
                     Align(
                       alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Tipo de actividad',
-                        style: theme.textTheme.labelLarge,
-                      ),
+                      child: Text('Tipo de actividad', style: theme.textTheme.labelLarge),
                     ),
                     const SizedBox(height: 8),
 
@@ -179,29 +243,31 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                                 is401
                                     ? 'Tu sesión expiró o no estás autenticado.'
                                     : 'No se pudieron cargar los tipos de actividad.',
-                                style: theme.textTheme.bodyMedium
-                                    ?.copyWith(color: theme.colorScheme.error),
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: theme.colorScheme.error,
+                                ),
                               ),
                               const SizedBox(height: 6),
                               Text(
                                 err,
-                                style: theme.textTheme.bodySmall
-                                    ?.copyWith(color: theme.colorScheme.error),
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.error,
+                                ),
                               ),
                               const SizedBox(height: 8),
                               Row(
                                 children: [
                                   OutlinedButton.icon(
-                                    onPressed: () => setState(() {
-                                      _typesFuture = _typeService.fetchAll();
-                                    }),
+                                    onPressed: _submitting ? null : () {
+                                      setState(() => _typesFuture = _typeService.fetchAll());
+                                    },
                                     icon: const Icon(Icons.refresh),
                                     label: const Text('Reintentar'),
                                   ),
                                   const SizedBox(width: 8),
                                   if (is401 && widget.onRequireLogin != null)
                                     OutlinedButton.icon(
-                                      onPressed: widget.onRequireLogin,
+                                      onPressed: _submitting ? null : widget.onRequireLogin,
                                       icon: const Icon(Icons.login),
                                       label: const Text('Iniciar sesión'),
                                     ),
@@ -213,24 +279,20 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
 
                         final types = snapshot.data ?? const <ActivityType>[];
                         if (types.isEmpty) {
-                          return Text(
-                            'No hay tipos de actividad disponibles.',
-                            style: theme.textTheme.bodyMedium,
-                          );
+                          return Text('No hay tipos de actividad disponibles.',
+                              style: theme.textTheme.bodyMedium);
                         }
 
                         return DropdownButtonFormField<ActivityType>(
                           value: _selectedType,
                           isExpanded: true,
                           items: types
-                              .map(
-                                (t) => DropdownMenuItem<ActivityType>(
-                                  value: t,
-                                  child: Text(t.name),
-                                ),
-                              )
+                              .map((t) => DropdownMenuItem<ActivityType>(
+                                    value: t,
+                                    child: Text(t.name),
+                                  ))
                               .toList(),
-                          onChanged: (v) => setState(() => _selectedType = v),
+                          onChanged: _submitting ? null : (v) => setState(() => _selectedType = v),
                           validator: (v) => v == null ? 'Selecciona un tipo' : null,
                           decoration: const InputDecoration(
                             border: OutlineInputBorder(),
@@ -245,56 +307,77 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
 
                     Align(
                       alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Fecha',
-                        style: theme.textTheme.labelLarge,
-                      ),
+                      child: Text('Fecha', style: theme.textTheme.labelLarge),
                     ),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _dateCtrl,
                       readOnly: true,
-                      onTap: _pickDate,
+                      onTap: _submitting ? null : _pickDate,
                       decoration: InputDecoration(
                         hintText: 'Selecciona la fecha',
                         isDense: true,
                         border: const OutlineInputBorder(),
                         suffixIcon: IconButton(
                           tooltip: 'Calendario',
-                          onPressed: _pickDate,
+                          onPressed: _submitting ? null : _pickDate,
                           icon: const Icon(Icons.calendar_today),
                         ),
                       ),
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Selecciona una fecha'
-                          : null,
+                      validator: (v) =>
+                          (v == null || v.trim().isEmpty) ? 'Selecciona una fecha' : null,
                     ),
 
                     const SizedBox(height: 16),
 
                     Align(
                       alignment: Alignment.centerLeft,
-                      child: Text(
-                        'Descripción (opcional)',
-                        style: theme.textTheme.labelLarge,
-                      ),
+                      child: Text('Descripción (opcional)', style: theme.textTheme.labelLarge),
                     ),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: _descCtrl,
                       maxLines: 4,
+                      readOnly: _submitting,
                       decoration: const InputDecoration(
                         hintText: 'Agrega detalles si lo deseas',
                         border: OutlineInputBorder(),
                       ),
                     ),
 
+                    const SizedBox(height: 16),
+
+                    CheckboxListTile(
+                      title: const Text('¿Tiene gastos?'),
+                      value: _hasExpense,
+                      onChanged: _submitting ? null : (v) => setState(() => _hasExpense = v ?? false),
+                      controlAffinity: ListTileControlAffinity.leading,
+                    ),
+                    if (_hasExpense) ...[
+                      TextFormField(
+                        controller: _amountCtrl,
+                        keyboardType: TextInputType.number,
+                        readOnly: _submitting,
+                        decoration: const InputDecoration(
+                          hintText: 'Monto del gasto',
+                          border: OutlineInputBorder(),
+                        ),
+                        validator: (v) {
+                          if (_hasExpense && (v == null || v.trim().isEmpty)) {
+                            return 'Ingresa el monto del gasto';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
                     const SizedBox(height: 20),
 
                     Row(
                       children: [
                         TextButton(
-                          onPressed: () => Navigator.of(context).pop(),
+                          onPressed: _submitting ? null : () => Navigator.of(context).pop(),
                           child: const Text('Cancelar'),
                         ),
                         const Spacer(),
