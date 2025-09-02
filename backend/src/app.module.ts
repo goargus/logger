@@ -11,6 +11,7 @@ import authConfig from './config/auth.config';
 import { UsersModule } from './users/users.module';
 import { ActivityTypesModule } from './activities-type/activity-types.module';
 import { IdpIdentitiesModule } from './idp-identities/idp-identities.module';
+import { ActivitiesModule } from './activity/activities.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { IdpIdentitiesModule } from './idp-identities/idp-identities.module';
     UsersModule,
     ActivityTypesModule,
     IdpIdentitiesModule,
+    ActivitiesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
