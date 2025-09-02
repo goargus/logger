@@ -13,89 +13,57 @@ export interface JwtValidatedUser {
   [k: string]: any;
 }
 
-function ensureTrailingSlash(url: string): string {
+function ensureTrailingSlash(url?: string): string | undefined {
+  if (!url) return undefined;
   return url.endsWith('/') ? url : `${url}/`;
 }
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  private readonly claimsNs?: string;
   private readonly rolesClaimKeys: string[];
   private readonly permsClaimKeys: string[];
 
   constructor(private readonly config: ConfigService) {
-    const alg = (
-      config.get<string>('auth.algorithm') ||
-      process.env.JWT_ALG ||
-      'RS256'
-    ).toUpperCase();
+    const domain = config.get<string>('auth.domain');
+    const audience = config.get<string>('auth.audience');
+    let issuer = config.get<string>('auth.issuer');
+    if (!issuer && domain) issuer = `https://${domain}`;
+    issuer = ensureTrailingSlash(issuer);
 
-    let issuer =
-      config.get<string>('auth.issuer') ||
-      process.env.AUTH_ISSUER ||
-      process.env.AUTH0_DOMAIN ||
-      '';
-
-    if (issuer && !issuer.startsWith('http')) {
-      issuer = `https://${issuer}`;
-    }
-    if (issuer) {
-      issuer = ensureTrailingSlash(issuer);
+    if (!issuer) {
+      throw new Error(
+        'auth.issuer (o auth.domain) no está configurado. Define AUTH0_ISSUER o AUTH0_DOMAIN en tu config.',
+      );
     }
 
-    const audience = config.get<string>('auth.audience') || process.env.AUTH_AUDIENCE || undefined;
+    const jwksUri = `${issuer}.well-known/jwks.json`;
 
-    let opts: StrategyOptions;
-
-    if (alg.startsWith('RS')) {
-      const jwksUri = config.get<string>('auth.jwksUri') || `${issuer}.well-known/jwks.json`;
-
-      opts = {
-        jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-        algorithms: ['RS256'],
-        secretOrKeyProvider: jwksRsa.passportJwtSecret({
-          jwksUri,
-          cache: true,
-          rateLimit: true,
-          jwksRequestsPerMinute: 10,
-        }),
-        issuer: issuer || undefined,
-        audience,
-        ignoreExpiration: false,
-      };
-    } else {
-      const secret = config.get<string>('auth.secret') || process.env.JWT_SECRET;
-      if (!secret) {
-        throw new Error('Missing JWT secret. Set auth.secret or JWT_SECRET when using HS256.');
-      }
-      opts = {
-        jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-        algorithms: ['HS256'],
-        secretOrKey: secret,
-        issuer: issuer || undefined,
-        audience,
-        ignoreExpiration: false,
-      };
-    }
+    const opts: StrategyOptions = {
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      algorithms: ['RS256'],
+      secretOrKeyProvider: jwksRsa.passportJwtSecret({
+        jwksUri,
+        cache: true,
+        rateLimit: true,
+        jwksRequestsPerMinute: 10,
+      }),
+      issuer,
+      audience,
+      ignoreExpiration: false,
+    };
 
     super(opts);
 
-    this.claimsNs = this.config.get<string>('auth.claimsNamespace') || process.env.JWT_CLAIMS_NS;
-
-    this.rolesClaimKeys = [this.claimsNs ? `${this.claimsNs}/roles` : '', 'roles'].filter(Boolean);
-
-    this.permsClaimKeys = [
-      this.claimsNs ? `${this.claimsNs}/permissions` : '',
-      'permissions',
-      'perm',
-    ].filter(Boolean);
+    const ns = this.config.get<string>('auth.claimsNamespace');
+    this.rolesClaimKeys = [ns ? `${ns}/roles` : '', 'roles'].filter(Boolean);
+    this.permsClaimKeys = [ns ? `${ns}/permissions` : '', 'permissions', 'perm'].filter(Boolean);
   }
 
   private readArrayClaim(payload: any, keys: string[]): string[] {
     for (const k of keys) {
       const v = payload?.[k];
       if (Array.isArray(v)) return v.map(String);
-      if (typeof v === 'string' && k === 'permissions') {
+      if (typeof v === 'string' && (k === 'permissions' || k.endsWith('/permissions'))) {
         return v
           .split(' ')
           .map((s) => s.trim())
@@ -117,18 +85,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Token has no sub.');
     }
 
-    const iss: string | undefined = payload?.iss;
-    const aud: string | string[] | undefined = payload?.aud;
-
-    const roles = this.readArrayClaim(payload, this.rolesClaimKeys);
-    const permissions = this.readArrayClaim(payload, this.permsClaimKeys);
-
     return {
       sub,
-      iss,
-      aud,
-      roles,
-      permissions,
+      iss: payload?.iss,
+      aud: payload?.aud,
+      roles: this.readArrayClaim(payload, this.rolesClaimKeys),
+      permissions: this.readArrayClaim(payload, this.permsClaimKeys),
     };
   }
 }
