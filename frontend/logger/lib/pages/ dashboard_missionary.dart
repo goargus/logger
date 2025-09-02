@@ -71,35 +71,70 @@ class _DashboardMissionaryPageState extends State<DashboardMissionaryPage> {
     ),
   ];
 
+  /// Opción A: El diálogo hace el POST y devuelve el JSON creado (Map<String, dynamic>).
   Future<void> _openCreateDialog() async {
+    // 1) Asegurar token (si no hay, hacemos login)
     final token = await _getAccessTokenEnsured();
     if (token == null || token.isEmpty) {
       Auth0Web.login();
       return;
     }
 
-    final created = await showDialog<CreatedActivityResult>(
+    // 2) Abrir diálogo que GUARDA en backend y retorna el JSON creado (o null si cancelado)
+    final created = await showDialog<Map<String, dynamic>?>(
       context: context,
       barrierDismissible: false,
       builder: (_) => CreateActivityDialog(
         baseUrl: _apiBaseUrl,
         getAccessToken: _getAccessTokenEnsured,
-        onRequireLogin: () {
-          Auth0Web.login();
-        },
+        onRequireLogin: () => Auth0Web.login(),
       ),
     );
 
+    // 3) Si el diálogo devolvió algo, significa que el backend creó la actividad
     if (created != null) {
+      // Mapeo defensivo del JSON a tu modelo Activity (ajusta si tu backend devuelve otros campos)
+      final DateTime date = () {
+        final raw = created['date'];
+        if (raw is String) {
+          try {
+            return DateTime.parse(raw);
+          } catch (_) {}
+        }
+        return DateTime.now();
+      }();
+
+      final String category =
+          (created['type'] is Map && (created['type']['name'] is String))
+              ? created['type']['name'] as String
+              : (created['type_name'] as String? ??
+                  created['typeId'] as String? ??
+                  created['type_id'] as String? ??
+                  'Actividad');
+
+      final String description = (created['description'] as String?) ?? '';
+
+      final double expense = () {
+        final v = created['expenseAmount'] ?? created['expense_amount'];
+        if (v == null) return 0.0;
+        final s = v.toString();
+        return double.tryParse(s) ?? 0.0;
+      }();
+
       final activity = Activity(
-        date: created.date,
-        category: created.type.name,
-        description: created.description ?? '',
-        expense: 0,
+        date: date,
+        category: category,
+        description: description,
+        expense: expense,
       );
+
       setState(() => _recent.insert(0, activity));
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Actividad creada.')));
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Actividad creada')),
+        );
+      }
     }
   }
 
