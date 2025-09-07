@@ -1,4 +1,3 @@
-
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy, StrategyOptions } from 'passport-jwt';
@@ -72,10 +71,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     this.expectedIssuer = issuer;
     this.expectedAudience = audience;
-
-    console.log('[JwtStrategy] issuer =', this.expectedIssuer);
-    console.log('[JwtStrategy] audience =', this.expectedAudience);
-    console.log('[JwtStrategy] jwksUri =', jwksUri);
   }
 
   private toArray(aud?: string | string[] | null): string[] {
@@ -92,29 +87,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any): Promise<JwtValidatedUser> {
-
     const sub = payload?.sub ?? payload?.subject;
     if (!sub) throw new UnauthorizedException('Token has no sub');
 
     const iss: string | undefined = payload?.iss;
     const audList = this.toArray(payload?.aud);
 
-    if (!iss) {
-      console.warn('[JwtStrategy] Missing iss in token payload');
-      throw new UnauthorizedException('Invalid token: missing iss');
-    }
-    if (iss !== this.expectedIssuer) {
-      console.warn('[JwtStrategy] Invalid iss:', iss, 'expected:', this.expectedIssuer);
-      throw new UnauthorizedException('Invalid token issuer');
-    }
+    if (!iss) throw new UnauthorizedException('Invalid token: missing iss');
+    if (iss !== this.expectedIssuer) throw new UnauthorizedException('Invalid token issuer');
 
     if (!audList.includes(this.expectedAudience)) {
-      console.warn(
-        '[JwtStrategy] Invalid aud:',
-        audList,
-        'expected to include:',
-        this.expectedAudience,
-      );
       throw new UnauthorizedException('Invalid token audience');
     }
 
