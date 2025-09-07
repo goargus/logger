@@ -33,8 +33,6 @@ class _DashboardMissionaryPageState extends State<DashboardMissionaryPage> {
   @override
   void initState() {
     super.initState();
-    // Calienta la sesión: garantiza un access token fresco tras el primer login/redirect.
-    // Esto evita el 401 inicial al abrir el diálogo por primera vez.
     _warmAuth();
   }
 
@@ -42,25 +40,20 @@ class _DashboardMissionaryPageState extends State<DashboardMissionaryPage> {
     try {
       await _getAccessTokenEnsured();
     } catch (_) {
-      // No bloqueamos la UI si falla; el flujo normal pedirá login cuando sea necesario.
     }
   }
 
 Future<String?> _getAccessTokenEnsured() async {
   await Auth0Web.waitUntilReady();
 
-  // 1) Siempre intenta primero un access_token fresco del audience correcto
   var t = await Auth0Web.refreshTokenSilently();
   if (t != null && t.isNotEmpty) {
     await Session.instance.setAccessToken(t);
     return t;
   }
 
-  // 2) Fallback: intenta lo que tengas guardado
   t = await Session.instance.getAccessToken();
   if (t != null && t.isNotEmpty) return t;
-
-  // 3) Reintento breve
   await Auth0Web.waitUntilReady();
   t = await Auth0Web.refreshTokenSilently();
   if (t != null && t.isNotEmpty) {

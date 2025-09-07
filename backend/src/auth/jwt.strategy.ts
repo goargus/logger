@@ -1,4 +1,4 @@
-// src/auth/jwt.strategy.ts
+
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy, StrategyOptions } from 'passport-jwt';
@@ -33,7 +33,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   private readonly expectedAudience: string;
 
   constructor(config: ConfigService) {
-    // ⚠️ NO usar `this` antes de super(...)
     const issuerFromCfg =
       firstDefined<string>(
         () => config.get<string>('auth.issuer'),
@@ -45,7 +44,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         },
       ) || '';
 
-    const issuer = ensureTrailingSlash(issuerFromCfg) as string; // ej.: 'https://dev-xxx.us.auth0.com/'
+    const issuer = ensureTrailingSlash(issuerFromCfg) as string;
     const audience =
       firstDefined<string>(
         () => config.get<string>('auth.audience'),
@@ -55,21 +54,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     const jwksUri = `${issuer}.well-known/jwks.json`;
 
-    // ✅ Sin clockTolerance ni passReqToCallback; tipos correctos para passport-jwt
     const opts: StrategyOptions = {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       secretOrKeyProvider: jwksRsa.passportJwtSecret({
         jwksUri,
         cache: true,
         cacheMaxEntries: 5,
-        cacheMaxAge: 10 * 60 * 1000, // 10 min
+        cacheMaxAge: 10 * 60 * 1000,
         rateLimit: true,
         jwksRequestsPerMinute: 10,
       }),
       algorithms: ['RS256'],
       ignoreExpiration: false,
-      // Importante: NO fijamos issuer/audience aquí para poder loguear el motivo si fallan.
-      // Los validamos manualmente dentro de `validate()`.
     };
 
     super(opts);
@@ -77,12 +73,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     this.expectedIssuer = issuer;
     this.expectedAudience = audience;
 
-    // Logs de arranque (puedes quitarlos en prod)
-    // eslint-disable-next-line no-console
     console.log('[JwtStrategy] issuer =', this.expectedIssuer);
-    // eslint-disable-next-line no-console
     console.log('[JwtStrategy] audience =', this.expectedAudience);
-    // eslint-disable-next-line no-console
     console.log('[JwtStrategy] jwksUri =', jwksUri);
   }
 
@@ -100,8 +92,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any): Promise<JwtValidatedUser> {
-    // En este punto la FIRMA ya fue verificada (RS256 via JWKS).
-    // Validamos issuer y audience manualmente para diagnosticar 401 con mensajes claros.
 
     const sub = payload?.sub ?? payload?.subject;
     if (!sub) throw new UnauthorizedException('Token has no sub');
@@ -109,21 +99,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const iss: string | undefined = payload?.iss;
     const audList = this.toArray(payload?.aud);
 
-    // Issuer
     if (!iss) {
-      // eslint-disable-next-line no-console
       console.warn('[JwtStrategy] Missing iss in token payload');
       throw new UnauthorizedException('Invalid token: missing iss');
     }
     if (iss !== this.expectedIssuer) {
-      // eslint-disable-next-line no-console
       console.warn('[JwtStrategy] Invalid iss:', iss, 'expected:', this.expectedIssuer);
       throw new UnauthorizedException('Invalid token issuer');
     }
 
-    // Audience
     if (!audList.includes(this.expectedAudience)) {
-      // eslint-disable-next-line no-console
       console.warn(
         '[JwtStrategy] Invalid aud:',
         audList,
@@ -133,7 +118,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Invalid token audience');
     }
 
-    // Roles/permissions opcionales (ajusta namespaces si los usas)
     const roles = this.readArrayClaim(payload, ['roles', 'https://roles', 'https://app/roles']);
     const permissions = this.readArrayClaim(payload, [
       'permissions',

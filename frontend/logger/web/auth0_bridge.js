@@ -1,21 +1,13 @@
-// web/auth0_bridge.js
-//
-// Bridge para Auth0 SPA SDK (carga CDN automáticamente).
-// v2: usa window.auth0.createAuth0Client
-// Siempre retorna el ACCESS TOKEN para el audience configurado.
-
 const __auth0Cfg__ = {
   domain: 'dev-ohuspam6fnmh4tgt.us.auth0.com',
   clientId: '2H45P97qEyC9HfiKFj8FOvb8DnSOgFwY',
-  audience: 'logger',            // ⬅️ Debe ser el API Identifier EXACTO que usa tu backend
-  redirectUri: window.location.origin, // ⬅️ Origen actual (puerto incluido)
+  audience: 'logger',
+  redirectUri: window.location.origin,
 };
 
-// Promesa global (readiness)
 window.__auth0Ready = new Promise((resolve) => { window.__auth0ReadyResolve = resolve; });
 window.auth0Ready = function () { return window.__auth0Ready; };
 
-// Utilitario: cargar script por CDN y esperar global
 function loadScriptOnce(url, globalName) {
   return new Promise((resolve, reject) => {
     if (globalName && typeof window[globalName] !== 'undefined') return resolve(window[globalName]);
@@ -56,7 +48,6 @@ function loadScriptOnce(url, globalName) {
   });
 }
 
-// Decodifica un JWT sin validar (solo para debug de claims)
 function decodeJwtNoVerify(t) {
   try {
     const p = t.split('.')[1];
@@ -69,19 +60,17 @@ function decodeJwtNoVerify(t) {
   let client = null;
 
   async function init() {
-    // 0) Cargar SDK v2
     const CDN_URL = 'https://cdn.auth0.com/js/auth0-spa-js/2.1/auth0-spa-js.production.js';
     await loadScriptOnce(CDN_URL, 'auth0');
 
     const createClient =
       (window.auth0 && window.auth0.createAuth0Client) ||
-      window.createAuth0Client; // fallback v1
+      window.createAuth0Client;
 
     if (typeof createClient !== 'function') {
       throw new Error('Auth0 SPA SDK not available (neither v2 nor v1).');
     }
 
-    // 1) Crear cliente
     client = await createClient({
       domain: __auth0Cfg__.domain,
       clientId: __auth0Cfg__.clientId,
@@ -93,7 +82,6 @@ function decodeJwtNoVerify(t) {
       useRefreshTokens: true,
     });
 
-    // 2) Completar redirect si venimos con code+state
     const qs = new URLSearchParams(window.location.search);
     if (qs.has('code') && qs.has('state')) {
       try {
@@ -106,11 +94,10 @@ function decodeJwtNoVerify(t) {
       }
     }
 
-    // 3) Intento inicial de token silencioso (puede fallar sin sesión)
     try {
       const res = await client.getTokenSilently({
         authorizationParams: { audience: __auth0Cfg__.audience },
-        detailedResponse: true, // ⬅️ importante: obtenemos access_token explícitamente
+        detailedResponse: true,
       });
       if (res && res.access_token) {
         const payload = decodeJwtNoVerify(res.access_token) || {};
@@ -118,7 +105,6 @@ function decodeJwtNoVerify(t) {
       }
     } catch (_) {}
 
-    // 4) listo
     window.auth0Client = client;
     if (typeof window.__auth0ReadyResolve === 'function') {
       window.__auth0ReadyResolve(client);
@@ -126,7 +112,6 @@ function decodeJwtNoVerify(t) {
     }
   }
 
-  // Helpers globales
   window.auth0Login = async () => {
     const c = window.auth0Client || (await window.auth0Ready());
     return c.loginWithRedirect();
@@ -136,11 +121,10 @@ function decodeJwtNoVerify(t) {
     const c = window.auth0Client || (await window.auth0Ready());
     const res = await c.getTokenSilently({
       authorizationParams: { audience: __auth0Cfg__.audience },
-      detailedResponse: true, // ⬅️ asegura que devolvemos el ACCESS TOKEN correcto
+      detailedResponse: true,
     });
     const token = res && res.access_token ? res.access_token : (typeof res === 'string' ? res : null);
 
-    // Debug rápido
     const payload = token ? decodeJwtNoVerify(token) : null;
     if (payload) {
       console.debug('[Auth0Bridge] (refresh) aud:', payload.aud, 'iss:', payload.iss, 'scope:', payload.scope);
