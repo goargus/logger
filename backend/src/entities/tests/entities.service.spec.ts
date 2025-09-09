@@ -3,6 +3,7 @@ import { ConflictException, NotFoundException, BadRequestException } from '@nest
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ObjectLiteral, Repository } from 'typeorm';
 import { EntitiesService } from '../entities.service';
+import { HierarchyValidationService } from '../hierarchy-validation.service';
 import { Entity, EntityType } from '../entity.entity';
 import { CreateEntityDto } from '../dto/create-entity.dto';
 import { UpdateEntityDto } from '../dto/update-entity.dto';
@@ -23,6 +24,7 @@ function createRepoMock<T extends ObjectLiteral>(): MockRepo<T> {
 describe('EntitiesService', () => {
   let service: EntitiesService;
   let repo: MockRepo<Entity>;
+  let hierarchyValidation: jest.Mocked<HierarchyValidationService>;
 
   const baseEntity: Entity = {
     id: '11111111-1111-1111-1111-111111111111',
@@ -32,13 +34,21 @@ describe('EntitiesService', () => {
     description: 'Cobertura nacional',
     location: 'Honduras',
     is_active: true,
+    parent_id: null,
     created_at: new Date('2025-08-12T17:34:14.503Z') as never,
     updated_at: new Date('2025-08-12T17:34:14.503Z') as never,
     users: [],
+    children: [],
   };
 
   beforeEach(async () => {
     repo = createRepoMock<Entity>();
+    hierarchyValidation = {
+      validateHierarchy: jest.fn(),
+      getAllowedParentTypes: jest.fn(),
+      getAllowedChildTypes: jest.fn(),
+      canHaveChildren: jest.fn(),
+    } as any;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -46,6 +56,10 @@ describe('EntitiesService', () => {
         {
           provide: getRepositoryToken(Entity),
           useValue: repo,
+        },
+        {
+          provide: HierarchyValidationService,
+          useValue: hierarchyValidation,
         },
       ],
     }).compile();
