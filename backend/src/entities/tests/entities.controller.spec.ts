@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { EntitiesController } from '../entities.controller';
 import { EntitiesService } from '../entities.service';
+import { HierarchyValidationService } from '../hierarchy-validation.service';
 import { EntityType, Entity } from '../entity.entity';
 import { ConflictException } from '@nestjs/common';
 import { CreateEntityDto } from '../dto/create-entity.dto';
@@ -18,9 +19,11 @@ describe('EntitiesController', () => {
     description: 'Cobertura nacional',
     location: 'Honduras',
     is_active: true,
+    parent_id: null,
     created_at: new Date('2025-08-12T17:34:14.503Z') as never,
     updated_at: new Date('2025-08-12T17:34:14.503Z') as never,
     users: [],
+    children: [],
   };
 
   beforeEach(async () => {
@@ -38,6 +41,15 @@ describe('EntitiesController', () => {
         {
           provide: EntitiesService,
           useValue: mockService,
+        },
+        {
+          provide: HierarchyValidationService,
+          useValue: {
+            validateHierarchy: jest.fn(),
+            getAllowedParentTypes: jest.fn(),
+            getAllowedChildTypes: jest.fn(),
+            canHaveChildren: jest.fn(),
+          },
         },
       ],
     }).compile();
