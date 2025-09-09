@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [ "*" ]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run linting
+      run: npm run lint
+
+    - name: Check formatting
+      run: npx prettier --check "src/**/*.ts"
+
+    - name: Run tests
+      run: npm test
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Check frontend static files
+      run: |
+        echo "Frontend contains static HTML/JS files - no build process needed"
+        ls -la frontend/
+        find frontend/ -type f -name "*.html" -o -name "*.js" | wc -l
