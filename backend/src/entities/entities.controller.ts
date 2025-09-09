@@ -68,4 +68,32 @@ export class EntitiesController {
   async remove(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.entitiesService.remove(id);
   }
+
+  @Get('hierarchy/tree')
+  async getHierarchyTree() {
+    return this.entitiesService.findHierarchyTree();
+  }
+
+  @Get('hierarchy/parents/:type')
+  async getValidParents(@Param('type') typeStr: string) {
+    const type = this.parseType(typeStr);
+    return this.entitiesService.findValidParentsForType(type);
+  }
+
+  @Get(':id/children')
+  async getChildren(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.entitiesService.findChildren(id);
+  }
+
+  @Patch(':id/deactivate')
+  @Roles('admin')
+  async deactivate(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.entitiesService.update(id, { is_active: false });
+  }
+
+  @Patch(':id/activate')
+  @Roles('admin')
+  async activate(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.entitiesService.update(id, { is_active: true });
+  }
 }
