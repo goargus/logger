@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString } from "class-validator";
+import { IsEnum, IsOptional, IsString, IsUUID } from "class-validator";
 import { EntityType } from "../entity.entity";
 
 export class CreateEntityDto {
@@ -9,12 +9,16 @@ export class CreateEntityDto {
   type!: EntityType;
 
   @IsOptional()
-  @IsString()
-  parentId!: string | null;
+  @IsUUID()
+  parentId?: string;
 
   @IsOptional()
   @IsString()
   code?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
 
   @IsOptional()
   @IsString()
