@@ -30,16 +30,39 @@ class DashboardMissionaryPage extends StatefulWidget {
 class _DashboardMissionaryPageState extends State<DashboardMissionaryPage> {
   static const String _apiBaseUrl = 'http://localhost:3000';
 
-  Future<String?> _getAccessTokenEnsured() async {
-    var t = await Session.instance.getAccessToken();
-    if (t == null || t.isEmpty) {
-      t = await Auth0Web.refreshTokenSilently();
-      if (t != null && t.isNotEmpty) {
-        await Session.instance.setAccessToken(t);
-      }
+  @override
+  void initState() {
+    super.initState();
+    _warmAuth();
+  }
+
+  Future<void> _warmAuth() async {
+    try {
+      await _getAccessTokenEnsured();
+    } catch (_) {
     }
+  }
+
+Future<String?> _getAccessTokenEnsured() async {
+  await Auth0Web.waitUntilReady();
+
+  var t = await Auth0Web.refreshTokenSilently();
+  if (t != null && t.isNotEmpty) {
+    await Session.instance.setAccessToken(t);
     return t;
   }
+
+  t = await Session.instance.getAccessToken();
+  if (t != null && t.isNotEmpty) return t;
+  await Auth0Web.waitUntilReady();
+  t = await Auth0Web.refreshTokenSilently();
+  if (t != null && t.isNotEmpty) {
+    await Session.instance.setAccessToken(t);
+    return t;
+  }
+  return null;
+}
+
 
   final DashboardConfig _cfg = const DashboardConfig(
     visits: 15,
@@ -71,16 +94,13 @@ class _DashboardMissionaryPageState extends State<DashboardMissionaryPage> {
     ),
   ];
 
-  /// Opción A: El diálogo hace el POST y devuelve el JSON creado (Map<String, dynamic>).
   Future<void> _openCreateDialog() async {
-    // 1) Asegurar token (si no hay, hacemos login)
     final token = await _getAccessTokenEnsured();
     if (token == null || token.isEmpty) {
       Auth0Web.login();
       return;
     }
 
-    // 2) Abrir diálogo que GUARDA en backend y retorna el JSON creado (o null si cancelado)
     final created = await showDialog<Map<String, dynamic>?>(
       context: context,
       barrierDismissible: false,
@@ -91,9 +111,7 @@ class _DashboardMissionaryPageState extends State<DashboardMissionaryPage> {
       ),
     );
 
-    // 3) Si el diálogo devolvió algo, significa que el backend creó la actividad
     if (created != null) {
-      // Mapeo defensivo del JSON a tu modelo Activity (ajusta si tu backend devuelve otros campos)
       final DateTime date = () {
         final raw = created['date'];
         if (raw is String) {
@@ -160,11 +178,6 @@ class _DashboardMissionaryPageState extends State<DashboardMissionaryPage> {
                     subtitle: subtitle,
                   ),
                 ),
-                PrimaryActionButton(
-                  label: 'Agregar Actividad',
-                  icon: Icons.add,
-                  onPressed: _openCreateDialog,
-                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -202,6 +215,18 @@ class _DashboardMissionaryPageState extends State<DashboardMissionaryPage> {
               ],
             ),
             const SizedBox(height: 16),
+
+            Padding(
+              padding: const EdgeInsets.only(top: 4.0, bottom: 8.0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: PrimaryActionButton(
+                  label: 'Agregar Actividad',
+                  icon: Icons.add,
+                  onPressed: _openCreateDialog,
+                ),
+              ),
+            ),
 
             Text('Actividades Recientes',
                 style: Theme.of(context).textTheme.titleMedium),

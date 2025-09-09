@@ -1,15 +1,19 @@
 import 'dart:html' as html;
 import 'dart:js_util' as js_util;
 
-/// Bridge para invocar funciones definidas en web/auth0_bridge.js
 class Auth0Web {
-  /// Abre Universal Login
+  static Future<void> waitUntilReady() async {
+    try {
+      final p = js_util.callMethod(html.window, 'auth0Ready', const []);
+      await js_util.promiseToFuture(p);
+    } catch (_) {
+    }
+  }
+
   static void login() {
     js_util.callMethod(html.window, 'auth0Login', const []);
   }
 
-  /// Pide un access token silenciosamente (si hay sesión),
-  /// lo guarda en localStorage y lo devuelve.
   static Future<String?> refreshTokenSilently() async {
     try {
       final p = js_util.callMethod(html.window, 'auth0Refresh', const []);
@@ -20,7 +24,6 @@ class Auth0Web {
     }
   }
 
-  /// Cierra sesión
   static void logout() {
     js_util.callMethod(html.window, 'auth0Logout', const []);
   }

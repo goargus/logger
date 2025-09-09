@@ -18,79 +18,95 @@ function ensureTrailingSlash(url?: string): string | undefined {
   return url.endsWith('/') ? url : `${url}/`;
 }
 
+function firstDefined<T>(...getters: Array<() => T | undefined | null>): T | undefined {
+  for (const g of getters) {
+    const v = g();
+    if (v !== undefined && v !== null && v !== '') return v as T;
+  }
+  return undefined;
+}
+
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-  private readonly rolesClaimKeys: string[];
-  private readonly permsClaimKeys: string[];
+  private readonly expectedIssuer: string;
+  private readonly expectedAudience: string;
 
-  constructor(private readonly config: ConfigService) {
-    const domain = config.get<string>('auth.domain');
-    const audience = config.get<string>('auth.audience');
-    let issuer = config.get<string>('auth.issuer');
-    if (!issuer && domain) issuer = `https://${domain}`;
-    issuer = ensureTrailingSlash(issuer);
+  constructor(config: ConfigService) {
+    const issuerFromCfg =
+      firstDefined<string>(
+        () => config.get<string>('auth.issuer'),
+        () => config.get<string>('AUTH0_ISSUER'),
+        () => config.get<string>('AUTH_ISSUER'),
+        () => {
+          const domain = config.get<string>('AUTH0_DOMAIN');
+          return domain ? `https://${domain}/` : undefined;
+        },
+      ) || '';
 
-    if (!issuer) {
-      throw new Error(
-        'auth.issuer (o auth.domain) no está configurado. Define AUTH0_ISSUER o AUTH0_DOMAIN en tu config.',
-      );
-    }
+    const issuer = ensureTrailingSlash(issuerFromCfg) as string;
+    const audience =
+      firstDefined<string>(
+        () => config.get<string>('auth.audience'),
+        () => config.get<string>('AUTH0_AUDIENCE'),
+        () => config.get<string>('AUTH_AUDIENCE'),
+      ) || 'logger';
 
     const jwksUri = `${issuer}.well-known/jwks.json`;
 
     const opts: StrategyOptions = {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      algorithms: ['RS256'],
       secretOrKeyProvider: jwksRsa.passportJwtSecret({
         jwksUri,
         cache: true,
+        cacheMaxEntries: 5,
+        cacheMaxAge: 10 * 60 * 1000,
         rateLimit: true,
         jwksRequestsPerMinute: 10,
       }),
-      issuer,
-      audience,
+      algorithms: ['RS256'],
       ignoreExpiration: false,
     };
 
     super(opts);
 
-    const ns = this.config.get<string>('auth.claimsNamespace');
-    this.rolesClaimKeys = [ns ? `${ns}/roles` : '', 'roles'].filter(Boolean);
-    this.permsClaimKeys = [ns ? `${ns}/permissions` : '', 'permissions', 'perm'].filter(Boolean);
+    this.expectedIssuer = issuer;
+    this.expectedAudience = audience;
+  }
+
+  private toArray(aud?: string | string[] | null): string[] {
+    if (!aud) return [];
+    return Array.isArray(aud) ? aud : [aud];
   }
 
   private readArrayClaim(payload: any, keys: string[]): string[] {
     for (const k of keys) {
       const v = payload?.[k];
-      if (Array.isArray(v)) return v.map(String);
-      if (typeof v === 'string' && (k === 'permissions' || k.endsWith('/permissions'))) {
-        return v
-          .split(' ')
-          .map((s) => s.trim())
-          .filter(Boolean);
-      }
-    }
-    if (typeof payload?.scope === 'string') {
-      return payload.scope
-        .split(' ')
-        .map((s: string) => s.trim())
-        .filter(Boolean);
+      if (Array.isArray(v)) return v.filter((x) => typeof x === 'string');
     }
     return [];
   }
 
   async validate(payload: any): Promise<JwtValidatedUser> {
     const sub = payload?.sub ?? payload?.subject;
-    if (!sub) {
-      throw new UnauthorizedException('Token has no sub.');
+    if (!sub) throw new UnauthorizedException('Token has no sub');
+
+    const iss: string | undefined = payload?.iss;
+    const audList = this.toArray(payload?.aud);
+
+    if (!iss) throw new UnauthorizedException('Invalid token: missing iss');
+    if (iss !== this.expectedIssuer) throw new UnauthorizedException('Invalid token issuer');
+
+    if (!audList.includes(this.expectedAudience)) {
+      throw new UnauthorizedException('Invalid token audience');
     }
 
-    return {
-      sub,
-      iss: payload?.iss,
-      aud: payload?.aud,
-      roles: this.readArrayClaim(payload, this.rolesClaimKeys),
-      permissions: this.readArrayClaim(payload, this.permsClaimKeys),
-    };
+    const roles = this.readArrayClaim(payload, ['roles', 'https://roles', 'https://app/roles']);
+    const permissions = this.readArrayClaim(payload, [
+      'permissions',
+      'https://permissions',
+      'https://app/permissions',
+    ]);
+
+    return { sub, iss, aud: payload?.aud, roles, permissions, ...payload };
   }
 }
