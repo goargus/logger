@@ -22,21 +22,21 @@ describe('RolesGuard', () => {
 
   it('should allow user with correct role', () => {
     jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['admin']);
-    const context = createMockContext({ roles: ['admin'] });
+    const context = createMockContext({ roles: ['admin'], permissions: [] });
 
     expect(guard.canActivate(context)).toBe(true);
   });
 
   it('should deny user without required role', () => {
     jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['admin']);
-    const context = createMockContext({ roles: ['user'] });
+    const context = createMockContext({ roles: ['user'], permissions: [] });
 
     expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
   });
 
   it('should deny user if no roles present in JWT', () => {
     jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(['admin']);
-    const context = createMockContext({});
+    const context = createMockContext({ roles: [], permissions: [] });
 
     expect(() => guard.canActivate(context)).toThrow(ForbiddenException);
   });

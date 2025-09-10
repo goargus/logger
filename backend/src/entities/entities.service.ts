@@ -127,7 +127,7 @@ export class EntitiesService {
     });
     if (activeChildren > 0) {
       throw new BadRequestException(
-        'Cannot delete entity: it has active child entities. Please deactivate or delete child entities first.'
+        'Cannot delete entity: it has active child entities. Please deactivate or delete child entities first.',
       );
     }
     const activeUsers = await this.repo
@@ -139,7 +139,7 @@ export class EntitiesService {
 
     if (activeUsers > 0) {
       throw new BadRequestException(
-        'Cannot delete entity: it has active user assignments. Please reassign users first.'
+        'Cannot delete entity: it has active user assignments. Please reassign users first.',
       );
     }
     const result = await this.repo.update(id, { is_active: false });

@@ -12,12 +12,16 @@ type MockRepo<T extends ObjectLiteral = never> = Partial<Record<keyof Repository
 
 function createRepoMock<T extends ObjectLiteral>(): MockRepo<T> {
   return {
+    exist: jest.fn(),
     exists: jest.fn(),
     create: jest.fn(),
     save: jest.fn(),
     find: jest.fn(),
     findOne: jest.fn(),
     delete: jest.fn(),
+    update: jest.fn(),
+    count: jest.fn(),
+    createQueryBuilder: jest.fn(),
   };
 }
 
@@ -82,19 +86,26 @@ describe('EntitiesService', () => {
         is_active: true,
       } as never;
 
-      repo.exists?.mockResolvedValue(false);
+      repo.exist?.mockResolvedValue(false);
       repo.create?.mockReturnValue({ ...baseEntity, name: 'Unión Hondureña' });
       repo.save?.mockResolvedValue({ ...baseEntity, name: 'Unión Hondureña' });
 
       const result = await service.create(dto);
-      expect(repo.exists).toHaveBeenCalled();
-      expect(repo.create).toHaveBeenCalledWith({ ...dto, name: 'Unión Hondureña' });
+      expect(repo.exist).toHaveBeenCalled();
+      expect(repo.create).toHaveBeenCalledWith({
+        name: 'Unión Hondureña',
+        type: dto.type,
+        code: dto.code,
+        description: dto.description,
+        location: dto.location,
+        parent_id: null,
+      });
       expect(result).toEqual({ ...baseEntity, name: 'Unión Hondureña' });
     });
 
     it('throws ConflictException when (name,type) already exists', async () => {
       const dto: CreateEntityDto = { name: 'Unión Hondureña', type: EntityType.UNION } as never;
-      repo.exists?.mockResolvedValue(true);
+      repo.exist?.mockResolvedValue(true);
 
       await expect(service.create(dto)).rejects.toBeInstanceOf(ConflictException);
     });
@@ -128,7 +139,7 @@ describe('EntitiesService', () => {
     it('updates entity when no conflict and trims name if provided', async () => {
       const patch: UpdateEntityDto = { name: '  Unión HN  ' } as never;
       repo.findOne?.mockResolvedValue(baseEntity);
-      repo.exists?.mockResolvedValue(false);
+      repo.exist?.mockResolvedValue(false);
       const saved = { ...baseEntity, name: 'Unión HN' };
       repo.save?.mockResolvedValue(saved);
 
@@ -139,7 +150,7 @@ describe('EntitiesService', () => {
     it('throws ConflictException when changing to duplicate (name,type)', async () => {
       const patch: UpdateEntityDto = { name: 'Otra', type: EntityType.UNION } as never;
       repo.findOne?.mockResolvedValue(baseEntity);
-      repo.exists?.mockResolvedValue(true);
+      repo.exist?.mockResolvedValue(true);
 
       await expect(service.update(baseEntity.id, patch)).rejects.toBeInstanceOf(ConflictException);
     });
@@ -156,12 +167,20 @@ describe('EntitiesService', () => {
 
   describe('remove', () => {
     it('removes by id', async () => {
-      repo.delete?.mockResolvedValue({ affected: 1 });
+      repo.findOne?.mockResolvedValue(baseEntity);
+      repo.count?.mockResolvedValue(0);
+      repo.createQueryBuilder?.mockReturnValue({
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
+      });
+      repo.update?.mockResolvedValue({ affected: 1 });
       await expect(service.remove(baseEntity.id)).resolves.toEqual({ affected: 1 });
     });
 
     it('throws NotFound when nothing deleted', async () => {
-      repo.delete?.mockResolvedValue({ affected: 0 });
+      repo.findOne?.mockResolvedValue(null);
       await expect(service.remove(baseEntity.id)).rejects.toBeInstanceOf(NotFoundException);
     });
   });
