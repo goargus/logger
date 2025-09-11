@@ -10,6 +10,7 @@ import {
   Patch,
   Post,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../auth/roles.decorator';
@@ -69,8 +70,11 @@ export class EntitiesController {
     return this.entitiesService.remove(id);
   }
 
-  @Get('hierarchy/parents/:type')
-  async getValidParents(@Param('type') typeStr: string) {
+  @Get('hierarchy/valid-parents')
+  async getValidParentsByQuery(@Query('type') typeStr?: string) {
+    if (!typeStr) {
+      throw new BadRequestException('Query param "type" is required');
+    }
     const type = this.parseType(typeStr);
     return this.entitiesService.findValidParentsForType(type);
   }
