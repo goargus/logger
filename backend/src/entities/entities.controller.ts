@@ -69,11 +69,6 @@ export class EntitiesController {
     return this.entitiesService.remove(id);
   }
 
-  @Get('hierarchy/tree')
-  async getHierarchyTree() {
-    return this.entitiesService.findHierarchyTree();
-  }
-
   @Get('hierarchy/parents/:type')
   async getValidParents(@Param('type') typeStr: string) {
     const type = this.parseType(typeStr);

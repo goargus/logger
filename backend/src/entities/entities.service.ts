@@ -174,14 +174,6 @@ export class EntitiesService {
     });
   }
 
-  async findHierarchyTree(): Promise<Entity[]> {
-    return this.repo.find({
-      where: { is_active: true },
-      relations: ['parent', 'children'],
-      order: { name: 'ASC' },
-    });
-  }
-
   async softDelete(id: string): Promise<{ affected: number }> {
     return this.remove(id);
   }
