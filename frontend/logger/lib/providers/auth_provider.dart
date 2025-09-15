@@ -1,5 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:auth0_flutter/auth0_flutter.dart';
+import 'package:auth0_flutter/auth0_flutter_web.dart';
+import '../config/auth_config.dart';
 
 class AuthState {
   final bool isAuthenticated;
@@ -30,16 +32,58 @@ class AuthState {
 }
 
 class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier() : super(const AuthState());
+  late final Auth0Web _auth0;
 
-  // TODO: Initialize Auth0 and implement authentication methods
-  // This will be implemented in the next phase
-  
+  AuthNotifier() : super(const AuthState()) {
+    _initializeAuth0();
+  }
+
+  void _initializeAuth0() {
+    _auth0 = Auth0Web(AuthConfig.domain, AuthConfig.clientId);
+    _checkExistingSession();
+  }
+
+  Future<void> _checkExistingSession() async {
+    try {
+      setLoading(true);
+      final credentials = await _auth0.onLoad();
+      if (credentials != null) {
+        setAuthenticated(credentials);
+      }
+    } catch (e) {
+      setError('Error loading existing session: $e');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  Future<void> login() async {
+    try {
+      setLoading(true);
+      await _auth0.loginWithRedirect(redirectUrl: AuthConfig.redirectUri);
+    } catch (e) {
+      setError('Login failed: $e');
+    }
+  }
+
+  Future<void> logout() async {
+    try {
+      setLoading(true);
+      await _auth0.logout();
+      setUnauthenticated();
+    } catch (e) {
+      setError('Logout failed: $e');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   void setAuthenticated(Credentials credentials) {
     state = state.copyWith(
       isAuthenticated: true,
       credentials: credentials,
       error: null,
+      isLoading: false,
     );
   }
 
@@ -48,6 +92,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       isAuthenticated: false,
       credentials: null,
       error: null,
+      isLoading: false,
     );
   }
 
