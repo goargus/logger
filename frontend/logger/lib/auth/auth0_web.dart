@@ -18,8 +18,10 @@ class Auth0Web {
     try {
       final p = js_util.callMethod(html.window, 'auth0Refresh', const []);
       final token = await js_util.promiseToFuture<String>(p);
+      print('Auth0Web.refreshTokenSilently() raw token => $token');
       return token;
-    } catch (_) {
+    } catch (e) {
+      print('Auth0Web.refreshTokenSilently() error => $e');
       return null;
     }
   }
