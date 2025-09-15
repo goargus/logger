@@ -77,6 +77,7 @@ function decodeJwtNoVerify(t) {
       authorizationParams: {
         audience: __auth0Cfg__.audience,
         redirect_uri: __auth0Cfg__.redirectUri,
+        scope: 'openid profile email offline_access',
       },
       cacheLocation: 'localstorage',
       useRefreshTokens: true,
@@ -96,14 +97,19 @@ function decodeJwtNoVerify(t) {
 
     try {
       const res = await client.getTokenSilently({
-        authorizationParams: { audience: __auth0Cfg__.audience },
+        authorizationParams: { 
+          audience: __auth0Cfg__.audience,
+          scope: 'openid profile email offline_access'
+        },
         detailedResponse: true,
       });
       if (res && res.access_token) {
         const payload = decodeJwtNoVerify(res.access_token) || {};
         console.debug('[Auth0Bridge] access_token aud:', payload.aud, 'iss:', payload.iss, 'scope:', payload.scope);
       }
-    } catch (_) {}
+    } catch (e) {
+      console.warn('[Auth0Bridge] getTokenSilently failed:', e);
+    }
 
     window.auth0Client = client;
     if (typeof window.__auth0ReadyResolve === 'function') {
@@ -118,20 +124,30 @@ function decodeJwtNoVerify(t) {
   };
 
   window.auth0Refresh = async () => {
-    const c = window.auth0Client || (await window.auth0Ready());
-    const res = await c.getTokenSilently({
-      authorizationParams: { audience: __auth0Cfg__.audience },
-      detailedResponse: true,
-    });
-    const token = res && res.access_token ? res.access_token : (typeof res === 'string' ? res : null);
+    try {
+      const c = window.auth0Client || (await window.auth0Ready());
+      console.debug('[Auth0Bridge] (refresh) attempting to get token...');
+      const res = await c.getTokenSilently({
+        authorizationParams: { 
+          audience: __auth0Cfg__.audience,
+          scope: 'openid profile email offline_access'
+        },
+        detailedResponse: true,
+      });
+      console.debug('[Auth0Bridge] (refresh) response:', res);
+      const token = res && res.access_token ? res.access_token : (typeof res === 'string' ? res : null);
 
-    const payload = token ? decodeJwtNoVerify(token) : null;
-    if (payload) {
-      console.debug('[Auth0Bridge] (refresh) aud:', payload.aud, 'iss:', payload.iss, 'scope:', payload.scope);
-    } else {
-      console.warn('[Auth0Bridge] (refresh) no access_token returned');
+      const payload = token ? decodeJwtNoVerify(token) : null;
+      if (payload) {
+        console.debug('[Auth0Bridge] (refresh) aud:', payload.aud, 'iss:', payload.iss, 'scope:', payload.scope);
+      } else {
+        console.warn('[Auth0Bridge] (refresh) no access_token returned');
+      }
+      return token;
+    } catch (e) {
+      console.error('[Auth0Bridge] (refresh) error:', e);
+      throw e;
     }
-    return token;
   };
 
   window.auth0Logout = async () => {
