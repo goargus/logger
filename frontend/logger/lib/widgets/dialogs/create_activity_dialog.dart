@@ -125,6 +125,8 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
       };
 
       print('CreateActivity payload => ${jsonEncode(payload)}');
+      print('CreateActivity token => $t');
+      print('CreateActivity token length => ${t?.length ?? 0}');
 
       final resp = await http.post(
         Uri.parse('${widget.baseUrl}/activities'),
@@ -139,6 +141,13 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
         final created = jsonDecode(resp.body) as Map<String, dynamic>;
         if (!mounted) return;
         Navigator.of(context).pop(created);
+        return;
+      }
+
+      // Handle 401 specifically - token expired
+      if (resp.statusCode == 401) {
+        setState(() => _error = 'Tu sesión expiró. Por favor, inicia sesión nuevamente.');
+        widget.onRequireLogin?.call();
         return;
       }
 
