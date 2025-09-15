@@ -47,15 +47,18 @@ Future<String?> _getAccessTokenEnsured() async {
   await Auth0Web.waitUntilReady();
 
   var t = await Auth0Web.refreshTokenSilently();
+  print('Auth0Web.refreshTokenSilently() => $t');
   if (t != null && t.isNotEmpty) {
     await Session.instance.setAccessToken(t);
     return t;
   }
 
   t = await Session.instance.getAccessToken();
+  print('Session.instance.getAccessToken() => $t');
   if (t != null && t.isNotEmpty) return t;
   await Auth0Web.waitUntilReady();
   t = await Auth0Web.refreshTokenSilently();
+  print('Auth0Web.refreshTokenSilently() (retry) => $t');
   if (t != null && t.isNotEmpty) {
     await Session.instance.setAccessToken(t);
     return t;
@@ -97,6 +100,8 @@ Future<String?> _getAccessTokenEnsured() async {
   Future<void> _openCreateDialog() async {
     final token = await _getAccessTokenEnsured();
     if (token == null || token.isEmpty) {
+      // Clear any expired tokens from localStorage
+      await Session.instance.clear();
       Auth0Web.login();
       return;
     }
