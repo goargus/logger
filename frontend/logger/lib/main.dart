@@ -34,7 +34,11 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _login() async {
     try {
-      await auth0.loginWithRedirect(redirectUrl: kRedirectUri);
+      await auth0.loginWithRedirect(
+        redirectUrl: kRedirectUri,
+        audience: 'logger',
+        scopes: {'openid', 'profile', 'email', 'offline_access'},
+      );
     } catch (e) {
       setState(() => _lastError = '$e');
     }
