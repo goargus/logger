@@ -11,7 +11,7 @@ type MockRepo<T extends ObjectLiteral = never> = Partial<Record<keyof Repository
 
 function createRepoMock<T extends ObjectLiteral>(): MockRepo<T> {
   return {
-    exists: jest.fn(),
+    exist: jest.fn(),
     create: jest.fn(),
     save: jest.fn(),
     find: jest.fn(),
@@ -68,19 +68,19 @@ describe('EntitiesService', () => {
         is_active: true,
       } as never;
 
-      repo.exists?.mockResolvedValue(false);
+      repo.exist?.mockResolvedValue(false);
       repo.create?.mockReturnValue({ ...baseEntity, name: 'Unión Hondureña' });
       repo.save?.mockResolvedValue({ ...baseEntity, name: 'Unión Hondureña' });
 
       const result = await service.create(dto);
-      expect(repo.exists).toHaveBeenCalled();
+      expect(repo.exist).toHaveBeenCalled();
       expect(repo.create).toHaveBeenCalledWith({ ...dto, name: 'Unión Hondureña' });
       expect(result).toEqual({ ...baseEntity, name: 'Unión Hondureña' });
     });
 
     it('throws ConflictException when (name,type) already exists', async () => {
       const dto: CreateEntityDto = { name: 'Unión Hondureña', type: EntityType.UNION } as never;
-      repo.exists?.mockResolvedValue(true);
+      repo.exist?.mockResolvedValue(true);
 
       await expect(service.create(dto)).rejects.toBeInstanceOf(ConflictException);
     });
@@ -114,7 +114,7 @@ describe('EntitiesService', () => {
     it('updates entity when no conflict and trims name if provided', async () => {
       const patch: UpdateEntityDto = { name: '  Unión HN  ' } as never;
       repo.findOne?.mockResolvedValue(baseEntity);
-      repo.exists?.mockResolvedValue(false);
+      repo.exist?.mockResolvedValue(false);
       const saved = { ...baseEntity, name: 'Unión HN' };
       repo.save?.mockResolvedValue(saved);
 
@@ -125,7 +125,7 @@ describe('EntitiesService', () => {
     it('throws ConflictException when changing to duplicate (name,type)', async () => {
       const patch: UpdateEntityDto = { name: 'Otra', type: EntityType.UNION } as never;
       repo.findOne?.mockResolvedValue(baseEntity);
-      repo.exists?.mockResolvedValue(true);
+      repo.exist?.mockResolvedValue(true);
 
       await expect(service.update(baseEntity.id, patch)).rejects.toBeInstanceOf(ConflictException);
     });

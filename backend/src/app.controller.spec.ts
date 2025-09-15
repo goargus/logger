@@ -2,23 +2,25 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { AppController } from "./app.controller";
 import { AppService } from "./app.service";
 
-// describe("AppController", () => {
-//   let appController: AppController;
+describe("AppController", () => {
+  let appController: AppController;
 
-//   beforeEach(async () => {
-//     const module: TestingModule = await Test.createTestingModule({
-//       controllers: [AppController],
-//       providers: [AppService],
-//     }).compile();
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [AppController],
+      providers: [AppService],
+    }).compile();
 
-//     appController = module.get<AppController>(AppController);
-//   });
+    appController = module.get<AppController>(AppController);
+  });
 
-//   it("should be defined", () => {
-//     expect(appController).toBeDefined();
-//   });
+  it("should be defined", () => {
+    expect(appController).toBeDefined();
+  });
 
-//   it('should return "Hello World!"', () => {
-//     expect(appController.getHello()).toBe("Hello World!");
-//   });
-// });
+  it('should return API status', () => {
+    const result = appController.getRootMessage();
+    expect(result.status).toBe('ok');
+    expect(result.message).toBe('API is running');
+  });
+});

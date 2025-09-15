@@ -136,7 +136,6 @@ describe('RolesService', () => {
 
       const result = await service.update('uuid-1', {
         description: 'Description only',
-        name: '',
       });
       expect(repo.exist).not.toHaveBeenCalled();
       expect(result.description).toBe('Description only');
@@ -145,6 +144,7 @@ describe('RolesService', () => {
 
   describe('remove', () => {
     it('deletes existing', async () => {
+      repo.findOne?.mockResolvedValue({ ...role });
       const del: DeleteResult = { affected: 1, raw: undefined as unknown };
       repo.delete?.mockResolvedValue(del);
 
@@ -154,8 +154,7 @@ describe('RolesService', () => {
     });
 
     it('throws 404 if not found', async () => {
-      const del: DeleteResult = { affected: 0, raw: undefined as unknown };
-      repo.delete?.mockResolvedValue(del);
+      repo.findOne?.mockResolvedValue(null);
       await expect(service.remove('nope')).rejects.toBeInstanceOf(NotFoundException);
     });
   });
