@@ -6,6 +6,8 @@ import {
   UpdateDateColumn,
   Unique,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { User } from '../users/user.entity';
 
@@ -39,6 +41,16 @@ export class Entity {
 
   @Column({ default: true })
   is_active!: boolean;
+
+  @Column({ type: 'uuid', nullable: true })
+  parent_id?: string | null;
+
+  @ManyToOne(() => Entity, (entity) => entity.children, { nullable: true })
+  @JoinColumn({ name: 'parent_id' })
+  parent?: Entity;
+
+  @OneToMany(() => Entity, (entity) => entity.parent)
+  children!: Entity[];
 
   @CreateDateColumn()
   created_at!: Date;

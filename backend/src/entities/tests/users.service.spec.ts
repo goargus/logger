@@ -7,6 +7,9 @@ import { UsersService } from '../../users/users.service';
 import { User } from '../../users/user.entity';
 import { Role } from '../../roles/role.entity';
 import { Entity as OrgEntity } from '../../entities/entity.entity';
+import { EntitiesService } from '../../entities/entities.service';
+import { RolesService } from '../../roles/roles.service';
+import { HierarchyValidationService } from '../../entities/hierarchy-validation.service';
 import { CreateUserDto } from '../../users/dto/create-user.dto';
 import { UpdateUserDto } from '../../users/dto/update-user.dto';
 import { UserStatus } from '../../users/user-status.enum';
@@ -29,6 +32,8 @@ describe('UsersService (create & update)', () => {
   let usersRepo: MockRepo<User>;
   let rolesRepo: MockRepo<Role>;
   let entitiesRepo: MockRepo<OrgEntity>;
+  let entitiesService: jest.Mocked<EntitiesService>;
+  let rolesService: jest.Mocked<RolesService>;
 
   const now = new Date();
 
@@ -53,6 +58,13 @@ describe('UsersService (create & update)', () => {
     usersRepo = createMockRepo<User>();
     rolesRepo = createMockRepo<Role>();
     entitiesRepo = createMockRepo<OrgEntity>();
+    entitiesService = {
+      findOne: jest.fn(),
+      existsById: jest.fn(),
+    } as any;
+    rolesService = {
+      findOne: jest.fn(),
+    } as any;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -60,6 +72,9 @@ describe('UsersService (create & update)', () => {
         { provide: getRepositoryToken(User), useValue: usersRepo },
         { provide: getRepositoryToken(Role), useValue: rolesRepo },
         { provide: getRepositoryToken(OrgEntity), useValue: entitiesRepo },
+        { provide: EntitiesService, useValue: entitiesService },
+        { provide: RolesService, useValue: rolesService },
+        { provide: HierarchyValidationService, useValue: { validateHierarchy: jest.fn() } },
       ],
     }).compile();
 
@@ -79,8 +94,8 @@ describe('UsersService (create & update)', () => {
       };
 
       usersRepo.findOne?.mockResolvedValue(null);
-      rolesRepo.findOne?.mockResolvedValue({ id: 'r-1', name: 'missionary' } as Role);
-      entitiesRepo.findOne?.mockResolvedValue({ id: 'e-1', name: 'Union A' } as OrgEntity);
+      rolesService.findOne.mockResolvedValue({ id: 'r-1', name: 'missionary' } as Role);
+      entitiesService.findOne.mockResolvedValue({ id: 'e-1', name: 'Union A' } as OrgEntity);
 
       usersRepo.create?.mockImplementation((data) => ({ ...data }) as User);
       usersRepo.save?.mockImplementation(async (u) => ({
@@ -94,8 +109,8 @@ describe('UsersService (create & update)', () => {
       const result = await service.create(dto);
 
       expect(usersRepo.findOne).toHaveBeenCalledWith({ where: { email: dto.email } });
-      expect(rolesRepo.findOne).toHaveBeenCalledWith({ where: { id: 'r-1' } });
-      expect(entitiesRepo.findOne).toHaveBeenCalledWith({ where: { id: 'e-1' } });
+      expect(rolesService.findOne).toHaveBeenCalledWith('r-1');
+      expect(entitiesService.findOne).toHaveBeenCalledWith('e-1');
       expect(usersRepo.create).toHaveBeenCalled();
       expect(usersRepo.save).toHaveBeenCalled();
       expect(result.id).toBe('u-1');
@@ -116,8 +131,8 @@ describe('UsersService (create & update)', () => {
         new BadRequestException('A user with this email already exists.'),
       );
 
-      expect(rolesRepo.findOne).not.toHaveBeenCalled();
-      expect(entitiesRepo.findOne).not.toHaveBeenCalled();
+      expect(rolesService.findOne).not.toHaveBeenCalled();
+      expect(entitiesService.findOne).not.toHaveBeenCalled();
     });
 
     it('fails if role_id does not exist', async () => {
@@ -129,13 +144,13 @@ describe('UsersService (create & update)', () => {
       };
 
       usersRepo.findOne?.mockResolvedValue(null);
-      rolesRepo.findOne?.mockResolvedValue(null);
+      rolesService.findOne.mockRejectedValue(new NotFoundException('Role not found'));
 
       await expect(service.create(dto)).rejects.toThrow(
         new BadRequestException('Invalid role_id: role does not exist.'),
       );
 
-      expect(entitiesRepo.findOne).not.toHaveBeenCalled();
+      expect(entitiesService.findOne).not.toHaveBeenCalled();
     });
 
     it('fails if entity_id does not exist', async () => {
@@ -147,8 +162,8 @@ describe('UsersService (create & update)', () => {
       };
 
       usersRepo.findOne?.mockResolvedValue(null);
-      rolesRepo.findOne?.mockResolvedValue({ id: 'r-1' } as Role);
-      entitiesRepo.findOne?.mockResolvedValue(null);
+      rolesService.findOne.mockResolvedValue({ id: 'r-1' } as Role);
+      entitiesService.findOne.mockRejectedValue(new NotFoundException('Entity not found'));
 
       await expect(service.create(dto)).rejects.toThrow(
         new BadRequestException('Invalid entity_id: entity does not exist.'),
@@ -198,19 +213,19 @@ describe('UsersService (create & update)', () => {
 
     it('updates role_id if the role exists', async () => {
       usersRepo.findOne?.mockResolvedValue({ ...baseUser });
-      rolesRepo.findOne?.mockResolvedValue({ id: 'r-2', name: 'pastor' } as Role);
+      rolesService.findOne.mockResolvedValue({ id: 'r-2', name: 'pastor' } as Role);
       usersRepo.save?.mockImplementation(async (u) => ({ ...baseUser, ...u }));
 
       const dto: UpdateUserDto = { role_id: 'r-2' };
 
       const updated = await service.update('u-1', dto);
-      expect(rolesRepo.findOne).toHaveBeenCalledWith({ where: { id: 'r-2' } });
+      expect(rolesService.findOne).toHaveBeenCalledWith('r-2');
       expect(updated.role_id).toBe('r-2');
     });
 
     it('fails to change role_id if role does not exist', async () => {
       usersRepo.findOne?.mockResolvedValue({ ...baseUser });
-      rolesRepo.findOne?.mockResolvedValue(null);
+      rolesService.findOne.mockRejectedValue(new NotFoundException('Role not found'));
 
       const dto: UpdateUserDto = { role_id: 'r-missing' };
 
@@ -221,19 +236,19 @@ describe('UsersService (create & update)', () => {
 
     it('updates entity_id if the entity exists', async () => {
       usersRepo.findOne?.mockResolvedValue({ ...baseUser });
-      entitiesRepo.findOne?.mockResolvedValue({ id: 'e-2' } as OrgEntity);
+      entitiesService.findOne.mockResolvedValue({ id: 'e-2' } as OrgEntity);
       usersRepo.save?.mockImplementation(async (u) => ({ ...baseUser, ...u }));
 
       const dto: UpdateUserDto = { entity_id: 'e-2' };
 
       const updated = await service.update('u-1', dto);
-      expect(entitiesRepo.findOne).toHaveBeenCalledWith({ where: { id: 'e-2' } });
+      expect(entitiesService.findOne).toHaveBeenCalledWith('e-2');
       expect(updated.entity_id).toBe('e-2');
     });
 
     it('fails to change entity_id if entity does not exist', async () => {
       usersRepo.findOne?.mockResolvedValue({ ...baseUser });
-      entitiesRepo.findOne?.mockResolvedValue(null);
+      entitiesService.findOne.mockRejectedValue(new NotFoundException('Entity not found'));
 
       const dto: UpdateUserDto = { entity_id: 'e-missing' };
 
