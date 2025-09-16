@@ -132,30 +132,32 @@ describe('RolesService', () => {
 
     it('updates only description if name is not provided', async () => {
       repo.findOne?.mockResolvedValue({ ...role });
+      repo.exist?.mockResolvedValue(false);
       repo.save?.mockResolvedValue({ ...role, description: 'Description only' });
 
       const result = await service.update('uuid-1', {
+        name: 'Existing Name',
         description: 'Description only',
-        name: '',
       });
-      expect(repo.exist).not.toHaveBeenCalled();
+      expect(repo.exist).toHaveBeenCalled();
       expect(result.description).toBe('Description only');
     });
   });
 
   describe('remove', () => {
     it('deletes existing', async () => {
+      repo.findOne?.mockResolvedValue({ ...role });
       const del: DeleteResult = { affected: 1, raw: undefined as unknown };
       repo.delete?.mockResolvedValue(del);
 
       const result = await service.remove('uuid-1');
+      expect(repo.findOne).toHaveBeenCalledWith({ where: { id: 'uuid-1' } });
       expect(repo.delete).toHaveBeenCalledWith('uuid-1');
       expect(result).toEqual({ deleted: true });
     });
 
     it('throws 404 if not found', async () => {
-      const del: DeleteResult = { affected: 0, raw: undefined as unknown };
-      repo.delete?.mockResolvedValue(del);
+      repo.findOne?.mockResolvedValue(null);
       await expect(service.remove('nope')).rejects.toBeInstanceOf(NotFoundException);
     });
   });

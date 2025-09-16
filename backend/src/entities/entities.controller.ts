@@ -10,6 +10,7 @@ import {
   Patch,
   Post,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Roles } from '../auth/roles.decorator';
@@ -67,5 +68,31 @@ export class EntitiesController {
   @Roles('admin')
   async remove(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.entitiesService.remove(id);
+  }
+
+  @Get('hierarchy/valid-parents')
+  async getValidParentsByQuery(@Query('type') typeStr?: string) {
+    if (!typeStr) {
+      throw new BadRequestException('Query param "type" is required');
+    }
+    const type = this.parseType(typeStr);
+    return this.entitiesService.findValidParentsForType(type);
+  }
+
+  @Get(':id/children')
+  async getChildren(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.entitiesService.findChildren(id);
+  }
+
+  @Patch(':id/deactivate')
+  @Roles('admin')
+  async deactivate(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.entitiesService.update(id, { is_active: false });
+  }
+
+  @Patch(':id/activate')
+  @Roles('admin')
+  async activate(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.entitiesService.update(id, { is_active: true });
   }
 }

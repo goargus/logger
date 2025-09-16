@@ -6,6 +6,7 @@ import { Repository, In, ObjectLiteral } from 'typeorm';
 import { ActivityTypesService } from '../../activities-type/activity-types.service';
 import { ActivityType } from '../../activities-type/activity-type.entity';
 import { Role } from '../../roles/role.entity';
+import { ACTIVITY_TYPE_USAGE_POLICY } from '../../activities-type/usage/activity-type-usage.policy';
 
 class UsagePolicyStub {
   isInUse = jest.fn<Promise<boolean>, [string]>();
@@ -66,7 +67,7 @@ describe('ActivityTypesService', () => {
         ActivityTypesService,
         { provide: getRepositoryToken(ActivityType), useValue: activityTypeRepo },
         { provide: getRepositoryToken(Role), useValue: roleRepo },
-        { provide: 'ACTIVITY_TYPE_USAGE_POLICY' as any, useValue: usagePolicy },
+        { provide: ACTIVITY_TYPE_USAGE_POLICY, useValue: usagePolicy },
       ],
     })
 
