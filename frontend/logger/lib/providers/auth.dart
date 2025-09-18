@@ -38,21 +38,26 @@ class AuthNotifier extends StateNotifier<AuthState> {
     _initializeAuth0();
   }
 
-  void _initializeAuth0() {
-    _auth0 = Auth0Web(AuthConfig.domain, AuthConfig.clientId);
-    _checkExistingSession();
+  Future<void> _initializeAuth0() async {
+    try {
+      setLoading(true);
+      _auth0 = Auth0Web(AuthConfig.domain, AuthConfig.clientId);
+      await _checkExistingSession();
+    } catch (e) {
+      setError('Auth0 initialization failed: $e');
+    }
   }
 
   Future<void> _checkExistingSession() async {
     try {
-      setLoading(true);
       final credentials = await _auth0.onLoad();
       if (credentials != null) {
         setAuthenticated(credentials);
+      } else {
+        setLoading(false);
       }
     } catch (e) {
-      setError('Error loading existing session: $e');
-    } finally {
+      // No existing session is normal, not an error
       setLoading(false);
     }
   }
@@ -69,7 +74,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> logout() async {
     try {
       setLoading(true);
-      await _auth0.logout();
+      await _auth0.logout(returnToUrl: AuthConfig.redirectUri);
       setUnauthenticated();
     } catch (e) {
       setError('Logout failed: $e');
