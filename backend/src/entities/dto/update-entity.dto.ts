@@ -1,5 +1,5 @@
-import { IsOptional, IsEnum, IsString, IsUUID, IsBoolean } from "class-validator";
-import { EntityType } from "../entity.entity";
+import { IsOptional, IsEnum, IsString, IsUUID, IsBoolean } from 'class-validator';
+import { EntityType } from '../entity.entity';
 
 export class UpdateEntityDto {
   @IsOptional()
