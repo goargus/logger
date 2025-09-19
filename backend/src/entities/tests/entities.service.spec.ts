@@ -3,6 +3,7 @@ import { ConflictException, NotFoundException, BadRequestException } from '@nest
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { ObjectLiteral, Repository } from 'typeorm';
 import { EntitiesService } from '../entities.service';
+import { HierarchyValidationService } from '../hierarchy-validation.service';
 import { Entity, EntityType } from '../entity.entity';
 import { CreateEntityDto } from '../dto/create-entity.dto';
 import { UpdateEntityDto } from '../dto/update-entity.dto';
@@ -17,12 +18,16 @@ function createRepoMock<T extends ObjectLiteral>(): MockRepo<T> {
     find: jest.fn(),
     findOne: jest.fn(),
     delete: jest.fn(),
+    update: jest.fn(),
+    count: jest.fn(),
+    createQueryBuilder: jest.fn(),
   };
 }
 
 describe('EntitiesService', () => {
   let service: EntitiesService;
   let repo: MockRepo<Entity>;
+  let hierarchyValidation: jest.Mocked<HierarchyValidationService>;
 
   const baseEntity: Entity = {
     id: '11111111-1111-1111-1111-111111111111',
@@ -32,13 +37,21 @@ describe('EntitiesService', () => {
     description: 'Cobertura nacional',
     location: 'Honduras',
     is_active: true,
+    parent_id: null,
     created_at: new Date('2025-08-12T17:34:14.503Z') as never,
     updated_at: new Date('2025-08-12T17:34:14.503Z') as never,
     users: [],
+    children: [],
   };
 
   beforeEach(async () => {
     repo = createRepoMock<Entity>();
+    hierarchyValidation = {
+      validateHierarchy: jest.fn(),
+      getAllowedParentTypes: jest.fn(),
+      getAllowedChildTypes: jest.fn(),
+      canHaveChildren: jest.fn(),
+    } as any;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -46,6 +59,10 @@ describe('EntitiesService', () => {
         {
           provide: getRepositoryToken(Entity),
           useValue: repo,
+        },
+        {
+          provide: HierarchyValidationService,
+          useValue: hierarchyValidation,
         },
       ],
     }).compile();
@@ -142,12 +159,20 @@ describe('EntitiesService', () => {
 
   describe('remove', () => {
     it('removes by id', async () => {
-      repo.delete?.mockResolvedValue({ affected: 1 });
+      repo.findOne?.mockResolvedValue(baseEntity);
+      repo.count?.mockResolvedValue(0);
+      repo.createQueryBuilder?.mockReturnValue({
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
+      });
+      repo.update?.mockResolvedValue({ affected: 1 });
       await expect(service.remove(baseEntity.id)).resolves.toEqual({ affected: 1 });
     });
 
     it('throws NotFound when nothing deleted', async () => {
-      repo.delete?.mockResolvedValue({ affected: 0 });
+      repo.findOne?.mockResolvedValue(null);
       await expect(service.remove(baseEntity.id)).rejects.toBeInstanceOf(NotFoundException);
     });
   });

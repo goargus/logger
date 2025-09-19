@@ -7,6 +7,9 @@ import { UsersService } from '../../users/users.service';
 import { User } from '../../users/user.entity';
 import { Role } from '../../roles/role.entity';
 import { Entity as OrgEntity } from '../../entities/entity.entity';
+import { EntitiesService } from '../../entities/entities.service';
+import { RolesService } from '../../roles/roles.service';
+import { HierarchyValidationService } from '../../entities/hierarchy-validation.service';
 import { CreateUserDto } from '../../users/dto/create-user.dto';
 import { UpdateUserDto } from '../../users/dto/update-user.dto';
 import { UserStatus } from '../../users/user-status.enum';
@@ -57,11 +60,9 @@ describe('UsersService (create & update)', () => {
     usersRepo = createMockRepo<User>();
     rolesRepo = createMockRepo<Role>();
     entitiesRepo = createMockRepo<OrgEntity>();
-    
     entitiesService = {
       findOne: jest.fn(),
     } as any;
-    
     rolesService = {
       findOne: jest.fn(),
     } as any;
@@ -71,7 +72,7 @@ describe('UsersService (create & update)', () => {
         UsersService,
         { provide: getRepositoryToken(User), useValue: usersRepo },
         { provide: EntitiesService, useValue: entitiesService },
-        { provide: RolesService, useValue: rolesService },
+        { provide: RolesService, useValue: rolesService }
       ],
     }).compile();
 

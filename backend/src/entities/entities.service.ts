@@ -9,12 +9,14 @@ import { ILike, Not, Repository } from 'typeorm';
 import { Entity, EntityType } from './entity.entity';
 import { CreateEntityDto } from './dto/create-entity.dto';
 import { UpdateEntityDto } from './dto/update-entity.dto';
+import { HierarchyValidationService } from './hierarchy-validation.service';
 
 @Injectable()
 export class EntitiesService {
   constructor(
     @InjectRepository(Entity)
     private readonly repo: Repository<Entity>,
+    private readonly hierarchyValidation: HierarchyValidationService,
   ) {}
 
   private normalizeName(name?: string) {
@@ -26,6 +28,18 @@ export class EntitiesService {
     if (!name) {
       throw new BadRequestException('name is required');
     }
+    if (dto.parentId) {
+      const parent = await this.repo.findOne({ where: { id: dto.parentId } });
+      if (!parent) {
+        throw new NotFoundException('Parent entity not found');
+      }
+      if (!parent.is_active) {
+        throw new BadRequestException('Cannot create entity under an inactive parent');
+      }
+      this.hierarchyValidation.validateHierarchy(dto.type, parent.type);
+    } else {
+      this.hierarchyValidation.validateHierarchy(dto.type);
+    }
 
     const exists = await this.repo.exist({
       where: { name: ILike(name), type: dto.type },
@@ -34,7 +48,15 @@ export class EntitiesService {
       throw new ConflictException('Entity name already exists for this type');
     }
 
-    const entity = this.repo.create({ ...dto, name });
+    const entityData = {
+      name,
+      type: dto.type,
+      code: dto.code,
+      description: dto.description,
+      location: dto.location,
+      parent_id: dto.parentId || null,
+    };
+    const entity = this.repo.create(entityData);
     return this.repo.save(entity);
   }
 
@@ -57,9 +79,25 @@ export class EntitiesService {
 
     const nextName = dto.name !== undefined ? this.normalizeName(dto.name) : current.name;
     const nextType = (dto.type ?? current.type) as EntityType;
+    const nextParentId = dto.parentId !== undefined ? dto.parentId : current.parent_id;
 
     if (dto.name !== undefined && !nextName) {
       throw new BadRequestException('name cannot be empty');
+    }
+
+    if (dto.type !== undefined || dto.parentId !== undefined) {
+      if (nextParentId) {
+        const parent = await this.repo.findOne({ where: { id: nextParentId } });
+        if (!parent) {
+          throw new NotFoundException('Parent entity not found');
+        }
+        if (!parent.is_active) {
+          throw new BadRequestException('Cannot assign entity to an inactive parent');
+        }
+        this.hierarchyValidation.validateHierarchy(nextType, parent.type);
+      } else {
+        this.hierarchyValidation.validateHierarchy(nextType);
+      }
     }
 
     if (nextName !== current.name || nextType !== current.type) {
@@ -76,29 +114,67 @@ export class EntitiesService {
       ...dto,
       name: nextName,
       type: nextType,
+      parent_id: nextParentId,
     } as Entity;
 
     return this.repo.save(toSave);
   }
 
   async remove(id: string): Promise<{ affected: number }> {
-    try {
-      const res = await this.repo.delete(id);
-      if (!res.affected) {
-        throw new NotFoundException('Entity not found');
-      }
-      return { affected: res.affected };
-    } catch (e: any) {
-      if (e?.code === '23503') {
-        throw new BadRequestException(
-          'Cannot delete entity: it is currently referenced by other records (e.g., users).',
-        );
-      }
-      throw e;
+    const entity = await this.findOne(id);
+    const activeChildren = await this.repo.count({
+      where: { parent_id: id, is_active: true },
+    });
+    if (activeChildren > 0) {
+      throw new BadRequestException(
+        'Cannot delete entity: it has active child entities. Please deactivate or delete child entities first.',
+      );
     }
+    const activeUsers = await this.repo
+      .createQueryBuilder('entity')
+      .leftJoin('entity.users', 'user')
+      .where('entity.id = :id', { id })
+      .andWhere('user.status = :status', { status: 'active' })
+      .getCount();
+
+    if (activeUsers > 0) {
+      throw new BadRequestException(
+        'Cannot delete entity: it has active user assignments. Please reassign users first.',
+      );
+    }
+    const result = await this.repo.update(id, { is_active: false });
+    if (!result.affected) {
+      throw new NotFoundException('Entity not found');
+    }
+    return { affected: result.affected };
   }
 
   async findAllByType(type: EntityType): Promise<Entity[]> {
     return this.repo.find({ where: { type }, order: { name: 'ASC' } });
+  }
+
+  async findValidParentsForType(childType: EntityType): Promise<Entity[]> {
+    const allowedParentTypes = this.hierarchyValidation.getAllowedParentTypes(childType);
+    if (allowedParentTypes.length === 0) {
+      return [];
+    }
+    return this.repo.find({
+      where: {
+        type: allowedParentTypes[0],
+        is_active: true,
+      },
+      order: { name: 'ASC' },
+    });
+  }
+
+  async findChildren(id: string): Promise<Entity[]> {
+    return this.repo.find({
+      where: { parent_id: id, is_active: true },
+      order: { name: 'ASC' },
+    });
+  }
+
+  async softDelete(id: string): Promise<{ affected: number }> {
+    return this.remove(id);
   }
 }

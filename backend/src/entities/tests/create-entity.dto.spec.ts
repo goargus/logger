@@ -7,7 +7,7 @@ describe("CreateEntityDto", () => {
     const dto = new CreateEntityDto();
     dto.name = "Union Central";
     dto.type = EntityType.UNION;
-    dto.parentId = null;
+    dto.parentId = undefined;
 
     const errors = await validate(dto);
     expect(errors.length).toBe(0);
@@ -16,7 +16,7 @@ describe("CreateEntityDto", () => {
   it("should fail if name is missing", async () => {
     const dto = new CreateEntityDto();
     dto.type = EntityType.UNION;
-    dto.parentId = null;
+    dto.parentId = undefined;
 
     const errors = await validate(dto);
     expect(errors.length).toBeGreaterThan(0);
@@ -27,7 +27,7 @@ describe("CreateEntityDto", () => {
     const dto = Object.assign(new CreateEntityDto(), {
       name: "Union Central",
       type: "INVALID",
-      parentId: null,
+      parentId: undefined,
     });
 
     const errors = await validate(dto);
@@ -39,7 +39,7 @@ describe("CreateEntityDto", () => {
     const dto = new CreateEntityDto();
     dto.name = "Union Central";
     dto.type = EntityType.UNION;
-    dto.parentId = null;
+    dto.parentId = undefined;
     dto.code = "U001";
     dto.location = "Honduras";
 

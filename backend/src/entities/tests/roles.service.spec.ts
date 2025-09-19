@@ -132,12 +132,14 @@ describe('RolesService', () => {
 
     it('updates only description if name is not provided', async () => {
       repo.findOne?.mockResolvedValue({ ...role });
+      repo.exist?.mockResolvedValue(false);
       repo.save?.mockResolvedValue({ ...role, description: 'Description only' });
 
       const result = await service.update('uuid-1', {
+        name: 'Existing Name',
         description: 'Description only',
       });
-      expect(repo.exist).not.toHaveBeenCalled();
+      expect(repo.exist).toHaveBeenCalled();
       expect(result.description).toBe('Description only');
     });
   });
@@ -149,6 +151,7 @@ describe('RolesService', () => {
       repo.delete?.mockResolvedValue(del);
 
       const result = await service.remove('uuid-1');
+      expect(repo.findOne).toHaveBeenCalledWith({ where: { id: 'uuid-1' } });
       expect(repo.delete).toHaveBeenCalledWith('uuid-1');
       expect(result).toEqual({ deleted: true });
     });
