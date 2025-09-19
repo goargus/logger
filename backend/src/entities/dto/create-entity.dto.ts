@@ -1,5 +1,5 @@
-import { IsEnum, IsOptional, IsString, IsUUID } from "class-validator";
-import { EntityType } from "../entity.entity";
+import { IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import { EntityType } from '../entity.entity';
 
 export class CreateEntityDto {
   @IsString()
