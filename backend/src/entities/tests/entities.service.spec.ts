@@ -91,7 +91,14 @@ describe('EntitiesService', () => {
 
       const result = await service.create(dto);
       expect(repo.exist).toHaveBeenCalled();
-      expect(repo.create).toHaveBeenCalledWith({ ...dto, name: 'Unión Hondureña' });
+      expect(repo.create).toHaveBeenCalledWith({ 
+        name: 'Unión Hondureña',
+        type: EntityType.UNION,
+        code: 'UH',
+        description: 'Cobertura nacional',
+        location: 'Honduras',
+        parent_id: null
+      });
       expect(result).toEqual({ ...baseEntity, name: 'Unión Hondureña' });
     });
 

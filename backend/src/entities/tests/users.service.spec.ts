@@ -13,8 +13,6 @@ import { HierarchyValidationService } from '../../entities/hierarchy-validation.
 import { CreateUserDto } from '../../users/dto/create-user.dto';
 import { UpdateUserDto } from '../../users/dto/update-user.dto';
 import { UserStatus } from '../../users/user-status.enum';
-import { EntitiesService } from '../../entities/entities.service';
-import { RolesService } from '../../roles/roles.service';
 
 type MockRepo<T extends ObjectLiteral = any> = Partial<Record<keyof Repository<T>, jest.Mock>>;
 
