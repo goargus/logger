@@ -7,6 +7,7 @@ import { Role } from '../src/roles/role.entity';
 import { Entity as OrgEntity, EntityType } from '../src/entities/entity.entity';
 import { IdpIdentitiesService } from '../src/idp-identities/idp-identities.service';
 import { UserStatus } from '../src/users/user-status.enum';
+import { ActivityType } from '../src/activities-type/activity-type.entity';
 
 interface StaffConfig {
   email: string;
@@ -83,6 +84,30 @@ async function getDatabaseInitConfig(): Promise<DatabaseInitConfig> {
         idpIssuer: process.env.ADMIN_IDP_ISSUER,
         idpSubject: 'auth0|missionary_brasilena',
         roleName: 'missionary',
+        entityName: 'Union Brasileña',
+        entityType: EntityType.UNION,
+      },
+      {
+        email: 'pastor.mexicana@church.org',
+        username: 'pastor_mexicana',
+        fullName: 'Roberto Martinez',
+        firstName: 'Roberto',
+        familyName: 'Martinez',
+        idpIssuer: process.env.ADMIN_IDP_ISSUER,
+        idpSubject: 'auth0|pastor_mexicana',
+        roleName: 'pastor',
+        entityName: 'Union Mexicana',
+        entityType: EntityType.UNION,
+      },
+      {
+        email: 'pastor.brasilena@church.org',
+        username: 'pastor_brasilena',
+        fullName: 'Fernando Costa',
+        firstName: 'Fernando',
+        familyName: 'Costa',
+        idpIssuer: process.env.ADMIN_IDP_ISSUER,
+        idpSubject: 'auth0|pastor_brasilena',
+        roleName: 'pastor',
         entityName: 'Union Brasileña',
         entityType: EntityType.UNION,
       },
@@ -279,6 +304,7 @@ async function ensureRoles(roleRepo: Repository<Role>): Promise<Map<string, Role
     { name: 'admin', description: 'System Administrator with full access' },
     { name: 'president', description: 'President with administrative privileges' },
     { name: 'missionary', description: 'Missionary with evangelistic and outreach privileges' },
+    { name: 'pastor', description: 'Pastor with spiritual and pastoral care privileges' },
   ];
 
   const roleMap = new Map<string, Role>();
@@ -298,6 +324,69 @@ async function ensureRoles(roleRepo: Repository<Role>): Promise<Map<string, Role
   }
 
   return roleMap;
+}
+
+async function ensureActivityTypes(
+  activityTypeRepo: Repository<ActivityType>,
+  roleMap: Map<string, Role>,
+): Promise<void> {
+  const activityTypeData = [
+    {
+      name: 'Reunion de comite',
+      description: 'Committee meetings for administrative purposes',
+      roleNames: ['president'],
+    },
+    {
+      name: 'Tramites',
+      description: 'Administrative procedures and paperwork',
+      roleNames: ['president'],
+    },
+    {
+      name: 'Visitas a interesados',
+      description: 'Visits to interested people and potential members',
+      roleNames: ['missionary'],
+    },
+    {
+      name: 'Visitas a iglesias',
+      description: 'Visits to churches and congregations',
+      roleNames: ['missionary'],
+    },
+    {
+      name: 'Santa Cena',
+      description: 'Holy Communion service',
+      roleNames: ['pastor'],
+    },
+    {
+      name: 'Bautismos',
+      description: 'Baptism ceremonies and services',
+      roleNames: ['pastor'],
+    },
+  ];
+
+  for (const activityData of activityTypeData) {
+    const existingActivityType = await activityTypeRepo.findOne({
+      where: { name: activityData.name },
+    });
+
+    if (!existingActivityType) {
+      console.log(`Creating activity type: ${activityData.name}...`);
+
+      const allowedRoles = activityData.roleNames
+        .map((roleName) => roleMap.get(roleName))
+        .filter((role) => role !== undefined) as Role[];
+
+      const activityType = activityTypeRepo.create({
+        name: activityData.name,
+        description: activityData.description,
+        allowed_roles: allowedRoles,
+      });
+
+      await activityTypeRepo.save(activityType);
+      console.log(`Activity type ${activityData.name} created`);
+    } else {
+      console.log(`Activity type ${activityData.name} already exists, skipping...`);
+    }
+  }
 }
 
 async function createUser(
@@ -413,6 +502,7 @@ async function initializeDatabase() {
     const userRepo = app.get<Repository<User>>(getRepositoryToken(User));
     const roleRepo = app.get<Repository<Role>>(getRepositoryToken(Role));
     const entityRepo = app.get<Repository<OrgEntity>>(getRepositoryToken(OrgEntity));
+    const activityTypeRepo = app.get<Repository<ActivityType>>(getRepositoryToken(ActivityType));
     const idpService = app.get<IdpIdentitiesService>(IdpIdentitiesService);
 
     console.log('\n=== Creating Organizational Hierarchy ===');
@@ -423,6 +513,9 @@ async function initializeDatabase() {
 
     console.log('\n=== Creating Roles ===');
     const roleMap = await ensureRoles(roleRepo);
+
+    console.log('\n=== Creating Activity Types ===');
+    await ensureActivityTypes(activityTypeRepo, roleMap);
 
     console.log('\n=== Creating Admin User ===');
     await createAdminUser(userRepo, idpService, config, roleMap, platform);
@@ -460,6 +553,20 @@ async function initializeDatabase() {
     console.log('Missionaries:');
     console.log('  - Miguel Hernandez (Union Mexicana)');
     console.log('  - Paulo Santos (Union Brasileña)');
+    console.log('Pastors:');
+    console.log('  - Roberto Martinez (Union Mexicana)');
+    console.log('  - Fernando Costa (Union Brasileña)');
+
+    console.log('\nActivity Types Created:');
+    console.log('President Activities:');
+    console.log('  - Reunion de comite');
+    console.log('  - Tramites');
+    console.log('Missionary Activities:');
+    console.log('  - Visitas a interesados');
+    console.log('  - Visitas a iglesias');
+    console.log('Pastor Activities:');
+    console.log('  - Santa Cena');
+    console.log('  - Bautismos');
   } catch (error) {
     console.error('Database initialization failed:', error);
     process.exit(1);
