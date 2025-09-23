@@ -60,7 +60,6 @@ describe('UsersService (create & update)', () => {
     entitiesRepo = createMockRepo<OrgEntity>();
     entitiesService = {
       findOne: jest.fn(),
-      existsById: jest.fn(),
     } as any;
     rolesService = {
       findOne: jest.fn(),
@@ -70,11 +69,8 @@ describe('UsersService (create & update)', () => {
       providers: [
         UsersService,
         { provide: getRepositoryToken(User), useValue: usersRepo },
-        { provide: getRepositoryToken(Role), useValue: rolesRepo },
-        { provide: getRepositoryToken(OrgEntity), useValue: entitiesRepo },
         { provide: EntitiesService, useValue: entitiesService },
-        { provide: RolesService, useValue: rolesService },
-        { provide: HierarchyValidationService, useValue: { validateHierarchy: jest.fn() } },
+        { provide: RolesService, useValue: rolesService }
       ],
     }).compile();
 

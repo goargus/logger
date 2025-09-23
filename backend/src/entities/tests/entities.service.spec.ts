@@ -13,7 +13,6 @@ type MockRepo<T extends ObjectLiteral = never> = Partial<Record<keyof Repository
 function createRepoMock<T extends ObjectLiteral>(): MockRepo<T> {
   return {
     exist: jest.fn(),
-    exists: jest.fn(),
     create: jest.fn(),
     save: jest.fn(),
     find: jest.fn(),
@@ -92,13 +91,13 @@ describe('EntitiesService', () => {
 
       const result = await service.create(dto);
       expect(repo.exist).toHaveBeenCalled();
-      expect(repo.create).toHaveBeenCalledWith({
+      expect(repo.create).toHaveBeenCalledWith({ 
         name: 'Unión Hondureña',
-        type: dto.type,
-        code: dto.code,
-        description: dto.description,
-        location: dto.location,
-        parent_id: null,
+        type: EntityType.UNION,
+        code: 'UH',
+        description: 'Cobertura nacional',
+        location: 'Honduras',
+        parent_id: null
       });
       expect(result).toEqual({ ...baseEntity, name: 'Unión Hondureña' });
     });
