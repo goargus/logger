@@ -20,17 +20,34 @@ class _MyAppState extends State<MyApp> {
   late final Auth0Web auth0;
   Credentials? _credentials;
   String? _lastError;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     auth0 = Auth0Web(kDomain, kClientId);
+    _initializeAuth();
+  }
 
-    auth0.onLoad().then((creds) {
-      setState(() => _credentials = creds);
-    }).catchError((e) {
-      setState(() => _lastError = '$e');
-    });
+  Future<void> _initializeAuth() async {
+    try {
+      // First check if user is already authenticated
+      final creds = await auth0.onLoad();
+      if (creds != null) {
+        setState(() {
+          _credentials = creds;
+          _isLoading = false;
+        });
+      } else {
+        // If not authenticated, automatically trigger login
+        await _login();
+      }
+    } catch (e) {
+      setState(() {
+        _lastError = '$e';
+        _isLoading = false;
+      });
+    }
   }
 
   Future<void> _login() async {
@@ -52,7 +69,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    if (_credentials == null) {
+    if (_isLoading) {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         home: Scaffold(
@@ -60,11 +77,9 @@ class _MyAppState extends State<MyApp> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                ElevatedButton.icon(
-                  onPressed: _login,
-                  icon: const Icon(Icons.login),
-                  label: const Text('Iniciar sesión con Auth0'),
-                ),
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                const Text('Iniciando sesión...'),
                 if (_lastError != null) ...[
                   const SizedBox(height: 12),
                   ConstrainedBox(
@@ -74,6 +89,36 @@ class _MyAppState extends State<MyApp> {
                         style: const TextStyle(color: Colors.red)),
                   )
                 ],
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
+    if (_credentials == null) {
+      return MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Error de autenticación'),
+                if (_lastError != null) ...[
+                  const SizedBox(height: 12),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 520),
+                    child: Text('Error: $_lastError',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.red)),
+                  )
+                ],
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: _initializeAuth,
+                  child: const Text('Reintentar'),
+                ),
               ],
             ),
           ),
