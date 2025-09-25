@@ -40,32 +40,42 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   Future<void> _initializeAuth0() async {
     try {
-      setLoading(true);
+      if (!AuthConfig.isConfigured) {
+        setError('Auth0 configuration missing. Please set AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_REDIRECT_URI, and AUTH0_AUDIENCE environment variables.');
+        return;
+      }
+      
       _auth0 = Auth0Web(AuthConfig.domain, AuthConfig.clientId);
-      await _checkExistingSession();
+      
+      // Replicate original simple approach
+      _auth0.onLoad().then((creds) {
+        if (creds != null) {
+          print('DEBUG: Found existing credentials');
+          setAuthenticated(creds);
+        } else {
+          print('DEBUG: No existing session found');
+          setLoading(false);
+        }
+      }).catchError((e) {
+        print('DEBUG: Error loading session: $e');
+        setError('Auth0 session load failed: $e');
+      });
+      
     } catch (e) {
       setError('Auth0 initialization failed: $e');
-    }
-  }
-
-  Future<void> _checkExistingSession() async {
-    try {
-      final credentials = await _auth0.onLoad();
-      if (credentials != null) {
-        setAuthenticated(credentials);
-      } else {
-        setLoading(false);
-      }
-    } catch (e) {
-      // No existing session is normal, not an error
-      setLoading(false);
     }
   }
 
   Future<void> login() async {
     try {
       setLoading(true);
-      await _auth0.loginWithRedirect(redirectUrl: AuthConfig.redirectUri);
+      final audience = AuthConfig.audience.isNotEmpty ? AuthConfig.audience : 'logger';
+      
+      await _auth0.loginWithRedirect(
+        redirectUrl: AuthConfig.redirectUri,
+        audience: audience,
+        scopes: {'openid', 'profile', 'email', 'read:activities', 'write:activities'},
+      );
     } catch (e) {
       setError('Login failed: $e');
     }
