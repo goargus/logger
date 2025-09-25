@@ -63,4 +63,32 @@ class ActivityService {
 
     throw Exception('Create activity failed: ${resp.statusCode} ${resp.body}');
   }
+
+  Future<double> getMonthlyExpenseTotal({
+    required int year,
+    required int month,
+  }) async {
+    final token = await getAccessToken();
+
+    final uri = Uri.parse('$baseUrl/activities/stats/monthly-expenses')
+        .replace(queryParameters: {
+      'year': year.toString(),
+      'month': month.toString(),
+    });
+
+    final resp = await http.get(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (resp.statusCode == 200) {
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      return (data['total'] as num).toDouble();
+    }
+
+    throw Exception('Get monthly expenses failed: ${resp.statusCode} ${resp.body}');
+  }
 }
