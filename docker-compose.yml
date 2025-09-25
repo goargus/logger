@@ -106,6 +106,7 @@ services:
       - AUTH0_DOMAIN=dev-ohuspam6fnmh4tgt.us.auth0.com
       - AUTH0_CLIENT_ID=2H45P97qEyC9HfiKFj8FOvb8DnSOgFwY
       - AUTH0_REDIRECT_URI=http://localhost:8080
+      - AUTH0_AUDIENCE=logger
     volumes:
       - ./frontend/logger/lib:/app/lib
       - ./frontend/logger/web:/app/web
