@@ -17,6 +17,7 @@ import '../widgets/dialogs/create_activity_dialog.dart';
 
 import '../auth/session.dart';
 import '../auth/auth0_web.dart';
+import '../services/activity_service.dart';
 
 class DashboardMissionaryPage extends StatefulWidget {
   final String userName;
@@ -29,11 +30,17 @@ class DashboardMissionaryPage extends StatefulWidget {
 
 class _DashboardMissionaryPageState extends State<DashboardMissionaryPage> {
   static const String _apiBaseUrl = 'http://localhost:3000';
+  
+  late ActivityService _activityService;
+  double _monthlyExpenseTotal = 0.0;
+  bool _isLoadingExpenses = true;
 
   @override
   void initState() {
     super.initState();
+    _activityService = ActivityService.localhost(() async => await _getAccessTokenEnsured() ?? '');
     _warmAuth();
+    _loadMonthlyExpenses();
   }
 
   Future<void> _warmAuth() async {
@@ -63,13 +70,34 @@ Future<String?> _getAccessTokenEnsured() async {
   return null;
 }
 
+  Future<void> _loadMonthlyExpenses() async {
+    try {
+      final now = DateTime.now();
+      final total = await _activityService.getMonthlyExpenseTotal(
+        year: now.year,
+        month: now.month,
+      );
+      if (mounted) {
+        setState(() {
+          _monthlyExpenseTotal = total;
+          _isLoadingExpenses = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingExpenses = false;
+        });
+      }
+    }
+  }
 
   final DashboardConfig _cfg = const DashboardConfig(
     visits: 15,
     bibleStudies: 10,
     viaticoUsed: 1500,
     reportsCount: 20,
-    month: 6,
+    month: 10,
     year: 2025,
   );
 
@@ -148,6 +176,11 @@ Future<String?> _getAccessTokenEnsured() async {
 
       setState(() => _recent.insert(0, activity));
 
+      // Recargar los gastos mensuales si la actividad tiene gastos
+      if (expense > 0) {
+        _loadMonthlyExpenses();
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Actividad creada')),
@@ -205,7 +238,9 @@ Future<String?> _getAccessTokenEnsured() async {
                 ),
                 StatCard(
                   title: 'Viático Utilizado',
-                  value: 'L.${_cfg.viaticoUsed.toStringAsFixed(0)}',
+                  value: _isLoadingExpenses 
+                    ? 'Cargando...' 
+                    : 'L.${_monthlyExpenseTotal.toStringAsFixed(0)}',
                   icon: Icons.payments_outlined,
                 ),
                 CtaReportCard(
