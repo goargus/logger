@@ -8,7 +8,7 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: churchdb
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -24,7 +24,7 @@ services:
       db:
         condition: service_healthy
     volumes:
-      - .:/app
+      - ./backend:/app
     working_dir: /app
     command: >
       sh -c "
@@ -59,19 +59,13 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ./src:/app/src
-      - ./test:/app/test
-      - ./config:/app/config
-      - ./package.json:/app/package.json
-      - ./tsconfig.json:/app/tsconfig.json
-      - ./package-lock.json:/app/package-lock.json
+      - ./backend/src:/app/src
+      - ./backend/test:/app/test
+      - ./backend/config:/app/config
+      - ./backend/package.json:/app/package.json
+      - ./backend/tsconfig.json:/app/tsconfig.json
+      - ./backend/package-lock.json:/app/package-lock.json
     working_dir: /app
-    command: >
-      sh -c "
-        npm install &&
-        npx nest build &&
-        npx nest start --watch
-      "
     environment:
       PORT: 3000
       DB_HOST: db
@@ -86,6 +80,36 @@ services:
       ADMIN_USERNAME: "hndoss"
       ADMIN_IDP_ISSUER: https://dev-ohuspam6fnmh4tgt.us.auth0.com/
       ADMIN_IDP_SUBJECT: auth0|688c59c6ec2186db091c74eb
+    command: >
+      sh -c "
+        npm install &&
+        npx nest build &&
+        npx nest start --watch
+      "
+    develop:
+      watch:
+        - action: sync
+          path: ./backend/src
+          target: /app/src
+        - action: rebuild
+          path: ./backend/package.json
+
+  frontend:
+    build:
+      context: ./frontend/logger
+      dockerfile: Dockerfile
+    container_name: frontend
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      - AUTH0_DOMAIN=dev-ohuspam6fnmh4tgt.us.auth0.com
+      - AUTH0_CLIENT_ID=2H45P97qEyC9HfiKFj8FOvb8DnSOgFwY
+      - AUTH0_REDIRECT_URI=http://localhost:8080
+    volumes:
+      - ./frontend/logger/lib:/app/lib
+      - ./frontend/logger/web:/app/web
+      - ./frontend/logger/pubspec.yaml:/app/pubspec.yaml
 
 volumes:
   postgres_data:

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/ activity.dart';
 import '../models/dashboard_config.dart';
@@ -16,18 +17,18 @@ import '../widgets/lists/ activities_table.dart';
 import '../widgets/dialogs/create_activity_dialog.dart';
 
 import '../auth/session.dart';
-import '../auth/auth0_web.dart';
+import '../providers/auth.dart';
 
-class DashboardMissionaryPage extends StatefulWidget {
+class DashboardMissionaryPage extends ConsumerStatefulWidget {
   final String userName;
   const DashboardMissionaryPage({super.key, required this.userName});
 
   @override
-  State<DashboardMissionaryPage> createState() =>
+  ConsumerState<DashboardMissionaryPage> createState() =>
       _DashboardMissionaryPageState();
 }
 
-class _DashboardMissionaryPageState extends State<DashboardMissionaryPage> {
+class _DashboardMissionaryPageState extends ConsumerState<DashboardMissionaryPage> {
   static const String _apiBaseUrl = 'http://localhost:3000';
 
   @override
@@ -44,22 +45,20 @@ class _DashboardMissionaryPageState extends State<DashboardMissionaryPage> {
   }
 
 Future<String?> _getAccessTokenEnsured() async {
-  await Auth0Web.waitUntilReady();
-
-  var t = await Auth0Web.refreshTokenSilently();
-  if (t != null && t.isNotEmpty) {
-    await Session.instance.setAccessToken(t);
-    return t;
+  // Get token from current auth state
+  final authState = ref.read(authProvider);
+  if (authState.isAuthenticated && authState.credentials != null) {
+    final token = authState.credentials!.accessToken;
+    await Session.instance.setAccessToken(token);
+    return token;
   }
-
-  t = await Session.instance.getAccessToken();
-  if (t != null && t.isNotEmpty) return t;
-  await Auth0Web.waitUntilReady();
-  t = await Auth0Web.refreshTokenSilently();
-  if (t != null && t.isNotEmpty) {
-    await Session.instance.setAccessToken(t);
-    return t;
+  
+  // Check session storage
+  final sessionToken = await Session.instance.getAccessToken();
+  if (sessionToken != null && sessionToken.isNotEmpty) {
+    return sessionToken;
   }
+  
   return null;
 }
 
@@ -97,7 +96,7 @@ Future<String?> _getAccessTokenEnsured() async {
   Future<void> _openCreateDialog() async {
     final token = await _getAccessTokenEnsured();
     if (token == null || token.isEmpty) {
-      Auth0Web.login();
+      ref.read(authProvider.notifier).login();
       return;
     }
 
@@ -107,7 +106,7 @@ Future<String?> _getAccessTokenEnsured() async {
       builder: (_) => CreateActivityDialog(
         baseUrl: _apiBaseUrl,
         getAccessToken: _getAccessTokenEnsured,
-        onRequireLogin: () => Auth0Web.login(),
+        onRequireLogin: () => ref.read(authProvider.notifier).login(),
       ),
     );
 

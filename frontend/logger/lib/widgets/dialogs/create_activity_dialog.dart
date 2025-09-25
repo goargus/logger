@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../dialogs/calendar_dialog.dart';
 import '../../models/activity_type.dart';
-import '../../services/activity_type_service.dart';
+import '../../services/activity_type.dart';
 
 class CreateActivityDialog extends StatefulWidget {
   final String baseUrl;
