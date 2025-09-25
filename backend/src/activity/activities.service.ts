@@ -116,4 +116,21 @@ export class ActivitiesService {
     const types = await this.typesRepo.find({ where: { id: In(uniq) } });
     return new Map(types.map((t) => [t.id, (t as any).name]));
   }
+
+  async getMonthlyExpenseTotal(userId: string, year: number, month: number): Promise<number> {
+    const startDate = new Date(year, month - 1, 1);
+    const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+
+    const result = await this.repo
+      .createQueryBuilder('activity')
+      .select('SUM(CAST(activity.expenseAmount AS DECIMAL))', 'total')
+      .where('activity.userId = :userId', { userId })
+      .andWhere('activity.status = :status', { status: ActivityStatus.ACTIVE })
+      .andWhere('activity.hasExpense = :hasExpense', { hasExpense: true })
+      .andWhere('activity.activityDate >= :startDate', { startDate: startDate.toISOString().split('T')[0] })
+      .andWhere('activity.activityDate <= :endDate', { endDate: endDate.toISOString().split('T')[0] })
+      .getRawOne();
+
+    return parseFloat(result?.total || '0');
+  }
 }
