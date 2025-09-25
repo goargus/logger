@@ -20,8 +20,7 @@ import '../auth/session.dart';
 import '../providers/auth.dart';
 
 class DashboardMissionaryPage extends ConsumerStatefulWidget {
-  final String userName;
-  const DashboardMissionaryPage({super.key, required this.userName});
+  const DashboardMissionaryPage({super.key});
 
   @override
   ConsumerState<DashboardMissionaryPage> createState() =>
@@ -48,7 +47,7 @@ Future<String?> _getAccessTokenEnsured() async {
   // Get token from current auth state
   final authState = ref.read(authProvider);
   if (authState.isAuthenticated && authState.credentials != null) {
-    final token = authState.credentials!.accessToken;
+  final token = authState.credentials!.accessToken;
     await Session.instance.setAccessToken(token);
     return token;
   }
@@ -56,9 +55,11 @@ Future<String?> _getAccessTokenEnsured() async {
   // Check session storage
   final sessionToken = await Session.instance.getAccessToken();
   if (sessionToken != null && sessionToken.isNotEmpty) {
+    print('DEBUG: Session Token: ${sessionToken.substring(0, 50)}...');
     return sessionToken;
   }
   
+  print('DEBUG: No token available');
   return null;
 }
 
@@ -172,9 +173,17 @@ Future<String?> _getAccessTokenEnsured() async {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: PageTitle(
-                    title: 'Bienvenido, ${widget.userName}',
-                    subtitle: subtitle,
+                  child: Consumer(
+                    builder: (context, ref, _) {
+                      final authState = ref.watch(authProvider);
+                      final userName = authState.credentials?.user.name ??
+                                       authState.credentials?.user.nickname ??
+                                       'Usuario';
+                      return PageTitle(
+                        title: 'Bienvenido, $userName',
+                        subtitle: subtitle,
+                      );
+                    },
                   ),
                 ),
               ],
