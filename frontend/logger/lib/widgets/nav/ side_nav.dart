@@ -98,11 +98,7 @@ class SideNav extends StatelessWidget {
             const SizedBox(height: 8),
             const Divider(thickness: 1, color: Colors.white24, height: 24),
             const SizedBox(height: 8),
-            const UserTile(
-              name: 'Andrew D.',
-              email: 'andrew@email.com',
-              avatarUrl: null,
-            ),
+            const UserTile(),
           ],
         ],
       ),
