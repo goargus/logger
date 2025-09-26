@@ -17,12 +17,7 @@ import '../widgets/lists/activities_table.dart';
 import '../widgets/dialogs/create_activity_dialog.dart';
 
 import '../auth/session.dart';
-<<<<<<< HEAD:frontend/logger/lib/pages/ dashboard_missionary.dart
-import '../auth/auth0_web.dart';
-import '../services/activity_service.dart';
-=======
 import '../providers/auth.dart';
->>>>>>> origin/main:frontend/lib/pages/dashboard_missionary.dart
 
 class DashboardMissionaryPage extends ConsumerStatefulWidget {
   const DashboardMissionaryPage({super.key});
