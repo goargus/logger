@@ -67,7 +67,6 @@ class _DashboardMissionaryPageState
     return null;
   }
 
-<<<<<<< HEAD:frontend/logger/lib/pages/ dashboard_missionary.dart
 Future<String?> _getAccessTokenEnsured() async {
   await Auth0Web.waitUntilReady();
 
@@ -110,8 +109,6 @@ Future<String?> _getAccessTokenEnsured() async {
     }
   }
 
-=======
->>>>>>> origin/main:frontend/lib/pages/dashboard_missionary.dart
   final DashboardConfig _cfg = const DashboardConfig(
     visits: 15,
     bibleStudies: 10,
