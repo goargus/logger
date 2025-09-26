@@ -31,7 +31,7 @@ class DashboardMissionaryPage extends ConsumerStatefulWidget {
 class _DashboardMissionaryPageState
     extends ConsumerState<DashboardMissionaryPage> {
   static const String _apiBaseUrl = 'http://localhost:3000';
-  
+
   late ActivityService _activityService;
   double _monthlyExpenseTotal = 0.0;
   bool _isLoadingExpenses = true;
@@ -39,7 +39,8 @@ class _DashboardMissionaryPageState
   @override
   void initState() {
     super.initState();
-    _activityService = ActivityService.localhost(() async => await _getAccessTokenEnsured() ?? '');
+    _activityService = ActivityService.localhost(
+        () async => await _getAccessTokenEnsured() ?? '');
     _warmAuth();
     _loadMonthlyExpenses();
   }
@@ -67,7 +68,6 @@ class _DashboardMissionaryPageState
 
     return null;
   }
-
 
   Future<void> _loadMonthlyExpenses() async {
     try {
@@ -248,9 +248,9 @@ class _DashboardMissionaryPageState
                 ),
                 StatCard(
                   title: 'Viático Utilizado',
-                  value: _isLoadingExpenses 
-                    ? 'Cargando...' 
-                    : 'L.${_monthlyExpenseTotal.toStringAsFixed(0)}',
+                  value: _isLoadingExpenses
+                      ? 'Cargando...'
+                      : 'L.${_monthlyExpenseTotal.toStringAsFixed(0)}',
                   icon: Icons.payments_outlined,
                 ),
                 CtaReportCard(

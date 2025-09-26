@@ -86,6 +86,7 @@ class ActivityService {
       return (data['total'] as num).toDouble();
     }
 
-    throw Exception('Get monthly expenses failed: ${resp.statusCode} ${resp.body}');
+    throw Exception(
+        'Get monthly expenses failed: ${resp.statusCode} ${resp.body}');
   }
 }
