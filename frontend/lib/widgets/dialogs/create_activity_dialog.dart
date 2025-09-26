@@ -289,6 +289,7 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                         }
 
                         return DropdownButtonFormField<ActivityType>(
+                          // ignore: deprecated_member_use
                           value: _selectedType,
                           isExpanded: true,
                           items: types
