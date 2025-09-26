@@ -6,7 +6,7 @@ class AppUser {
   final String email;
   final UserRole role;
   final String association;
-  final List<String> fields; // campos a cargo
+  final List<String> fields;
 
   const AppUser({
     required this.id,

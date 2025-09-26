@@ -55,7 +55,6 @@ class StatCard extends StatelessWidget {
     );
 
     if (backgroundImage == null) {
-      // Fallback sólido
       return InkWell(
         onTap: onTap,
         borderRadius: radius,

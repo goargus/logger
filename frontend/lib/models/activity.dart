@@ -2,7 +2,7 @@ class Activity {
   final DateTime date;
   final String category;
   final String description;
-  final double expense; // viático gastado
+  final double expense;
 
   const Activity({
     required this.date,
