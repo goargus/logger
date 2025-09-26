@@ -70,7 +70,7 @@ describe('UsersService (create & update)', () => {
         UsersService,
         { provide: getRepositoryToken(User), useValue: usersRepo },
         { provide: EntitiesService, useValue: entitiesService },
-        { provide: RolesService, useValue: rolesService }
+        { provide: RolesService, useValue: rolesService },
       ],
     }).compile();
 
