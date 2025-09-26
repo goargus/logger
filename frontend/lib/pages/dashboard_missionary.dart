@@ -18,6 +18,7 @@ import '../widgets/dialogs/create_activity_dialog.dart';
 
 import '../auth/session.dart';
 import '../providers/auth.dart';
+import '../services/activity.dart';
 
 class DashboardMissionaryPage extends ConsumerStatefulWidget {
   const DashboardMissionaryPage({super.key});
@@ -67,25 +68,6 @@ class _DashboardMissionaryPageState
     return null;
   }
 
-Future<String?> _getAccessTokenEnsured() async {
-  await Auth0Web.waitUntilReady();
-
-  var t = await Auth0Web.refreshTokenSilently();
-  if (t != null && t.isNotEmpty) {
-    await Session.instance.setAccessToken(t);
-    return t;
-  }
-
-  t = await Session.instance.getAccessToken();
-  if (t != null && t.isNotEmpty) return t;
-  await Auth0Web.waitUntilReady();
-  t = await Auth0Web.refreshTokenSilently();
-  if (t != null && t.isNotEmpty) {
-    await Session.instance.setAccessToken(t);
-    return t;
-  }
-  return null;
-}
 
   Future<void> _loadMonthlyExpenses() async {
     try {
