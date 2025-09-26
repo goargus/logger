@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'nav_item_tile.dart';
 import 'user_tile.dart';
@@ -24,22 +23,22 @@ class SideNav extends StatelessWidget {
   static const Color kPill = Color(0xFFEDEFFF);
   static const Color kTextDark = Color(0xFF1E2364);
   static const LinearGradient kBackgroundGradient = LinearGradient(
-  begin: Alignment.topCenter,
-  end: Alignment.bottomCenter,
-  colors: [
-    Color(0xFF0F3999),
-    Color(0xFF391A7C),
-  ],
-);
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0xFF0F3999),
+      Color(0xFF391A7C),
+    ],
+  );
 
   @override
   Widget build(BuildContext context) {
     return Container(
       width: 300,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-     decoration: const BoxDecoration(
-     gradient: SideNav.kBackgroundGradient,
-  ),
+      decoration: const BoxDecoration(
+        gradient: SideNav.kBackgroundGradient,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

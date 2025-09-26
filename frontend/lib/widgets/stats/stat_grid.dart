@@ -8,7 +8,11 @@ class StatGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (context, c) {
       final w = c.maxWidth;
-      final cross = w < 700 ? 1 : w < 1000 ? 2 : 3;
+      final cross = w < 700
+          ? 1
+          : w < 1000
+              ? 2
+              : 3;
       return GridView.count(
         crossAxisCount: cross,
         shrinkWrap: true,

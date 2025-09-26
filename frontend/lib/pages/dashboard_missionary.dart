@@ -27,7 +27,8 @@ class DashboardMissionaryPage extends ConsumerStatefulWidget {
       _DashboardMissionaryPageState();
 }
 
-class _DashboardMissionaryPageState extends ConsumerState<DashboardMissionaryPage> {
+class _DashboardMissionaryPageState
+    extends ConsumerState<DashboardMissionaryPage> {
   static const String _apiBaseUrl = 'http://localhost:3000';
 
   @override
@@ -39,28 +40,26 @@ class _DashboardMissionaryPageState extends ConsumerState<DashboardMissionaryPag
   Future<void> _warmAuth() async {
     try {
       await _getAccessTokenEnsured();
-    } catch (_) {
+    } catch (_) {}
+  }
+
+  Future<String?> _getAccessTokenEnsured() async {
+    // Get token from current auth state
+    final authState = ref.read(authProvider);
+    if (authState.isAuthenticated && authState.credentials != null) {
+      final token = authState.credentials!.accessToken;
+      await Session.instance.setAccessToken(token);
+      return token;
     }
-  }
 
-Future<String?> _getAccessTokenEnsured() async {
-  // Get token from current auth state
-  final authState = ref.read(authProvider);
-  if (authState.isAuthenticated && authState.credentials != null) {
-  final token = authState.credentials!.accessToken;
-    await Session.instance.setAccessToken(token);
-    return token;
-  }
-  
-  // Check session storage
-  final sessionToken = await Session.instance.getAccessToken();
-  if (sessionToken != null && sessionToken.isNotEmpty) {
-    return sessionToken;
-  }
-  
-  return null;
-}
+    // Check session storage
+    final sessionToken = await Session.instance.getAccessToken();
+    if (sessionToken != null && sessionToken.isNotEmpty) {
+      return sessionToken;
+    }
 
+    return null;
+  }
 
   final DashboardConfig _cfg = const DashboardConfig(
     visits: 15,
@@ -100,7 +99,7 @@ Future<String?> _getAccessTokenEnsured() async {
     }
 
     if (!mounted) return;
-    
+
     final created = await showDialog<Map<String, dynamic>?>(
       context: context,
       barrierDismissible: false,
@@ -177,8 +176,8 @@ Future<String?> _getAccessTokenEnsured() async {
                     builder: (context, ref, _) {
                       final authState = ref.watch(authProvider);
                       final userName = authState.credentials?.user.name ??
-                                       authState.credentials?.user.nickname ??
-                                       'Usuario';
+                          authState.credentials?.user.nickname ??
+                          'Usuario';
                       return PageTitle(
                         title: 'Bienvenido, $userName',
                         subtitle: subtitle,
@@ -189,16 +188,17 @@ Future<String?> _getAccessTokenEnsured() async {
               ],
             ),
             const SizedBox(height: 16),
-
             Row(
               children: [
-                const InfoPill(label: 'Actividades en el Mes', icon: Icons.checklist),
+                const InfoPill(
+                    label: 'Actividades en el Mes', icon: Icons.checklist),
                 const SizedBox(width: 8),
-                InfoPill(label: _monthLabel(_cfg.month, _cfg.year), icon: Icons.calendar_month),
+                InfoPill(
+                    label: _monthLabel(_cfg.month, _cfg.year),
+                    icon: Icons.calendar_month),
               ],
             ),
             const SizedBox(height: 12),
-
             StatGrid(
               children: [
                 StatCard(
@@ -223,7 +223,6 @@ Future<String?> _getAccessTokenEnsured() async {
               ],
             ),
             const SizedBox(height: 16),
-
             Padding(
               padding: const EdgeInsets.only(top: 4.0, bottom: 8.0),
               child: Align(
@@ -235,12 +234,10 @@ Future<String?> _getAccessTokenEnsured() async {
                 ),
               ),
             ),
-
             Text('Actividades Recientes',
                 style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
             ActivitiesTable(items: _recent),
-
             const SizedBox(height: 24),
           ],
         ),
@@ -250,8 +247,18 @@ Future<String?> _getAccessTokenEnsured() async {
 
   String _monthLabel(int month, int year) {
     const m = [
-      'Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio',
-      'Agosto','Septiembre','Octubre','Noviembre','Diciembre'
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre'
     ];
     return '${m[month - 1]} $year';
   }

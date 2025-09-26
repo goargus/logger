@@ -33,13 +33,10 @@ class ActivityService {
     final payload = <String, dynamic>{
       'activity_type_id': typeId,
       'type_id': typeId,
-
       'activity_date': iso,
       'date': iso,
-
       if (description != null && description.trim().isNotEmpty)
         'description': description.trim(),
-
       'hasExpense': hasExpense,
       'has_expense': hasExpense,
       if (hasExpense) ...{

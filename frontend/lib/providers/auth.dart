@@ -41,12 +41,13 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> _initializeAuth0() async {
     try {
       if (!AuthConfig.isConfigured) {
-        setError('Auth0 configuration missing. Please set AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_REDIRECT_URI, and AUTH0_AUDIENCE environment variables.');
+        setError(
+            'Auth0 configuration missing. Please set AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_REDIRECT_URI, and AUTH0_AUDIENCE environment variables.');
         return;
       }
-      
+
       _auth0 = Auth0Web(AuthConfig.domain, AuthConfig.clientId);
-      
+
       // Replicate original simple approach
       _auth0.onLoad().then((creds) {
         if (creds != null) {
@@ -57,7 +58,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }).catchError((e) {
         setError('Auth0 session load failed: $e');
       });
-      
     } catch (e) {
       setError('Auth0 initialization failed: $e');
     }
@@ -66,12 +66,19 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> login() async {
     try {
       setLoading(true);
-      final audience = AuthConfig.audience.isNotEmpty ? AuthConfig.audience : 'logger';
-      
+      final audience =
+          AuthConfig.audience.isNotEmpty ? AuthConfig.audience : 'logger';
+
       await _auth0.loginWithRedirect(
         redirectUrl: AuthConfig.redirectUri,
         audience: audience,
-        scopes: {'openid', 'profile', 'email', 'read:activities', 'write:activities'},
+        scopes: {
+          'openid',
+          'profile',
+          'email',
+          'read:activities',
+          'write:activities'
+        },
       );
     } catch (e) {
       setError('Login failed: $e');

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth.dart';
@@ -11,11 +10,11 @@ class UserTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authProvider);
     final name = authState.credentials?.user.name ??
-                 authState.credentials?.user.nickname ??
-                 'Usuario';
+        authState.credentials?.user.nickname ??
+        'Usuario';
     final email = authState.credentials?.user.email ?? '';
     final avatarUrl = authState.credentials?.user.pictureUrl?.toString();
-    
+
     return Row(
       children: [
         CircleAvatar(

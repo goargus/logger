@@ -82,7 +82,6 @@ class AppShell extends ConsumerWidget {
                 ],
               ),
             ),
-
             Positioned(
               top: 8,
               right: 12,

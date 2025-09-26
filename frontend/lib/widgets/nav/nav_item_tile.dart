@@ -1,4 +1,3 @@
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -86,7 +85,8 @@ class _NavItemTileState extends State<NavItemTile> {
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: widget.selected ? 0.95 : 0.9),
+                    color: Colors.white
+                        .withValues(alpha: widget.selected ? 0.95 : 0.9),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(

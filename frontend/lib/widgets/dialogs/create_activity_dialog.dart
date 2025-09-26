@@ -109,13 +109,10 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
         'type_id': typeId,
         'activityTypeId': typeId,
         'typeId': typeId,
-
         'activity_date': iso,
         'date': iso,
         'activityDate': iso,
-
         if (desc.isNotEmpty) 'description': desc,
-
         'hasExpense': hasExp,
         'has_expense': hasExp,
         if (hasExp) ...{
@@ -123,7 +120,6 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
           'expense_amount': amount,
         },
       };
-
 
       final resp = await http.post(
         Uri.parse('${widget.baseUrl}/activities'),
@@ -143,7 +139,8 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
 
       if (resp.statusCode == 401) {
         widget.onRequireLogin?.call();
-        setState(() => _error = 'Sesión expirada. Por favor, inicia sesión nuevamente.');
+        setState(() =>
+            _error = 'Sesión expirada. Por favor, inicia sesión nuevamente.');
         return;
       }
 
@@ -179,7 +176,8 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                   const Spacer(),
                   IconButton(
                     tooltip: 'Cerrar',
-                    onPressed: _submitting ? null : () => Navigator.of(context).pop(),
+                    onPressed:
+                        _submitting ? null : () => Navigator.of(context).pop(),
                     icon: const Icon(Icons.close),
                   ),
                 ],
@@ -187,14 +185,14 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
               const SizedBox(height: 4),
               Divider(height: 1, color: theme.dividerColor),
               const SizedBox(height: 12),
-
               if (_error != null) ...[
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.error.withValues(alpha: 0.08),
-                    border: Border.all(color: theme.colorScheme.error.withValues(alpha: 0.3)),
+                    border: Border.all(
+                        color: theme.colorScheme.error.withValues(alpha: 0.3)),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -206,21 +204,21 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                 ),
                 const SizedBox(height: 12),
               ],
-
               Form(
                 key: _formKey,
                 child: Column(
                   children: [
                     Align(
                       alignment: Alignment.centerLeft,
-                      child: Text('Tipo de actividad', style: theme.textTheme.labelLarge),
+                      child: Text('Tipo de actividad',
+                          style: theme.textTheme.labelLarge),
                     ),
                     const SizedBox(height: 8),
-
                     FutureBuilder<List<ActivityType>>(
                       future: _typesFuture,
                       builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
                           return const Padding(
                             padding: EdgeInsets.symmetric(vertical: 12),
                             child: Row(
@@ -228,7 +226,8 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                                 SizedBox(
                                   width: 18,
                                   height: 18,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
                                 ),
                                 SizedBox(width: 10),
                                 Text('Cargando tipos de actividad...'),
@@ -239,7 +238,8 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
 
                         if (snapshot.hasError) {
                           final err = snapshot.error?.toString() ?? 'Error';
-                          final is401 = err.contains('401') || err.toLowerCase().contains('unauthorized');
+                          final is401 = err.contains('401') ||
+                              err.toLowerCase().contains('unauthorized');
 
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -263,16 +263,21 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                               Row(
                                 children: [
                                   OutlinedButton.icon(
-                                    onPressed: _submitting ? null : () {
-                                      setState(() => _typesFuture = _typeService.fetchAll());
-                                    },
+                                    onPressed: _submitting
+                                        ? null
+                                        : () {
+                                            setState(() => _typesFuture =
+                                                _typeService.fetchAll());
+                                          },
                                     icon: const Icon(Icons.refresh),
                                     label: const Text('Reintentar'),
                                   ),
                                   const SizedBox(width: 8),
                                   if (is401 && widget.onRequireLogin != null)
                                     OutlinedButton.icon(
-                                      onPressed: _submitting ? null : widget.onRequireLogin,
+                                      onPressed: _submitting
+                                          ? null
+                                          : widget.onRequireLogin,
                                       icon: const Icon(Icons.login),
                                       label: const Text('Iniciar sesión'),
                                     ),
@@ -298,8 +303,11 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                                     child: Text(t.name),
                                   ))
                               .toList(),
-                          onChanged: _submitting ? null : (v) => setState(() => _selectedType = v),
-                          validator: (v) => v == null ? 'Selecciona un tipo' : null,
+                          onChanged: _submitting
+                              ? null
+                              : (v) => setState(() => _selectedType = v),
+                          validator: (v) =>
+                              v == null ? 'Selecciona un tipo' : null,
                           decoration: const InputDecoration(
                             border: OutlineInputBorder(),
                             hintText: 'Selecciona un tipo',
@@ -308,9 +316,7 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                         );
                       },
                     ),
-
                     const SizedBox(height: 16),
-
                     Align(
                       alignment: Alignment.centerLeft,
                       child: Text('Fecha', style: theme.textTheme.labelLarge),
@@ -330,15 +336,15 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                           icon: const Icon(Icons.calendar_today),
                         ),
                       ),
-                      validator: (v) =>
-                          (v == null || v.trim().isEmpty) ? 'Selecciona una fecha' : null,
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Selecciona una fecha'
+                          : null,
                     ),
-
                     const SizedBox(height: 16),
-
                     Align(
                       alignment: Alignment.centerLeft,
-                      child: Text('Descripción (opcional)', style: theme.textTheme.labelLarge),
+                      child: Text('Descripción (opcional)',
+                          style: theme.textTheme.labelLarge),
                     ),
                     const SizedBox(height: 8),
                     TextFormField(
@@ -350,13 +356,13 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                         border: OutlineInputBorder(),
                       ),
                     ),
-
                     const SizedBox(height: 16),
-
                     CheckboxListTile(
                       title: const Text('¿Tiene gastos?'),
                       value: _hasExpense,
-                      onChanged: _submitting ? null : (v) => setState(() => _hasExpense = v ?? false),
+                      onChanged: _submitting
+                          ? null
+                          : (v) => setState(() => _hasExpense = v ?? false),
                       controlAffinity: ListTileControlAffinity.leading,
                     ),
                     if (_hasExpense) ...[
@@ -377,13 +383,13 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                       ),
                       const SizedBox(height: 16),
                     ],
-
                     const SizedBox(height: 20),
-
                     Row(
                       children: [
                         TextButton(
-                          onPressed: _submitting ? null : () => Navigator.of(context).pop(),
+                          onPressed: _submitting
+                              ? null
+                              : () => Navigator.of(context).pop(),
                           child: const Text('Cancelar'),
                         ),
                         const Spacer(),
@@ -393,7 +399,8 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                               ? const SizedBox(
                                   height: 16,
                                   width: 16,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
                                 )
                               : const Icon(Icons.save),
                           label: const Text('Guardar'),

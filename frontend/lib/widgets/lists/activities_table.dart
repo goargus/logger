@@ -29,7 +29,8 @@ class ActivitiesTable extends StatelessWidget {
           ],
           rows: items.map((a) {
             return DataRow(cells: [
-              DataCell(Text('${a.date.day} ${_month(a.date.month)} ${a.date.year}')),
+              DataCell(
+                  Text('${a.date.day} ${_month(a.date.month)} ${a.date.year}')),
               DataCell(Text(a.category)),
               DataCell(Text(a.description)),
               DataCell(Text('L.${a.expense.toStringAsFixed(2)}')),
@@ -55,7 +56,18 @@ class ActivitiesTable extends StatelessWidget {
 
   String _month(int m) {
     const months = [
-      'Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'
+      'Ene',
+      'Feb',
+      'Mar',
+      'Abr',
+      'May',
+      'Jun',
+      'Jul',
+      'Ago',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dic'
     ];
     return months[m - 1];
   }

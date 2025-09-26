@@ -24,12 +24,16 @@ class CtaReportCard extends StatelessWidget {
             const SizedBox(width: 12),
             Text(
               '$reports',
-              style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800),
             ),
             const SizedBox(width: 12),
             const Expanded(
               child: Text('Ver Mis Reportes',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+                  style: TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.w700)),
             ),
             const Icon(Icons.chevron_right, color: Colors.white),
           ],

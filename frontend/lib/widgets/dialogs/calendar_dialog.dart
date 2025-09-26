@@ -44,7 +44,8 @@ class _CalendarDialogState extends State<CalendarDialog> {
   Widget build(BuildContext context) {
     final year = _focusedMonth.year;
     final monthLabel = DateFormat.MMMM('es_ES').format(_focusedMonth);
-    final today = DateFormat('d \'de\' MMMM, y', 'es_ES').format(DateTime.now());
+    final today =
+        DateFormat('d \'de\' MMMM, y', 'es_ES').format(DateTime.now());
 
     return Dialog(
       insetPadding: const EdgeInsets.all(16),
@@ -56,7 +57,8 @@ class _CalendarDialogState extends State<CalendarDialog> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(8),
@@ -75,7 +77,8 @@ class _CalendarDialogState extends State<CalendarDialog> {
                   icon: const Icon(Icons.chevron_left),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(8),
@@ -97,7 +100,6 @@ class _CalendarDialogState extends State<CalendarDialog> {
               ],
             ),
             const SizedBox(height: 12),
-
             Row(
               children: [
                 Expanded(
@@ -113,7 +115,11 @@ class _CalendarDialogState extends State<CalendarDialog> {
                     child: Text(
                       'Rango de fechas',
                       style: TextStyle(
-                        color: Theme.of(context).textTheme.bodySmall?.color?.withValues(alpha: 0.7),
+                        color: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.color
+                            ?.withValues(alpha: 0.7),
                       ),
                     ),
                   ),
@@ -127,12 +133,12 @@ class _CalendarDialogState extends State<CalendarDialog> {
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Theme.of(context).dividerColor),
                   ),
-                  child: Icon(Icons.filter_list, color: Theme.of(context).colorScheme.primary),
+                  child: Icon(Icons.filter_list,
+                      color: Theme.of(context).colorScheme.primary),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
@@ -150,7 +156,6 @@ class _CalendarDialogState extends State<CalendarDialog> {
               ),
             ),
             const SizedBox(height: 12),
-
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
@@ -163,12 +168,12 @@ class _CalendarDialogState extends State<CalendarDialog> {
                 children: [
                   const Icon(Icons.today, size: 16, color: Colors.white),
                   const SizedBox(width: 8),
-                  Text('Hoy: $today', style: const TextStyle(color: Colors.white)),
+                  Text('Hoy: $today',
+                      style: const TextStyle(color: Colors.white)),
                 ],
               ),
             ),
             const SizedBox(height: 12),
-
             Row(
               children: [
                 Expanded(

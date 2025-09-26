@@ -13,7 +13,6 @@ class MissionaryApp extends ConsumerWidget {
       title: 'Missionary App',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
-
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -24,7 +23,6 @@ class MissionaryApp extends ConsumerWidget {
         Locale('en'),
       ],
       locale: const Locale('es'),
-
       routes: appRoutes(),
       initialRoute: Routes.dashboardMissionary,
     );

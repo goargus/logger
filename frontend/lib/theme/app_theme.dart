@@ -5,7 +5,7 @@ class AppTheme {
   static const Color primary = Color(0xFF3C1E8A); // morado
   static const Color primaryDark = Color(0xFF2A1664);
   static const Color sidebarStart = Color(0xFF1D2A7A); // azul
-  static const Color sidebarEnd = Color(0xFF3C1E8A);   // morado
+  static const Color sidebarEnd = Color(0xFF3C1E8A); // morado
   static const Color bg = Color(0xFFF4F4FA);
   static const double radius = 16;
 

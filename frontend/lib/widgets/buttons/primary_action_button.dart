@@ -12,7 +12,7 @@ class PrimaryActionButton extends StatelessWidget {
     required this.onPressed,
   });
 
-static const bgcolor = Color(0xFF391A7C);
+  static const bgcolor = Color(0xFF391A7C);
 
   @override
   Widget build(BuildContext context) {

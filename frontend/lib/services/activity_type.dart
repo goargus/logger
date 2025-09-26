@@ -19,7 +19,6 @@ class UnauthorizedException implements Exception {
   String toString() => 'UnauthorizedException($message)';
 }
 
-
 typedef GetTokenFn = Future<String?> Function();
 
 class ActivityTypeService {
@@ -37,7 +36,8 @@ class ActivityTypeService {
 
   List _extractList(dynamic decoded) {
     if (decoded is List) return decoded;
-    if (decoded is Map && decoded['data'] is List) return decoded['data'] as List;
+    if (decoded is Map && decoded['data'] is List)
+      return decoded['data'] as List;
     throw const FormatException('Unexpected response shape');
   }
 
@@ -60,13 +60,15 @@ class ActivityTypeService {
         final list = _extractList(decoded);
         return list.map<ActivityType>((e) {
           if (e is Map<String, dynamic>) return ActivityType.fromJson(e);
-          if (e is Map) return ActivityType.fromJson(Map<String, dynamic>.from(e));
+          if (e is Map)
+            return ActivityType.fromJson(Map<String, dynamic>.from(e));
           throw const FormatException('Item is not an object');
         }).toList();
       }
 
       if (resp.statusCode == 401) {
-        throw const UnauthorizedException('Unauthorized (401): invalid or expired token');
+        throw const UnauthorizedException(
+            'Unauthorized (401): invalid or expired token');
       }
 
       throw HttpException(
@@ -86,7 +88,8 @@ class ActivityTypeService {
     } on UnauthorizedException {
       final refreshed = await getAccessToken();
       if (refreshed != null && refreshed.isNotEmpty && refreshed != token) {
-        debugPrint('[ActivityTypeService] Retrying after 401 with refreshed token');
+        debugPrint(
+            '[ActivityTypeService] Retrying after 401 with refreshed token');
         return await doFetch(refreshed);
       }
       rethrow;

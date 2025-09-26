@@ -58,10 +58,11 @@ class MyApp extends ConsumerWidget {
               child: Consumer(
                 builder: (context, ref, _) {
                   final authState = ref.watch(authProvider);
-                  final userName = authState.credentials?.user.name ?? 
-                                   authState.credentials?.user.nickname ?? 
-                                   'Usuario';
-                  return Text('Salir (${authState.credentials?.user.email ?? userName})');
+                  final userName = authState.credentials?.user.name ??
+                      authState.credentials?.user.nickname ??
+                      'Usuario';
+                  return Text(
+                      'Salir (${authState.credentials?.user.email ?? userName})');
                 },
               ),
             ),

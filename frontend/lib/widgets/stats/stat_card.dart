@@ -82,7 +82,10 @@ class StatCard extends StatelessWidget {
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.black.withValues(alpha: 0.55), Colors.black.withValues(alpha: 0.25)],
+                  colors: [
+                    Colors.black.withValues(alpha: 0.55),
+                    Colors.black.withValues(alpha: 0.25)
+                  ],
                   begin: Alignment.bottomLeft,
                   end: Alignment.topRight,
                 ),
