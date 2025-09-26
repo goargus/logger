@@ -45,21 +45,25 @@ class MyApp extends ConsumerWidget {
       );
     }
 
-    final userName = authState.credentials!.user.name ?? 
-                     authState.credentials!.user.nickname ?? 
-                     'Usuario';
-
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Stack(
         children: [
-          MissionaryApp(userName: userName),
+          const MissionaryApp(),
           Positioned(
             right: 16,
             top: 16,
             child: FilledButton.tonal(
               onPressed: authNotifier.logout,
-              child: Text('Salir (${authState.credentials!.user.email ?? userName})'),
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final authState = ref.watch(authProvider);
+                  final userName = authState.credentials?.user.name ?? 
+                                   authState.credentials?.user.nickname ?? 
+                                   'Usuario';
+                  return Text('Salir (${authState.credentials?.user.email ?? userName})');
+                },
+              ),
             ),
           ),
         ],

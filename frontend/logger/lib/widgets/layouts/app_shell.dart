@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../nav/ side_nav.dart';
+import '../../providers/auth.dart';
 
 const double kOverlayTopInset = 64.0;
 
-class AppShell extends StatelessWidget {
+class AppShell extends ConsumerWidget {
   final Widget body;
   final String activeRoute;
-
-  final String? userEmail;
-
-  final VoidCallback? onLogout;
 
   static const String homeRoute = '/';
   static const String addActivityRoute = '/activities/new';
@@ -19,8 +17,6 @@ class AppShell extends StatelessWidget {
     super.key,
     required this.body,
     required this.activeRoute,
-    this.userEmail,
-    this.onLogout,
   });
 
   int _mapRouteToIndex(String route) {
@@ -59,7 +55,7 @@ class AppShell extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isWide = MediaQuery.of(context).size.width >= 1000;
 
     return Scaffold(
@@ -90,18 +86,20 @@ class AppShell extends StatelessWidget {
             Positioned(
               top: 8,
               right: 12,
-              child: ActionChip(
-                label: Text(
-                  (userEmail != null && userEmail!.isNotEmpty)
-                      ? 'Salir (${userEmail!})'
-                      : 'Salir',
-                ),
-                onPressed: onLogout ??
-                    () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Logout tapped')),
-                      );
-                    },
+              child: Consumer(
+                builder: (context, ref, _) {
+                  final authState = ref.watch(authProvider);
+                  final authNotifier = ref.read(authProvider.notifier);
+                  final userEmail = authState.credentials?.user.email;
+                  return ActionChip(
+                    label: Text(
+                      userEmail != null && userEmail.isNotEmpty
+                          ? 'Salir ($userEmail)'
+                          : 'Salir',
+                    ),
+                    onPressed: authNotifier.logout,
+                  );
+                },
               ),
             ),
           ],

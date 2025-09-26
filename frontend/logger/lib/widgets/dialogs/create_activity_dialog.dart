@@ -125,6 +125,7 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
       };
 
       print('CreateActivity payload => ${jsonEncode(payload)}');
+      print('DEBUG: Sending token: ${t.substring(0, 50)}...');
 
       final resp = await http.post(
         Uri.parse('${widget.baseUrl}/activities'),
@@ -142,6 +143,13 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
         return;
       }
 
+      if (resp.statusCode == 401) {
+        widget.onRequireLogin?.call();
+        setState(() => _error = 'Sesión expirada. Por favor, inicia sesión nuevamente.');
+        return;
+      }
+
+      print('DEBUG: HTTP ${resp.statusCode} Response: ${resp.body}');
       setState(() => _error = 'Error ${resp.statusCode}: ${resp.body}');
     } catch (e) {
       setState(() => _error = e.toString());

@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'routes.dart';
 import 'theme/ app_theme.dart';
 
-class MissionaryApp extends StatelessWidget {
-  final String userName;
-  const MissionaryApp({super.key, required this.userName});
+class MissionaryApp extends ConsumerWidget {
+  const MissionaryApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp(
       title: 'Missionary App',
       debugShowCheckedModeBanner: false,
@@ -25,7 +25,7 @@ class MissionaryApp extends StatelessWidget {
       ],
       locale: const Locale('es'),
 
-      routes: appRoutes(userName),
+      routes: appRoutes(),
       initialRoute: Routes.dashboardMissionary,
     );
   }
