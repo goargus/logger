@@ -96,7 +96,7 @@ services:
 
   frontend:
     build:
-      context: ./frontend/logger
+      context: ./frontend
       dockerfile: Dockerfile
     container_name: frontend
     restart: always
@@ -108,9 +108,9 @@ services:
       - AUTH0_REDIRECT_URI=http://localhost:8080
       - AUTH0_AUDIENCE=logger
     volumes:
-      - ./frontend/logger/lib:/app/lib
-      - ./frontend/logger/web:/app/web
-      - ./frontend/logger/pubspec.yaml:/app/pubspec.yaml
+      - ./frontend/lib:/app/lib
+      - ./frontend/web:/app/web
+      - ./frontend/pubspec.yaml:/app/pubspec.yaml
 
 volumes:
   postgres_data:

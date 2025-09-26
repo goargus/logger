@@ -36,12 +36,31 @@ jobs:
 
   frontend:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Check frontend static files
-      run: |
-        echo "Frontend contains static HTML/JS files - no build process needed"
-        ls -la frontend/
-        find frontend/ -type f -name "*.html" -o -name "*.js" | wc -l
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.0'
+        channel: 'stable'
+
+    - name: Install dependencies
+      run: flutter pub get
+
+    - name: Verify Flutter installation
+      run: flutter doctor
+
+    - name: Run Flutter analyzer
+      run: flutter analyze
+
+    - name: Run Flutter formatter check
+      run: dart format --output=none --set-exit-if-changed lib/ test/
+
+    - name: Run Flutter tests
+      run: flutter test
