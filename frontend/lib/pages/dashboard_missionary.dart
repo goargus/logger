@@ -177,7 +177,6 @@ class _DashboardMissionaryPageState
 
       setState(() => _recent.insert(0, activity));
 
-      // Recargar los gastos mensuales si la actividad tiene gastos
       if (expense > 0) {
         _loadMonthlyExpenses();
       }
