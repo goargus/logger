@@ -14,6 +14,12 @@ class MyApp extends ConsumerWidget {
     final authNotifier = ref.read(authProvider.notifier);
 
     if (!authState.isAuthenticated) {
+      if (!authState.isLoading && authState.error == null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          authNotifier.login();
+        });
+      }
+
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         home: Scaffold(
@@ -21,22 +27,27 @@ class MyApp extends ConsumerWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (authState.isLoading)
-                  const CircularProgressIndicator()
-                else
-                  ElevatedButton.icon(
-                    onPressed: authNotifier.login,
-                    icon: const Icon(Icons.login),
-                    label: const Text('Iniciar sesión con Auth0'),
-                  ),
+                if (authState.isLoading) ...[
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  const Text('Redirigiendo a Auth0...'),
+                ],
                 if (authState.error != null) ...[
-                  const SizedBox(height: 12),
+                  const Icon(Icons.error, color: Colors.red, size: 48),
+                  const SizedBox(height: 16),
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 520),
                     child: Text('Error: ${authState.error}',
                         textAlign: TextAlign.center,
                         style: const TextStyle(color: Colors.red)),
-                  )
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      authNotifier.clearError();
+                    },
+                    child: const Text('Reintentar'),
+                  ),
                 ],
               ],
             ),
