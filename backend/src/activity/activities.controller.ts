@@ -127,4 +127,17 @@ export class ActivitiesController {
     await this.activities.archiveMine(id, user.id);
     return { ok: true };
   }
+
+  @Get('stats/monthly-expenses')
+  async getMonthlyExpenses(
+    @Req() req: Request,
+    @Query('year', new DefaultValuePipe(new Date().getFullYear()), ParseIntPipe) year: number,
+    @Query('month', new DefaultValuePipe(new Date().getMonth() + 1), ParseIntPipe) month: number,
+  ) {
+    const { sub, iss } = (req.user as any) ?? {};
+    const user = await this.identity.resolveUserBySubAndIssuer(sub, iss);
+
+    const total = await this.activities.getMonthlyExpenseTotal(user.id, year, month);
+    return { total, year, month };
+  }
 }
