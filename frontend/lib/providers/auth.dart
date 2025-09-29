@@ -48,7 +48,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       _auth0 = Auth0Web(AuthConfig.domain, AuthConfig.clientId);
 
-      // Replicate original simple approach
       _auth0.onLoad().then((creds) {
         if (creds != null) {
           setAuthenticated(creds);
@@ -120,6 +119,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
       error: error,
       isLoading: false,
     );
+  }
+
+  void clearError() {
+    state = state.copyWith(error: null);
   }
 
   void setLoading(bool loading) {
