@@ -66,6 +66,10 @@ class ActivityService {
     required int month,
   }) async {
     final token = await getAccessToken();
+    
+    if (token.isEmpty) {
+      throw Exception('No access token available');
+    }
 
     final uri = Uri.parse('$baseUrl/activities/stats/monthly-expenses')
         .replace(queryParameters: {
@@ -86,7 +90,46 @@ class ActivityService {
       return (data['total'] as num).toDouble();
     }
 
+    if (resp.statusCode == 401) {
+      throw Exception('Unauthorized: Token may be invalid or expired');
+    }
+
     throw Exception(
         'Get monthly expenses failed: ${resp.statusCode} ${resp.body}');
+  }
+
+  Future<List<Map<String, dynamic>>> getRecentActivities({int limit = 3}) async {
+    final token = await getAccessToken();
+    
+    if (token.isEmpty) {
+      throw Exception('No access token available');
+    }
+
+    final uri = Uri.parse('$baseUrl/activities')
+        .replace(queryParameters: {
+      'page': '1',
+      'limit': limit.toString(),
+    });
+
+    final resp = await http.get(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (resp.statusCode == 200) {
+      final data = jsonDecode(resp.body) as Map<String, dynamic>;
+      final items = data['items'] as List<dynamic>;
+      return items.cast<Map<String, dynamic>>();
+    }
+
+    if (resp.statusCode == 401) {
+      throw Exception('Unauthorized: Token may be invalid or expired');
+    }
+
+    throw Exception(
+        'Get recent activities failed: ${resp.statusCode} ${resp.body}');
   }
 }
