@@ -34,42 +34,85 @@ class _DashboardMissionaryPageState
 
   late ActivityService _activityService;
   double _monthlyExpenseTotal = 0.0;
-  bool _isLoadingExpenses = true;
+  bool _isLoadingExpenses = false;
+  List<Activity> _recentActivities = [];
+  bool _isLoadingActivities = false;
+  bool _hasAttemptedLoad = false;
 
   @override
   void initState() {
     super.initState();
     _activityService = ActivityService.localhost(
         () async => await _getAccessTokenEnsured() ?? '');
-    _warmAuth();
-    _loadMonthlyExpenses();
   }
 
-  Future<void> _warmAuth() async {
+  Future<void> _initializeData() async {
+    if (_isLoadingExpenses || _isLoadingActivities) {
+      return;
+    }
+
+    final authState = ref.read(authProvider);
+    if (!authState.isAuthenticated || authState.credentials == null) {
+      return;
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _isLoadingExpenses = true;
+      _isLoadingActivities = true;
+    });
+
     try {
-      await _getAccessTokenEnsured();
-    } catch (_) {}
+      final token = await _getAccessTokenEnsured();
+      
+      if (token != null && token.isNotEmpty && mounted) {
+        await _loadMonthlyExpenses();
+        if (mounted) {
+          await _loadRecentActivities();
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _isLoadingExpenses = false;
+            _isLoadingActivities = false;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoadingExpenses = false; 
+          _isLoadingActivities = false;
+        });
+      }
+    }
   }
 
   Future<String?> _getAccessTokenEnsured() async {
-    // Get token from current auth state
-    final authState = ref.read(authProvider);
-    if (authState.isAuthenticated && authState.credentials != null) {
-      final token = authState.credentials!.accessToken;
-      await Session.instance.setAccessToken(token);
-      return token;
-    }
+    try {
+      final authState = ref.read(authProvider);
+      if (authState.isAuthenticated && authState.credentials != null) {
+        final token = authState.credentials!.accessToken;
+        
 
-    // Check session storage
-    final sessionToken = await Session.instance.getAccessToken();
-    if (sessionToken != null && sessionToken.isNotEmpty) {
-      return sessionToken;
-    }
+        await Session.instance.setAccessToken(token);
+        return token;
+      }
 
-    return null;
+      final sessionToken = await Session.instance.getAccessToken();
+      if (sessionToken != null && sessionToken.isNotEmpty) {
+        return sessionToken;
+      }
+
+      return null;
+    } catch (e) {
+      return null;
+    }
   }
 
   Future<void> _loadMonthlyExpenses() async {
+    if (!mounted) return;
+    
     try {
       final now = DateTime.now();
       final total = await _activityService.getMonthlyExpenseTotal(
@@ -85,7 +128,33 @@ class _DashboardMissionaryPageState
     } catch (e) {
       if (mounted) {
         setState(() {
+          _monthlyExpenseTotal = 0.0;
           _isLoadingExpenses = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _loadRecentActivities() async {
+    if (!mounted) return;
+    
+    try {
+      final activitiesData = await _activityService.getRecentActivities(limit: 3);
+      final activities = activitiesData
+          .map((data) => Activity.fromApi(data))
+          .toList();
+      
+      if (mounted) {
+        setState(() {
+          _recentActivities = activities;
+          _isLoadingActivities = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _recentActivities = [];
+          _isLoadingActivities = false;
         });
       }
     }
@@ -100,90 +169,64 @@ class _DashboardMissionaryPageState
     year: 2025,
   );
 
-  final List<Activity> _recent = [
-    Activity(
-      date: DateTime(2025, 6, 5),
-      category: 'Visita Misionera',
-      description: 'Visita a la Hna. Lidia en Lajas, Comayagua',
-      expense: 180,
-    ),
-    Activity(
-      date: DateTime(2025, 6, 5),
-      category: 'Visita Misionera',
-      description: 'Visita a la Hna. Lidia en Lajas, Comayagua',
-      expense: 180,
-    ),
-    Activity(
-      date: DateTime(2025, 6, 5),
-      category: 'Visita Misionera',
-      description: 'Visita a la Hna. Lidia en Lajas, Comayagua',
-      expense: 180,
-    ),
-  ];
-
   Future<void> _openCreateDialog() async {
-    final token = await _getAccessTokenEnsured();
-    if (token == null || token.isEmpty) {
-      ref.read(authProvider.notifier).login();
-      return;
-    }
-
     if (!mounted) return;
 
-    final created = await showDialog<Map<String, dynamic>?>(
-      context: context,
-      barrierDismissible: false,
-      builder: (_) => CreateActivityDialog(
-        baseUrl: _apiBaseUrl,
-        getAccessToken: _getAccessTokenEnsured,
-        onRequireLogin: () => ref.read(authProvider.notifier).login(),
-      ),
-    );
-
-    if (created != null) {
-      final DateTime date = () {
-        final raw = created['date'];
-        if (raw is String) {
-          try {
-            return DateTime.parse(raw);
-          } catch (_) {}
-        }
-        return DateTime.now();
-      }();
-
-      final String category =
-          (created['type'] is Map && (created['type']['name'] is String))
-              ? created['type']['name'] as String
-              : (created['type_name'] as String? ??
-                  created['typeId'] as String? ??
-                  created['type_id'] as String? ??
-                  'Actividad');
-
-      final String description = (created['description'] as String?) ?? '';
-
-      final double expense = () {
-        final v = created['expenseAmount'] ?? created['expense_amount'];
-        if (v == null) return 0.0;
-        final s = v.toString();
-        return double.tryParse(s) ?? 0.0;
-      }();
-
-      final activity = Activity(
-        date: date,
-        category: category,
-        description: description,
-        expense: expense,
+    try {
+      final created = await showDialog<Map<String, dynamic>?>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => CreateActivityDialog(
+          baseUrl: _apiBaseUrl,
+          getAccessToken: () async {
+            final authState = ref.read(authProvider);
+            if (authState.isAuthenticated && authState.credentials != null) {
+              return authState.credentials!.accessToken;
+            }
+            
+            final sessionToken = await Session.instance.getAccessToken();
+            if (sessionToken != null && sessionToken.isNotEmpty) {
+              return sessionToken;
+            }
+            
+            return '';
+          },
+          onRequireLogin: () {
+            Navigator.of(context).pop();
+            ref.read(authProvider.notifier).login();
+          },
+        ),
       );
 
-      setState(() => _recent.insert(0, activity));
+      if (created != null && mounted) {
+        await _loadRecentActivities();
 
-      if (expense > 0) {
-        _loadMonthlyExpenses();
+        final expense = () {
+          final v = created['expenseAmount'] ?? created['expense_amount'];
+          if (v == null) return 0.0;
+          final s = v.toString();
+          return double.tryParse(s) ?? 0.0;
+        }();
+
+        if (expense > 0) {
+          await _loadMonthlyExpenses();
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Actividad creada exitosamente'),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
-
+    } catch (e) {
+      print('Error en _openCreateDialog: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Actividad creada')),
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     }
@@ -197,10 +240,43 @@ class _DashboardMissionaryPageState
     final subtitle =
         'Asociación: $association\nCampos a Cargo: ${fields.join(', ')}';
 
-    return AppShell(
-      activeRoute: Routes.dashboardMissionary,
-      body: ResponsiveContainer(
-        child: ListView(
+    return Consumer(
+      builder: (context, ref, _) {
+        final authState = ref.watch(authProvider);
+        
+        if (authState.isAuthenticated && 
+            authState.credentials != null &&
+            _recentActivities.isEmpty && 
+            !_isLoadingActivities && 
+            !_hasAttemptedLoad) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _hasAttemptedLoad = true;
+              });
+              _initializeData();
+            }
+          });
+        }
+        
+        if (!authState.isAuthenticated) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              setState(() {
+                _isLoadingExpenses = false;
+                _isLoadingActivities = false;
+                _hasAttemptedLoad = false;
+                _recentActivities = [];
+                _monthlyExpenseTotal = 0.0;
+              });
+            }
+          });
+        }
+        
+        return AppShell(
+          activeRoute: Routes.dashboardMissionary,
+          body: ResponsiveContainer(
+            child: ListView(
           children: [
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -261,23 +337,68 @@ class _DashboardMissionaryPageState
             const SizedBox(height: 16),
             Padding(
               padding: const EdgeInsets.only(top: 4.0, bottom: 8.0),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: PrimaryActionButton(
-                  label: 'Agregar Actividad',
-                  icon: Icons.add,
-                  onPressed: _openCreateDialog,
-                ),
+              child: Row(
+                children: [
+                  PrimaryActionButton(
+                    label: 'Agregar Actividad',
+                    icon: Icons.add,
+                    onPressed: _openCreateDialog,
+                  ),
+                  const SizedBox(width: 12),
+                  if (authState.isAuthenticated && 
+                      _recentActivities.isEmpty && 
+                      !_isLoadingActivities &&
+                      _hasAttemptedLoad)
+                    TextButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _hasAttemptedLoad = false;
+                        });
+                        _initializeData();
+                      },
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('Recargar'),
+                    ),
+                ],
               ),
             ),
             Text('Actividades Recientes',
                 style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 8),
-            ActivitiesTable(items: _recent),
+            _isLoadingActivities
+                ? const Center(child: CircularProgressIndicator())
+                : _recentActivities.isEmpty
+                    ? Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: Column(
+                            children: [
+                              const Icon(Icons.info_outline, size: 48, color: Colors.grey),
+                              const SizedBox(height: 8),
+                              Text(
+                                'No hay actividades recientes',
+                                style: Theme.of(context).textTheme.titleMedium,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                authState.isAuthenticated 
+                                    ? 'Agrega tu primera actividad para verla aquí'
+                                    : 'Inicia sesión para ver tus actividades',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : ActivitiesTable(items: _recentActivities),
             const SizedBox(height: 24),
           ],
         ),
       ),
+    );
+      },
     );
   }
 
