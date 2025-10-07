@@ -212,15 +212,17 @@ class _DashboardMissionaryPageState
           await _loadMonthlyExpenses();
         }
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Actividad creada exitosamente'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Actividad creada exitosamente'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
       }
     } catch (e) {
-      print('Error en _openCreateDialog: $e');
+      debugPrint('Error en _openCreateDialog: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
