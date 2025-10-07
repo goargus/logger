@@ -66,7 +66,7 @@ class ActivityService {
     required int month,
   }) async {
     final token = await getAccessToken();
-    
+
     if (token.isEmpty) {
       throw Exception('No access token available');
     }
@@ -98,15 +98,15 @@ class ActivityService {
         'Get monthly expenses failed: ${resp.statusCode} ${resp.body}');
   }
 
-  Future<List<Map<String, dynamic>>> getRecentActivities({int limit = 3}) async {
+  Future<List<Map<String, dynamic>>> getRecentActivities(
+      {int limit = 3}) async {
     final token = await getAccessToken();
-    
+
     if (token.isEmpty) {
       throw Exception('No access token available');
     }
 
-    final uri = Uri.parse('$baseUrl/activities')
-        .replace(queryParameters: {
+    final uri = Uri.parse('$baseUrl/activities').replace(queryParameters: {
       'page': '1',
       'limit': limit.toString(),
     });

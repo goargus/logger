@@ -64,7 +64,7 @@ class _DashboardMissionaryPageState
 
     try {
       final token = await _getAccessTokenEnsured();
-      
+
       if (token != null && token.isNotEmpty && mounted) {
         await _loadMonthlyExpenses();
         if (mounted) {
@@ -81,7 +81,7 @@ class _DashboardMissionaryPageState
     } catch (e) {
       if (mounted) {
         setState(() {
-          _isLoadingExpenses = false; 
+          _isLoadingExpenses = false;
           _isLoadingActivities = false;
         });
       }
@@ -93,7 +93,6 @@ class _DashboardMissionaryPageState
       final authState = ref.read(authProvider);
       if (authState.isAuthenticated && authState.credentials != null) {
         final token = authState.credentials!.accessToken;
-        
 
         await Session.instance.setAccessToken(token);
         return token;
@@ -112,7 +111,7 @@ class _DashboardMissionaryPageState
 
   Future<void> _loadMonthlyExpenses() async {
     if (!mounted) return;
-    
+
     try {
       final now = DateTime.now();
       final total = await _activityService.getMonthlyExpenseTotal(
@@ -137,13 +136,13 @@ class _DashboardMissionaryPageState
 
   Future<void> _loadRecentActivities() async {
     if (!mounted) return;
-    
+
     try {
-      final activitiesData = await _activityService.getRecentActivities(limit: 3);
-      final activities = activitiesData
-          .map((data) => Activity.fromApi(data))
-          .toList();
-      
+      final activitiesData =
+          await _activityService.getRecentActivities(limit: 3);
+      final activities =
+          activitiesData.map((data) => Activity.fromApi(data)).toList();
+
       if (mounted) {
         setState(() {
           _recentActivities = activities;
@@ -183,12 +182,12 @@ class _DashboardMissionaryPageState
             if (authState.isAuthenticated && authState.credentials != null) {
               return authState.credentials!.accessToken;
             }
-            
+
             final sessionToken = await Session.instance.getAccessToken();
             if (sessionToken != null && sessionToken.isNotEmpty) {
               return sessionToken;
             }
-            
+
             return '';
           },
           onRequireLogin: () {
@@ -245,11 +244,11 @@ class _DashboardMissionaryPageState
     return Consumer(
       builder: (context, ref, _) {
         final authState = ref.watch(authProvider);
-        
-        if (authState.isAuthenticated && 
+
+        if (authState.isAuthenticated &&
             authState.credentials != null &&
-            _recentActivities.isEmpty && 
-            !_isLoadingActivities && 
+            _recentActivities.isEmpty &&
+            !_isLoadingActivities &&
             !_hasAttemptedLoad) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
@@ -260,7 +259,7 @@ class _DashboardMissionaryPageState
             }
           });
         }
-        
+
         if (!authState.isAuthenticated) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
@@ -274,132 +273,137 @@ class _DashboardMissionaryPageState
             }
           });
         }
-        
+
         return AppShell(
           activeRoute: Routes.dashboardMissionary,
           body: ResponsiveContainer(
             child: ListView(
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Consumer(
-                    builder: (context, ref, _) {
-                      final authState = ref.watch(authProvider);
-                      final userName = authState.credentials?.user.name ??
-                          authState.credentials?.user.nickname ??
-                          'Usuario';
-                      return PageTitle(
-                        title: 'Bienvenido, $userName',
-                        subtitle: subtitle,
-                      );
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                const InfoPill(
-                    label: 'Actividades en el Mes', icon: Icons.checklist),
-                const SizedBox(width: 8),
-                InfoPill(
-                    label: _monthLabel(_cfg.month, _cfg.year),
-                    icon: Icons.calendar_month),
-              ],
-            ),
-            const SizedBox(height: 12),
-            StatGrid(
-              children: [
-                StatCard(
-                  title: 'Visitas Misioneras',
-                  value: '${_cfg.visits}',
-                  icon: Icons.groups_2,
-                ),
-                StatCard(
-                  title: 'Estudios Bíblicos',
-                  value: '${_cfg.bibleStudies}',
-                  icon: Icons.menu_book_outlined,
-                ),
-                StatCard(
-                  title: 'Viático Utilizado',
-                  value: _isLoadingExpenses
-                      ? 'Cargando...'
-                      : 'L.${_monthlyExpenseTotal.toStringAsFixed(0)}',
-                  icon: Icons.payments_outlined,
-                ),
-                CtaReportCard(
-                  reports: _cfg.reportsCount,
-                  onTap: () => Navigator.pushNamed(context, Routes.reports),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.only(top: 4.0, bottom: 8.0),
-              child: Row(
-                children: [
-                  PrimaryActionButton(
-                    label: 'Agregar Actividad',
-                    icon: Icons.add,
-                    onPressed: _openCreateDialog,
-                  ),
-                  const SizedBox(width: 12),
-                  if (authState.isAuthenticated && 
-                      _recentActivities.isEmpty && 
-                      !_isLoadingActivities &&
-                      _hasAttemptedLoad)
-                    TextButton.icon(
-                      onPressed: () {
-                        setState(() {
-                          _hasAttemptedLoad = false;
-                        });
-                        _initializeData();
-                      },
-                      icon: const Icon(Icons.refresh),
-                      label: const Text('Recargar'),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Consumer(
+                        builder: (context, ref, _) {
+                          final authState = ref.watch(authProvider);
+                          final userName = authState.credentials?.user.name ??
+                              authState.credentials?.user.nickname ??
+                              'Usuario';
+                          return PageTitle(
+                            title: 'Bienvenido, $userName',
+                            subtitle: subtitle,
+                          );
+                        },
+                      ),
                     ),
-                ],
-              ),
-            ),
-            Text('Actividades Recientes',
-                style: Theme.of(context).textTheme.titleMedium),
-            const SizedBox(height: 8),
-            _isLoadingActivities
-                ? const Center(child: CircularProgressIndicator())
-                : _recentActivities.isEmpty
-                    ? Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            children: [
-                              const Icon(Icons.info_outline, size: 48, color: Colors.grey),
-                              const SizedBox(height: 8),
-                              Text(
-                                'No hay actividades recientes',
-                                style: Theme.of(context).textTheme.titleMedium,
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                authState.isAuthenticated 
-                                    ? 'Agrega tu primera actividad para verla aquí'
-                                    : 'Inicia sesión para ver tus actividades',
-                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: Colors.grey[600],
-                                ),
-                              ),
-                            ],
-                          ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    const InfoPill(
+                        label: 'Actividades en el Mes', icon: Icons.checklist),
+                    const SizedBox(width: 8),
+                    InfoPill(
+                        label: _monthLabel(_cfg.month, _cfg.year),
+                        icon: Icons.calendar_month),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                StatGrid(
+                  children: [
+                    StatCard(
+                      title: 'Visitas Misioneras',
+                      value: '${_cfg.visits}',
+                      icon: Icons.groups_2,
+                    ),
+                    StatCard(
+                      title: 'Estudios Bíblicos',
+                      value: '${_cfg.bibleStudies}',
+                      icon: Icons.menu_book_outlined,
+                    ),
+                    StatCard(
+                      title: 'Viático Utilizado',
+                      value: _isLoadingExpenses
+                          ? 'Cargando...'
+                          : 'L.${_monthlyExpenseTotal.toStringAsFixed(0)}',
+                      icon: Icons.payments_outlined,
+                    ),
+                    CtaReportCard(
+                      reports: _cfg.reportsCount,
+                      onTap: () => Navigator.pushNamed(context, Routes.reports),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.only(top: 4.0, bottom: 8.0),
+                  child: Row(
+                    children: [
+                      PrimaryActionButton(
+                        label: 'Agregar Actividad',
+                        icon: Icons.add,
+                        onPressed: _openCreateDialog,
+                      ),
+                      const SizedBox(width: 12),
+                      if (authState.isAuthenticated &&
+                          _recentActivities.isEmpty &&
+                          !_isLoadingActivities &&
+                          _hasAttemptedLoad)
+                        TextButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              _hasAttemptedLoad = false;
+                            });
+                            _initializeData();
+                          },
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Recargar'),
                         ),
-                      )
-                    : ActivitiesTable(items: _recentActivities),
-            const SizedBox(height: 24),
-          ],
-        ),
-      ),
-    );
+                    ],
+                  ),
+                ),
+                Text('Actividades Recientes',
+                    style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                _isLoadingActivities
+                    ? const Center(child: CircularProgressIndicator())
+                    : _recentActivities.isEmpty
+                        ? Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16.0),
+                              child: Column(
+                                children: [
+                                  const Icon(Icons.info_outline,
+                                      size: 48, color: Colors.grey),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'No hay actividades recientes',
+                                    style:
+                                        Theme.of(context).textTheme.titleMedium,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    authState.isAuthenticated
+                                        ? 'Agrega tu primera actividad para verla aquí'
+                                        : 'Inicia sesión para ver tus actividades',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .bodyMedium
+                                        ?.copyWith(
+                                          color: Colors.grey[600],
+                                        ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : ActivitiesTable(items: _recentActivities),
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+        );
       },
     );
   }
