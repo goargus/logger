@@ -44,7 +44,7 @@ services:
       ADMIN_EMAIL: hndoss@gmail.com
       ADMIN_USERNAME: "hndoss"
       ADMIN_IDP_ISSUER: https://dev-ohuspam6fnmh4tgt.us.auth0.com/
-      ADMIN_IDP_SUBJECT: TU_AUTH0_SUBJECT_ID_DE_HNDOSS
+      ADMIN_IDP_SUBJECT: auth0|688c59c6ec2186db091c74eb
     restart: "no"
 
   backend:
@@ -79,7 +79,7 @@ services:
       ADMIN_EMAIL: hndoss@gmail.com
       ADMIN_USERNAME: "hndoss"
       ADMIN_IDP_ISSUER: https://dev-ohuspam6fnmh4tgt.us.auth0.com/
-      ADMIN_IDP_SUBJECT: TU_AUTH0_SUBJECT_ID_DE_HNDOSS
+      ADMIN_IDP_SUBJECT: auth0|688c59c6ec2186db091c74eb
     command: >
       sh -c "
         npm install &&
