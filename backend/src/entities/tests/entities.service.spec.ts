@@ -162,6 +162,60 @@ describe('EntitiesService', () => {
         BadRequestException,
       );
     });
+
+    it('throws BadRequest when deactivating entity with active children', async () => {
+      const patch: UpdateEntityDto = { is_active: false } as never;
+      repo.findOne?.mockResolvedValue(baseEntity);
+      repo.count?.mockResolvedValue(2); // Has 2 active children
+
+      await expect(service.update(baseEntity.id, patch)).rejects.toThrow(
+        'Cannot deactivate entity: it has active child entities. Please deactivate child entities first.',
+      );
+    });
+
+    it('throws BadRequest when deactivating entity with active users', async () => {
+      const patch: UpdateEntityDto = { is_active: false } as never;
+      repo.findOne?.mockResolvedValue(baseEntity);
+      repo.count?.mockResolvedValue(0);
+      repo.createQueryBuilder?.mockReturnValue({
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(1),
+      });
+
+      await expect(service.update(baseEntity.id, patch)).rejects.toThrow(
+        'Cannot deactivate entity: it has active user assignments. Please reassign users first.',
+      );
+    });
+
+    it('allows deactivation when no active children or users exist', async () => {
+      const patch: UpdateEntityDto = { is_active: false } as never;
+      const deactivatedEntity = { ...baseEntity, is_active: false };
+      repo.findOne?.mockResolvedValue(baseEntity);
+      repo.count?.mockResolvedValue(0);
+      repo.createQueryBuilder?.mockReturnValue({
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getCount: jest.fn().mockResolvedValue(0),
+      });
+      repo.save?.mockResolvedValue(deactivatedEntity);
+
+      await expect(service.update(baseEntity.id, patch)).resolves.toEqual(deactivatedEntity);
+    });
+
+    it('allows reactivation without validation checks', async () => {
+      const inactiveEntity = { ...baseEntity, is_active: false };
+      const patch: UpdateEntityDto = { is_active: true } as never;
+      const reactivatedEntity = { ...baseEntity, is_active: true };
+      repo.findOne?.mockResolvedValue(inactiveEntity);
+      repo.save?.mockResolvedValue(reactivatedEntity);
+
+      await expect(service.update(baseEntity.id, patch)).resolves.toEqual(reactivatedEntity);
+      expect(repo.count).not.toHaveBeenCalled();
+      expect(repo.createQueryBuilder).not.toHaveBeenCalled();
+    });
   });
 
   describe('remove', () => {
