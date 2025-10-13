@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource, ILike } from 'typeorm';
+import { Repository, DataSource, ILike, In } from 'typeorm';
 
 import { User } from '../users/user.entity';
 import { UserStatus } from '../users/user-status.enum';
@@ -15,6 +15,8 @@ import { Entity as OrgEntity } from '../entities/entity.entity';
 import { UserRoleAssignment } from './user-role-assignment.entity';
 import { AssignRoleDto, RoleEnum } from './dto/assign-role.dto';
 import { RemoveRoleDto } from './dto/remove-role.dto';
+import { BulkAssignRoleDto } from './dto/bulk-assign-role.dto';
+import { GetUserEntitiesByRoleDto } from './dto/get-user-entities-by-role.dto';
 
 @Injectable()
 export class RoleAssignmentService {
@@ -99,5 +101,95 @@ export class RoleAssignmentService {
     const user = await this.usersRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
     return this.uraRepo.find({ where: { user: { id: userId } } });
+  }
+
+  async bulkAssign(dto: BulkAssignRoleDto, adminUserId?: string) {
+    const user = await this.usersRepo.findOne({ where: { id: dto.userId } });
+    if (!user) throw new NotFoundException('User not found');
+    if (user.status !== UserStatus.ACTIVE) {
+      throw new BadRequestException('Cannot assign roles to inactive users');
+    }
+
+    if (!Object.values(RoleEnum).includes(dto.role)) {
+      throw new BadRequestException('Invalid role enum value');
+    }
+    const role = await this.rolesRepo.findOne({ where: { name: ILike(dto.role) } });
+    if (!role) throw new NotFoundException('Role not found');
+
+    const entities = await this.entitiesRepo.find({
+      where: dto.entityIds.map((id) => ({ id })),
+    });
+    if (entities.length !== dto.entityIds.length) {
+      throw new NotFoundException('One or more entities not found');
+    }
+    const inactiveEntities = entities.filter((entity) => entity.is_active === false);
+    if (inactiveEntities.length > 0) {
+      throw new BadRequestException('Cannot assign roles to inactive entities');
+    }
+
+    const existingAssignments = await this.uraRepo.find({
+      where: {
+        user: { id: user.id },
+        role: { id: role.id },
+        entity: { id: In(dto.entityIds) },
+      },
+    });
+
+    const existingEntityIds = existingAssignments.map((assignment) => assignment.entity.id);
+    const newEntityIds = dto.entityIds.filter((id) => !existingEntityIds.includes(id));
+
+    if (newEntityIds.length === 0) {
+      return {
+        message: 'User already has this role in all specified entities',
+        skipped: existingEntityIds.length,
+        created: 0,
+      };
+    }
+
+    return this.dataSource.transaction(async (manager) => {
+      const newAssignments = newEntityIds.map((entityId) => {
+        const entity = entities.find((e) => e.id === entityId);
+        if (!entity) {
+          throw new NotFoundException(`Entity ${entityId} not found`);
+        }
+        return manager.create(UserRoleAssignment, {
+          user,
+          role,
+          entity,
+          created_by: adminUserId,
+          updated_by: adminUserId,
+        });
+      });
+
+      const saved = await manager.save(newAssignments);
+      return {
+        message: `Successfully assigned ${newAssignments.length} roles`,
+        created: newAssignments.length,
+        skipped: existingEntityIds.length,
+        assignments: saved,
+      };
+    });
+  }
+
+  async getUserEntitiesByRole(dto: GetUserEntitiesByRoleDto) {
+    const user = await this.usersRepo.findOne({ where: { id: dto.userId } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const role = await this.rolesRepo.findOne({ where: { name: ILike(dto.role) } });
+    if (!role) throw new NotFoundException('Role not found');
+
+    const assignments = await this.uraRepo.find({
+      where: {
+        user: { id: user.id },
+        role: { id: role.id },
+      },
+    });
+
+    return {
+      user,
+      role: role.name,
+      entities: assignments.map((assignment) => assignment.entity),
+      totalEntities: assignments.length,
+    };
   }
 }

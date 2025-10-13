@@ -21,6 +21,8 @@ import { Roles } from '../auth/roles.decorator';
 import { RoleAssignmentService } from './role-assignment.service';
 import { AssignRoleDto, RoleEnum } from './dto/assign-role.dto';
 import { RemoveRoleDto } from './dto/remove-role.dto';
+import { BulkAssignRoleDto } from './dto/bulk-assign-role.dto';
+import { GetUserEntitiesByRoleDto } from './dto/get-user-entities-by-role.dto';
 
 @Controller('roles')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
@@ -54,6 +56,26 @@ export class RolesController {
   @Roles('admin')
   removeAssignment(@Body() dto: RemoveRoleDto) {
     return this.roleAssignment.remove(dto);
+  }
+
+  @Post('assign/bulk')
+  @Roles('admin')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  bulkAssign(@Body() dto: BulkAssignRoleDto) {
+    return this.roleAssignment.bulkAssign(dto);
+  }
+
+  @Get('user-entities-by-role')
+  @Roles('admin')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  getUserEntitiesByRole(@Query() dto: GetUserEntitiesByRoleDto) {
+    return this.roleAssignment.getUserEntitiesByRole(dto);
+  }
+
+  @Get('user-assignments/:userId')
+  @Roles('admin')
+  getUserAssignments(@Param('userId', new ParseUUIDPipe({ version: '4' })) userId: string) {
+    return this.roleAssignment.listAssignmentsForUser(userId);
   }
 
   @Post()
