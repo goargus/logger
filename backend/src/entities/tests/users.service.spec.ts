@@ -13,6 +13,7 @@ import { HierarchyValidationService } from '../../entities/hierarchy-validation.
 import { CreateUserDto } from '../../users/dto/create-user.dto';
 import { UpdateUserDto } from '../../users/dto/update-user.dto';
 import { UserStatus } from '../../users/user-status.enum';
+import { UserRoleAssignment } from '../../roles/user-role-assignment.entity';
 
 type MockRepo<T extends ObjectLiteral = any> = Partial<Record<keyof Repository<T>, jest.Mock>>;
 
@@ -32,8 +33,9 @@ describe('UsersService (create & update)', () => {
   let usersRepo: MockRepo<User>;
   let rolesRepo: MockRepo<Role>;
   let entitiesRepo: MockRepo<OrgEntity>;
-  let entitiesService: jest.Mocked<EntitiesService>;
-  let rolesService: jest.Mocked<RolesService>;
+  let userRoleAssignmentRepo: MockRepo<UserRoleAssignment>;
+  let entitiesService: { findOne: jest.Mock };
+  let rolesService: { findOne: jest.Mock };
 
   const now = new Date();
 
@@ -58,17 +60,19 @@ describe('UsersService (create & update)', () => {
     usersRepo = createMockRepo<User>();
     rolesRepo = createMockRepo<Role>();
     entitiesRepo = createMockRepo<OrgEntity>();
+    userRoleAssignmentRepo = createMockRepo<UserRoleAssignment>();
     entitiesService = {
       findOne: jest.fn(),
-    } as any;
+    };
     rolesService = {
       findOne: jest.fn(),
-    } as any;
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
         { provide: getRepositoryToken(User), useValue: usersRepo },
+        { provide: getRepositoryToken(UserRoleAssignment), useValue: userRoleAssignmentRepo },
         { provide: EntitiesService, useValue: entitiesService },
         { provide: RolesService, useValue: rolesService },
       ],

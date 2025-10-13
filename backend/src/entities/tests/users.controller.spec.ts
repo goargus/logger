@@ -1,12 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UsersController } from '../../users/users.controller';
+import { AdminUsersController } from '../../users/users.controller';
 import { UsersService } from '../../users/users.service';
 import { CreateUserDto } from '../../users/dto/create-user.dto';
 import { UpdateUserDto } from '../../users/dto/update-user.dto';
 import { UserStatus } from '../../users/user-status.enum';
+import { User } from '../../users/user.entity';
 
-describe('UsersController (create & update)', () => {
-  let controller: UsersController;
+describe('AdminUsersController (create & update)', () => {
+  let controller: AdminUsersController;
   let service: jest.Mocked<UsersService>;
 
   const now = new Date();
@@ -30,7 +31,7 @@ describe('UsersController (create & update)', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [UsersController],
+      controllers: [AdminUsersController],
       providers: [
         {
           provide: UsersService,
@@ -42,7 +43,7 @@ describe('UsersController (create & update)', () => {
       ],
     }).compile();
 
-    controller = module.get<UsersController>(UsersController);
+    controller = module.get<AdminUsersController>(AdminUsersController);
     service = module.get(UsersService) as jest.Mocked<UsersService>;
 
     jest.clearAllMocks();
@@ -58,7 +59,7 @@ describe('UsersController (create & update)', () => {
         full_name: 'John Doe',
       };
 
-      service.create.mockResolvedValue(userMock as any);
+      service.create.mockResolvedValue(userMock as User);
 
       const res = await controller.create(dto);
       expect(service.create).toHaveBeenCalledWith(dto);
@@ -74,7 +75,7 @@ describe('UsersController (create & update)', () => {
       const dto: UpdateUserDto = { username: 'johnny' };
       const updated = { ...userMock, username: 'johnny' };
 
-      service.update.mockResolvedValue(updated as any);
+      service.update.mockResolvedValue(updated as User);
 
       const res = await controller.update('u-1', dto);
       expect(service.update).toHaveBeenCalledWith('u-1', dto);
