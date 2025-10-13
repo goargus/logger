@@ -77,6 +77,29 @@ export class EntitiesService {
   async update(id: string, dto: UpdateEntityDto): Promise<Entity> {
     const current = await this.findOne(id);
 
+    if (dto.is_active === false && current.is_active) {
+      const activeChildren = await this.repo.count({
+        where: { parent_id: id, is_active: true },
+      });
+      if (activeChildren > 0) {
+        throw new BadRequestException(
+          'Cannot deactivate entity: it has active child entities. Please deactivate child entities first.',
+        );
+      }
+      const activeUsers = await this.repo
+        .createQueryBuilder('entity')
+        .leftJoin('entity.users', 'user')
+        .where('entity.id = :id', { id })
+        .andWhere('user.status = :status', { status: 'active' })
+        .getCount();
+
+      if (activeUsers > 0) {
+        throw new BadRequestException(
+          'Cannot deactivate entity: it has active user assignments. Please reassign users first.',
+        );
+      }
+    }
+
     const nextName = dto.name !== undefined ? this.normalizeName(dto.name) : current.name;
     const nextType = (dto.type ?? current.type) as EntityType;
     const nextParentId = dto.parentId !== undefined ? dto.parentId : current.parent_id;
