@@ -11,12 +11,14 @@ import { CreateActivityDto } from './dto/create-activity.dto';
 import { UpdateActivityDto } from './dto/update-activity.dto';
 import { ActivityStatus } from './activity-status.enum';
 import { ActivityType } from '../activities-type/activity-type.entity';
+import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
 
 @Injectable()
 export class ActivitiesService {
   constructor(
     @InjectRepository(Activity) private readonly repo: Repository<Activity>,
     @InjectRepository(ActivityType) private readonly typesRepo: Repository<ActivityType>,
+    @InjectRepository(UserRoleAssignment) private readonly uraRepo: Repository<UserRoleAssignment>,
   ) {}
 
   private ensureOwnershipOrThrow(activity: Activity, userId: string) {
@@ -31,8 +33,39 @@ export class ActivitiesService {
     return t;
   }
 
+  async canUserSubmitActivityType(userId: string, activityTypeId: string): Promise<boolean> {
+    const activityType = await this.typesRepo.findOne({
+      where: { id: activityTypeId },
+      relations: ['allowed_roles'],
+    });
+
+    if (!activityType) {
+      return false;
+    }
+
+    if (!activityType.allowed_roles || activityType.allowed_roles.length === 0) {
+      return true;
+    }
+
+    const allowedRoleIds = activityType.allowed_roles.map((role) => role.id);
+
+    const userRoleAssignment = await this.uraRepo.findOne({
+      where: {
+        user: { id: userId },
+        role: { id: In(allowedRoleIds) },
+      },
+    });
+
+    return !!userRoleAssignment;
+  }
+
   async create(dto: CreateActivityDto, actorUserId: string): Promise<Activity> {
     await this.ensureTypeOrThrow(dto.activityTypeId);
+
+    const isAuthorized = await this.canUserSubmitActivityType(actorUserId, dto.activityTypeId);
+    if (!isAuthorized) {
+      throw new ForbiddenException('You are not authorized to submit this activity type');
+    }
 
     if (dto.hasExpense && (dto.expenseAmount == null || dto.expenseAmount === '')) {
       throw new BadRequestException('expenseAmount is required when hasExpense is true.');
@@ -79,6 +112,10 @@ export class ActivitiesService {
 
     if (dto.activityTypeId) {
       await this.ensureTypeOrThrow(dto.activityTypeId);
+      const isAuthorized = await this.canUserSubmitActivityType(userId, dto.activityTypeId);
+      if (!isAuthorized) {
+        throw new ForbiddenException('You are not authorized to submit this activity type');
+      }
       a.activityTypeId = dto.activityTypeId;
     }
 
@@ -127,8 +164,12 @@ export class ActivitiesService {
       .where('activity.userId = :userId', { userId })
       .andWhere('activity.status = :status', { status: ActivityStatus.ACTIVE })
       .andWhere('activity.hasExpense = :hasExpense', { hasExpense: true })
-      .andWhere('activity.activityDate >= :startDate', { startDate: startDate.toISOString().split('T')[0] })
-      .andWhere('activity.activityDate <= :endDate', { endDate: endDate.toISOString().split('T')[0] })
+      .andWhere('activity.activityDate >= :startDate', {
+        startDate: startDate.toISOString().split('T')[0],
+      })
+      .andWhere('activity.activityDate <= :endDate', {
+        endDate: endDate.toISOString().split('T')[0],
+      })
       .getRawOne();
 
     return parseFloat(result?.total || '0');
