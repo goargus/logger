@@ -14,11 +14,14 @@ import { UserStatus } from './user-status.enum';
 
 import { EntitiesService } from '../entities/entities.service';
 import { RolesService } from '../roles/roles.service';
+import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User) private readonly usersRepo: Repository<User>,
+    @InjectRepository(UserRoleAssignment)
+    private readonly userRoleAssignmentRepo: Repository<UserRoleAssignment>,
     private readonly entitiesService: EntitiesService,
     private readonly rolesService: RolesService,
   ) {}
@@ -118,5 +121,21 @@ export class UsersService {
     }
 
     return this.usersRepo.save(user);
+  }
+
+  async findUserProfile(userId: string): Promise<{
+    user: User;
+    roleAssignments: UserRoleAssignment[];
+  }> {
+    const user = await this.findOne(userId);
+    const roleAssignments = await this.userRoleAssignmentRepo.find({
+      where: { user: { id: userId } },
+      relations: ['role', 'entity', 'user'],
+    });
+
+    return {
+      user,
+      roleAssignments,
+    };
   }
 }
