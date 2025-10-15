@@ -10,11 +10,11 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authProvider);
-    final authNotifier = ref.read(authProvider.notifier);
+    final authState = ref.watch(authNotifierProvider);
+    final authNotifier = ref.read(authNotifierProvider.notifier);
 
     if (!authState.isAuthenticated) {
-      if (!authState.isLoading && authState.error == null) {
+      if (!authState.isLoading && authState.lastError == null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           authNotifier.login();
         });
@@ -32,19 +32,19 @@ class MyApp extends ConsumerWidget {
                   const SizedBox(height: 16),
                   const Text('Redirigiendo a Auth0...'),
                 ],
-                if (authState.error != null) ...[
+                if (authState.lastError != null) ...[
                   const Icon(Icons.error, color: Colors.red, size: 48),
                   const SizedBox(height: 16),
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 520),
-                    child: Text('Error: ${authState.error}',
+                    child: Text('Error: ${authState.lastError}',
                         textAlign: TextAlign.center,
                         style: const TextStyle(color: Colors.red)),
                   ),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
-                      authNotifier.clearError();
+                      authNotifier.login();
                     },
                     child: const Text('Reintentar'),
                   ),
@@ -68,12 +68,12 @@ class MyApp extends ConsumerWidget {
               onPressed: authNotifier.logout,
               child: Consumer(
                 builder: (context, ref, _) {
-                  final authState = ref.watch(authProvider);
-                  final userName = authState.credentials?.user.name ??
-                      authState.credentials?.user.nickname ??
+                  final authState = ref.watch(authNotifierProvider);
+                  final userName = authState.user?['name'] ??
+                      authState.user?['nickname'] ??
                       'Usuario';
                   return Text(
-                      'Salir (${authState.credentials?.user.email ?? userName})');
+                      'Salir (${authState.user?['email'] ?? userName})');
                 },
               ),
             ),
