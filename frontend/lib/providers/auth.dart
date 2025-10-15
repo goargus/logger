@@ -1,135 +1,256 @@
+import 'dart:async';
+import 'dart:convert';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:auth0_flutter/auth0_flutter.dart';
-import 'package:auth0_flutter/auth0_flutter_web.dart';
+import 'package:http/http.dart' as http;
+import 'package:web/web.dart' as web;
+
 import '../config/auth_config.dart';
 
+import '../auth/session.dart';
+import '../auth/session_interface.dart';
+const bool kAutoRedirectOnBoot = true;
+@immutable
 class AuthState {
-  final bool isAuthenticated;
-  final Credentials? credentials;
-  final String? error;
   final bool isLoading;
+  final bool isAuthenticated;
+  final Map<String, dynamic>? user;
+  final String? accessToken;
+  final String? lastError;
 
   const AuthState({
-    this.isAuthenticated = false,
-    this.credentials,
-    this.error,
-    this.isLoading = false,
+    required this.isLoading,
+    required this.isAuthenticated,
+    this.user,
+    this.accessToken,
+    this.lastError,
   });
 
+  factory AuthState.initial() =>
+      const AuthState(isLoading: true, isAuthenticated: false);
+
   AuthState copyWith({
-    bool? isAuthenticated,
-    Credentials? credentials,
-    String? error,
     bool? isLoading,
+    bool? isAuthenticated,
+    Map<String, dynamic>? user,
+    String? accessToken,
+    String? lastError,
   }) {
     return AuthState(
-      isAuthenticated: isAuthenticated ?? this.isAuthenticated,
-      credentials: credentials ?? this.credentials,
-      error: error,
       isLoading: isLoading ?? this.isLoading,
+      isAuthenticated: isAuthenticated ?? this.isAuthenticated,
+      user: user ?? this.user,
+      accessToken: accessToken ?? this.accessToken,
+      lastError: lastError,
     );
   }
 }
 
-class AuthNotifier extends StateNotifier<AuthState> {
-  late final Auth0Web _auth0;
+final authNotifierProvider =
+    StateNotifierProvider<AuthNotifier, AuthState>((ref) {
+  return AuthNotifier();
+});
 
-  AuthNotifier() : super(const AuthState()) {
-    _initializeAuth0();
+class AuthNotifier extends StateNotifier<AuthState> {
+  AuthNotifier() : super(AuthState.initial()) {
+    _bootstrap();
   }
 
-  Future<void> _initializeAuth0() async {
+  final SessionInterface _session = Session();
+
+  bool _bootstrapped = false;
+  bool _isRedirecting = false;
+
+  Future<void> _bootstrap() async {
+    if (_bootstrapped) return;
+    _bootstrapped = true;
+
+    if (!AuthConfig.isConfigured) {
+      state = state.copyWith(
+        isLoading: false,
+        lastError:
+            'Auth0 no está configurado. Revisa tus --dart-define en auth_config.dart',
+      );
+      return;
+    }
+
     try {
-      if (!AuthConfig.isConfigured) {
-        setError(
-            'Auth0 configuration missing. Please set AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_REDIRECT_URI, and AUTH0_AUDIENCE environment variables.');
+      final currentUrl = web.window.location.href;
+      if (currentUrl.contains('code=') && currentUrl.contains('state=')) {
+        await _handleAuthCallback();
         return;
       }
 
-      _auth0 = Auth0Web(AuthConfig.domain, AuthConfig.clientId);
+      final existingToken = web.window.localStorage.getItem('auth_token');
+      if (existingToken != null && existingToken.isNotEmpty) {
+        await _refreshSession();
+        return;
+      }
 
-      _auth0.onLoad().then((creds) {
-        if (creds != null) {
-          setAuthenticated(creds);
-        } else {
-          setLoading(false);
-        }
-      }).catchError((e) {
-        setError('Auth0 session load failed: $e');
-      });
+      if (kAutoRedirectOnBoot && !_isRedirecting) {
+        await login();
+      } else {
+        state = state.copyWith(isLoading: false, isAuthenticated: false);
+      }
     } catch (e) {
-      setError('Auth0 initialization failed: $e');
+      state = state.copyWith(
+        isLoading: false,
+        isAuthenticated: false,
+        lastError: e.toString(),
+      );
+    }
+  }
+
+  Future<void> _handleAuthCallback() async {
+    try {
+      final uri = Uri.parse(web.window.location.href);
+      final code = uri.queryParameters['code'];
+      
+      if (code == null) {
+        throw Exception('No authorization code found in URL');
+      }
+
+      final tokenResponse = await http.post(
+        Uri.parse('https://${AuthConfig.domain}/oauth/token'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'grant_type': 'authorization_code',
+          'client_id': AuthConfig.clientId,
+          'code': code,
+          'redirect_uri': AuthConfig.redirectUri,
+        }),
+      );
+
+      if (tokenResponse.statusCode == 200) {
+        final tokens = jsonDecode(tokenResponse.body);
+        final accessToken = tokens['access_token'];
+        
+        final userResponse = await http.get(
+          Uri.parse('https://${AuthConfig.domain}/userinfo'),
+          headers: {'Authorization': 'Bearer $accessToken'},
+        );
+
+        if (userResponse.statusCode == 200) {
+          final userInfo = jsonDecode(userResponse.body);
+          
+          web.window.localStorage.setItem('auth_token', accessToken);
+          await _session.saveToken(accessToken);
+          
+          web.window.history.replaceState(null, '', AuthConfig.redirectUri);
+          
+          state = state.copyWith(
+            isLoading: false,
+            isAuthenticated: true,
+            user: userInfo,
+            accessToken: accessToken,
+            lastError: null,
+          );
+        }
+      } else {
+        throw Exception('Failed to exchange code for token');
+      }
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        isAuthenticated: false,
+        lastError: e.toString(),
+      );
+    }
+  }
+
+  Future<void> _refreshSession() async {
+    try {
+      final accessToken = web.window.localStorage.getItem('auth_token');
+      if (accessToken == null) {
+        throw Exception('No token found');
+      }
+      
+      final userResponse = await http.get(
+        Uri.parse('https://${AuthConfig.domain}/userinfo'),
+        headers: {'Authorization': 'Bearer $accessToken'},
+      );
+
+      if (userResponse.statusCode == 200) {
+        final userInfo = jsonDecode(userResponse.body);
+        
+        await _session.saveToken(accessToken);
+        
+        state = state.copyWith(
+          isLoading: false,
+          isAuthenticated: true,
+          user: userInfo,
+          accessToken: accessToken,
+          lastError: null,
+        );
+      } else {
+        web.window.localStorage.removeItem('auth_token');
+        throw Exception('Invalid token');
+      }
+    } catch (e) {
+      state = state.copyWith(
+        isLoading: false,
+        isAuthenticated: false,
+        lastError: e.toString(),
+      );
     }
   }
 
   Future<void> login() async {
+    if (_isRedirecting) return;
+    _isRedirecting = true;
+    
     try {
-      setLoading(true);
-      final audience =
-          AuthConfig.audience.isNotEmpty ? AuthConfig.audience : 'logger';
+      final authUrl = Uri.https(AuthConfig.domain, '/authorize', {
+        'response_type': 'code',
+        'client_id': AuthConfig.clientId,
+        'redirect_uri': AuthConfig.redirectUri,
+        'scope': 'openid profile email',
+        'audience': AuthConfig.audience,
+        'state': DateTime.now().millisecondsSinceEpoch.toString(),
+      });
 
-      await _auth0.loginWithRedirect(
-        redirectUrl: AuthConfig.redirectUri,
-        audience: audience,
-        scopes: {
-          'openid',
-          'profile',
-          'email',
-          'read:activities',
-          'write:activities'
-        },
-      );
+      web.window.location.assign(authUrl.toString());
     } catch (e) {
-      setError('Login failed: $e');
+      _isRedirecting = false;
+      state = state.copyWith(lastError: e.toString());
+    }
+  }
+
+  Future<String?> getAccessToken() async {
+    try {
+      final accessToken = web.window.localStorage.getItem('auth_token');
+      if (accessToken == null) {
+        return null;
+      }
+
+      try {
+        await _session.saveToken(accessToken);
+      } catch (_) {}
+
+      state = state.copyWith(accessToken: accessToken);
+      return accessToken;
+    } catch (e) {
+      state = state.copyWith(lastError: e.toString());
+      return null;
     }
   }
 
   Future<void> logout() async {
     try {
-      setLoading(true);
-      await _auth0.logout(returnToUrl: AuthConfig.redirectUri);
-      setUnauthenticated();
-    } catch (e) {
-      setError('Logout failed: $e');
+      web.window.localStorage.removeItem('auth_token');
+      
+      final logoutUrl = Uri.https(AuthConfig.domain, '/v2/logout', {
+        'client_id': AuthConfig.clientId,
+        'returnTo': AuthConfig.redirectUri,
+      });
+      
+      web.window.location.assign(logoutUrl.toString());
     } finally {
-      setLoading(false);
+      try {
+        await _session.clear();
+      } catch (_) {}
+      state = AuthState.initial().copyWith(isLoading: false);
     }
   }
-
-  void setAuthenticated(Credentials credentials) {
-    state = state.copyWith(
-      isAuthenticated: true,
-      credentials: credentials,
-      error: null,
-      isLoading: false,
-    );
-  }
-
-  void setUnauthenticated() {
-    state = state.copyWith(
-      isAuthenticated: false,
-      credentials: null,
-      error: null,
-      isLoading: false,
-    );
-  }
-
-  void setError(String error) {
-    state = state.copyWith(
-      error: error,
-      isLoading: false,
-    );
-  }
-
-  void clearError() {
-    state = state.copyWith(error: null);
-  }
-
-  void setLoading(bool loading) {
-    state = state.copyWith(isLoading: loading);
-  }
 }
-
-final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier();
-});
