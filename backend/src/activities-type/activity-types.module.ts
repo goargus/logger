@@ -7,12 +7,16 @@ import { Role } from '../roles/role.entity';
 import { ACTIVITY_TYPE_USAGE_POLICY } from './usage/activity-type-usage.policy';
 import type { ActivityTypeUsagePolicy } from './usage/activity-type-usage.policy';
 import { NullActivityTypeUsagePolicy } from './usage/null-activity-type-usage.policy';
+import { IdentityResolutionService } from '../auth/identity-resolution.service';
+import { IdpIdentity } from '../idp-identities/idp-identity.entity';
+import { User } from '../users/user.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ActivityType, Role])],
+  imports: [TypeOrmModule.forFeature([ActivityType, Role, IdpIdentity, User])],
   controllers: [ActivityTypesController],
   providers: [
     ActivityTypesService,
+    IdentityResolutionService,
     { provide: ACTIVITY_TYPE_USAGE_POLICY, useClass: NullActivityTypeUsagePolicy },
   ],
   exports: [ActivityTypesService],
