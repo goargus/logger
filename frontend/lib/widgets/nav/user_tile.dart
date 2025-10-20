@@ -8,9 +8,8 @@ class UserTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authNotifierProvider);
-    final name = authState.user?['name'] ??
-        authState.user?['nickname'] ??
-        'Usuario';
+    final name =
+        authState.user?['name'] ?? authState.user?['nickname'] ?? 'Usuario';
     final email = authState.user?['email'] ?? '';
     final avatarUrl = authState.user?['picture'];
 

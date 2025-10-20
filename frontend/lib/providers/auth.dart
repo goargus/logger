@@ -10,7 +10,9 @@ import '../config/auth_config.dart';
 
 import '../auth/session.dart';
 import '../auth/session_interface.dart';
+
 const bool kAutoRedirectOnBoot = true;
+
 @immutable
 class AuthState {
   final bool isLoading;
@@ -106,7 +108,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       final uri = Uri.parse(web.window.location.href);
       final code = uri.queryParameters['code'];
-      
+
       if (code == null) {
         throw Exception('No authorization code found in URL');
       }
@@ -125,7 +127,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       if (tokenResponse.statusCode == 200) {
         final tokens = jsonDecode(tokenResponse.body);
         final accessToken = tokens['access_token'];
-        
+
         final userResponse = await http.get(
           Uri.parse('https://${AuthConfig.domain}/userinfo'),
           headers: {'Authorization': 'Bearer $accessToken'},
@@ -133,12 +135,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
         if (userResponse.statusCode == 200) {
           final userInfo = jsonDecode(userResponse.body);
-          
+
           web.window.localStorage.setItem('auth_token', accessToken);
           await _session.saveToken(accessToken);
-          
+
           web.window.history.replaceState(null, '', AuthConfig.redirectUri);
-          
+
           state = state.copyWith(
             isLoading: false,
             isAuthenticated: true,
@@ -165,7 +167,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
       if (accessToken == null) {
         throw Exception('No token found');
       }
-      
+
       final userResponse = await http.get(
         Uri.parse('https://${AuthConfig.domain}/userinfo'),
         headers: {'Authorization': 'Bearer $accessToken'},
@@ -173,9 +175,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       if (userResponse.statusCode == 200) {
         final userInfo = jsonDecode(userResponse.body);
-        
+
         await _session.saveToken(accessToken);
-        
+
         state = state.copyWith(
           isLoading: false,
           isAuthenticated: true,
@@ -199,7 +201,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> login() async {
     if (_isRedirecting) return;
     _isRedirecting = true;
-    
+
     try {
       final authUrl = Uri.https(AuthConfig.domain, '/authorize', {
         'response_type': 'code',
@@ -239,12 +241,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> logout() async {
     try {
       web.window.localStorage.removeItem('auth_token');
-      
+
       final logoutUrl = Uri.https(AuthConfig.domain, '/v2/logout', {
         'client_id': AuthConfig.clientId,
         'returnTo': AuthConfig.redirectUri,
       });
-      
+
       web.window.location.assign(logoutUrl.toString());
     } finally {
       try {

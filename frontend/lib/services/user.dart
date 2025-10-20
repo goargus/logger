@@ -60,8 +60,10 @@ class UserProfile {
       status: json['status'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
-      primaryRole: UserRole.fromJson(json['primary_role'] as Map<String, dynamic>),
-      primaryEntity: UserEntity.fromJson(json['primary_entity'] as Map<String, dynamic>),
+      primaryRole:
+          UserRole.fromJson(json['primary_role'] as Map<String, dynamic>),
+      primaryEntity:
+          UserEntity.fromJson(json['primary_entity'] as Map<String, dynamic>),
       roleAssignments: (json['role_assignments'] as List)
           .map((e) => RoleAssignment.fromJson(e as Map<String, dynamic>))
           .toList(),

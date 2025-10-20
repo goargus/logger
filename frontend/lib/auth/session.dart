@@ -4,7 +4,7 @@ import 'session_interface.dart';
 class Session implements SessionInterface {
   Session._();
   static final Session instance = Session._();
-  
+
   factory Session() => instance;
 
   String? _accessToken;
@@ -14,7 +14,7 @@ class Session implements SessionInterface {
     _accessToken = token;
     web.window.localStorage.setItem('flutter.access_token', token);
   }
-  
+
   @override
   Future<void> saveToken(String token) async {
     await setAccessToken(token);
