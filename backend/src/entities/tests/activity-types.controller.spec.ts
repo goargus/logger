@@ -3,6 +3,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ActivityTypesController } from '../../activities-type/activity-types.controller';
 import { ActivityTypesService } from '../../activities-type/activity-types.service';
 import { RolesGuard } from '../../auth/roles.guard';
+import { IdentityResolutionService } from '../../auth/identity-resolution.service';
 
 const serviceMock = {
   findAll: jest.fn(),
@@ -10,6 +11,10 @@ const serviceMock = {
   create: jest.fn(),
   update: jest.fn(),
   remove: jest.fn(),
+};
+
+const identityServiceMock = {
+  resolveUserBySubAndIssuer: jest.fn(),
 };
 
 class AllowAllRolesGuard {
@@ -26,6 +31,7 @@ describe('ActivityTypesController', () => {
       controllers: [ActivityTypesController],
       providers: [
         { provide: ActivityTypesService, useValue: serviceMock },
+        { provide: IdentityResolutionService, useValue: identityServiceMock },
         { provide: RolesGuard, useClass: AllowAllRolesGuard },
       ],
     }).compile();
