@@ -25,6 +25,7 @@ import { Repository, In } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../users/user.entity';
 import { ActivityType } from '../activities-type/activity-type.entity';
+import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
 
 @UseGuards(JwtAuthGuard)
 @Controller('activities')
@@ -34,7 +35,14 @@ export class ActivitiesController {
     private readonly identity: IdentityResolutionService,
     @InjectRepository(User) private readonly usersRepo: Repository<User>,
     @InjectRepository(ActivityType) private readonly typesRepo: Repository<ActivityType>,
+    @InjectRepository(ReportingPeriod)
+    private readonly reportingPeriodsRepo: Repository<ReportingPeriod>,
   ) {}
+
+  private async getReportingPeriodForActivity(activity: any): Promise<ReportingPeriod | null> {
+    if (!activity.reportingPeriodId) return null;
+    return this.reportingPeriodsRepo.findOne({ where: { id: activity.reportingPeriodId } });
+  }
 
   @Post()
   async create(@Req() req: Request, @Body() dto: CreateActivityDto): Promise<ActivityResponseDto> {
@@ -43,12 +51,18 @@ export class ActivitiesController {
 
     const created = await this.activities.create(dto, user.id);
 
-    const [owner, type] = await Promise.all([
+    const [owner, type, reportingPeriod] = await Promise.all([
       this.usersRepo.findOneByOrFail({ id: created.userId }),
       this.typesRepo.findOneByOrFail({ id: created.activityTypeId }),
+      this.getReportingPeriodForActivity(created),
     ]);
 
-    return ActivityResponseDto.fromEntity(created, owner.username, (type as any).name);
+    return ActivityResponseDto.fromEntity(
+      created,
+      owner.username,
+      (type as any).name,
+      reportingPeriod,
+    );
   }
 
   @Get()
@@ -62,13 +76,19 @@ export class ActivitiesController {
 
     const [items, total] = await this.activities.findMine(user.id, page, limit);
 
-    const [owner, typesMap] = await Promise.all([
+    const [owner, typesMap, reportingPeriodsMap] = await Promise.all([
       this.usersRepo.findOneByOrFail({ id: user.id }),
       (async () => {
         const ids = [...new Set(items.map((i) => i.activityTypeId))];
         if (!ids.length) return new Map<string, string>();
         const types = await this.typesRepo.find({ where: { id: In(ids) } });
         return new Map(types.map((t) => [t.id, (t as any).name]));
+      })(),
+      (async () => {
+        const ids = [...new Set(items.map((i) => i.reportingPeriodId).filter(Boolean))];
+        if (!ids.length) return new Map<string, ReportingPeriod>();
+        const periods = await this.reportingPeriodsRepo.find({ where: { id: In(ids) } });
+        return new Map(periods.map((p) => [p.id, p]));
       })(),
     ]);
 
@@ -77,7 +97,12 @@ export class ActivitiesController {
       limit,
       total,
       items: items.map((a) =>
-        ActivityResponseDto.fromEntity(a, owner.username, typesMap.get(a.activityTypeId) ?? ''),
+        ActivityResponseDto.fromEntity(
+          a,
+          owner.username,
+          typesMap.get(a.activityTypeId) ?? '',
+          reportingPeriodsMap.get(a.reportingPeriodId || '') ?? null,
+        ),
       ),
     };
   }
@@ -88,11 +113,12 @@ export class ActivitiesController {
     const user = await this.identity.resolveUserBySubAndIssuer(sub, iss);
 
     const a = await this.activities.findOneMine(id, user.id);
-    const [owner, type] = await Promise.all([
+    const [owner, type, reportingPeriod] = await Promise.all([
       this.usersRepo.findOneByOrFail({ id: a.userId }),
       this.typesRepo.findOneByOrFail({ id: a.activityTypeId }),
+      this.getReportingPeriodForActivity(a),
     ]);
-    return ActivityResponseDto.fromEntity(a, owner.username, (type as any).name);
+    return ActivityResponseDto.fromEntity(a, owner.username, (type as any).name, reportingPeriod);
   }
 
   @Patch(':id')
@@ -105,11 +131,17 @@ export class ActivitiesController {
     const user = await this.identity.resolveUserBySubAndIssuer(sub, iss);
 
     const updated = await this.activities.updateMine(id, dto, user.id);
-    const [owner, type] = await Promise.all([
+    const [owner, type, reportingPeriod] = await Promise.all([
       this.usersRepo.findOneByOrFail({ id: updated.userId }),
       this.typesRepo.findOneByOrFail({ id: updated.activityTypeId }),
+      this.getReportingPeriodForActivity(updated),
     ]);
-    return ActivityResponseDto.fromEntity(updated, owner.username, (type as any).name);
+    return ActivityResponseDto.fromEntity(
+      updated,
+      owner.username,
+      (type as any).name,
+      reportingPeriod,
+    );
   }
 
   @Delete(':id')
