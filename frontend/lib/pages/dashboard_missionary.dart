@@ -51,8 +51,8 @@ class _DashboardMissionaryPageState
       return;
     }
 
-    final authState = ref.read(authProvider);
-    if (!authState.isAuthenticated || authState.credentials == null) {
+    final authState = ref.read(authNotifierProvider);
+    if (!authState.isAuthenticated || authState.accessToken == null) {
       return;
     }
 
@@ -90,9 +90,9 @@ class _DashboardMissionaryPageState
 
   Future<String?> _getAccessTokenEnsured() async {
     try {
-      final authState = ref.read(authProvider);
-      if (authState.isAuthenticated && authState.credentials != null) {
-        final token = authState.credentials!.accessToken;
+      final authState = ref.read(authNotifierProvider);
+      if (authState.isAuthenticated && authState.accessToken != null) {
+        final token = authState.accessToken!;
 
         await Session.instance.setAccessToken(token);
         return token;
@@ -178,9 +178,9 @@ class _DashboardMissionaryPageState
         builder: (_) => CreateActivityDialog(
           baseUrl: _apiBaseUrl,
           getAccessToken: () async {
-            final authState = ref.read(authProvider);
-            if (authState.isAuthenticated && authState.credentials != null) {
-              return authState.credentials!.accessToken;
+            final authState = ref.read(authNotifierProvider);
+            if (authState.isAuthenticated && authState.accessToken != null) {
+              return authState.accessToken!;
             }
 
             final sessionToken = await Session.instance.getAccessToken();
@@ -192,7 +192,7 @@ class _DashboardMissionaryPageState
           },
           onRequireLogin: () {
             Navigator.of(context).pop();
-            ref.read(authProvider.notifier).login();
+            ref.read(authNotifierProvider.notifier).login();
           },
         ),
       );
@@ -243,10 +243,10 @@ class _DashboardMissionaryPageState
 
     return Consumer(
       builder: (context, ref, _) {
-        final authState = ref.watch(authProvider);
+        final authState = ref.watch(authNotifierProvider);
 
         if (authState.isAuthenticated &&
-            authState.credentials != null &&
+            authState.accessToken != null &&
             _recentActivities.isEmpty &&
             !_isLoadingActivities &&
             !_hasAttemptedLoad) {
@@ -285,9 +285,9 @@ class _DashboardMissionaryPageState
                     Expanded(
                       child: Consumer(
                         builder: (context, ref, _) {
-                          final authState = ref.watch(authProvider);
-                          final userName = authState.credentials?.user.name ??
-                              authState.credentials?.user.nickname ??
+                          final authState = ref.watch(authNotifierProvider);
+                          final userName = authState.user?['name'] ??
+                              authState.user?['nickname'] ??
                               'Usuario';
                           return PageTitle(
                             title: 'Bienvenido, $userName',

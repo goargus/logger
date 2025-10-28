@@ -55,8 +55,39 @@ export class ActivitiesService {
     }
   }
 
+  async canUserSubmitActivityType(userId: string, activityTypeId: string): Promise<boolean> {
+    const activityType = await this.typesRepo.findOne({
+      where: { id: activityTypeId },
+      relations: ['allowed_roles'],
+    });
+
+    if (!activityType) {
+      return false;
+    }
+
+    if (!activityType.allowed_roles || activityType.allowed_roles.length === 0) {
+      return true;
+    }
+
+    const allowedRoleIds = activityType.allowed_roles.map((role) => role.id);
+
+    const userRoleAssignment = await this.uraRepo.findOne({
+      where: {
+        user: { id: userId },
+        role: { id: In(allowedRoleIds) },
+      },
+    });
+
+    return !!userRoleAssignment;
+  }
+
   async create(dto: CreateActivityDto, actorUserId: string): Promise<Activity> {
     await this.ensureTypeOrThrow(dto.activityTypeId);
+
+    const isAuthorized = await this.canUserSubmitActivityType(actorUserId, dto.activityTypeId);
+    if (!isAuthorized) {
+      throw new ForbiddenException('You are not authorized to submit this activity type');
+    }
 
     if (dto.hasExpense && (dto.expenseAmount == null || dto.expenseAmount === '')) {
       throw new BadRequestException('expenseAmount is required when hasExpense is true.');
@@ -111,6 +142,10 @@ export class ActivitiesService {
 
     if (dto.activityTypeId) {
       await this.ensureTypeOrThrow(dto.activityTypeId);
+      const isAuthorized = await this.canUserSubmitActivityType(userId, dto.activityTypeId);
+      if (!isAuthorized) {
+        throw new ForbiddenException('You are not authorized to submit this activity type');
+      }
       a.activityTypeId = dto.activityTypeId;
     }
 
