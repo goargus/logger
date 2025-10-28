@@ -54,6 +54,14 @@ export class ActivityTypesService {
     return this.repo.find();
   }
 
+  async findAllByUserRole(userRoleId: string): Promise<ActivityType[]> {
+    return this.repo
+      .createQueryBuilder('activity_type')
+      .leftJoinAndSelect('activity_type.allowed_roles', 'role')
+      .where('role.id = :roleId', { roleId: userRoleId })
+      .getMany();
+  }
+
   async findOne(id: string): Promise<ActivityType> {
     const found = await this.repo.findOne({ where: { id } });
     if (!found) throw new NotFoundException('Activity type not found.');

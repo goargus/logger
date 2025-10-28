@@ -2,18 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/auth.dart';
 
-/// Minimal user tile. You can hide this using `showUserTile: false` in SideNav.
 class UserTile extends ConsumerWidget {
   const UserTile({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authProvider);
-    final name = authState.credentials?.user.name ??
-        authState.credentials?.user.nickname ??
-        'Usuario';
-    final email = authState.credentials?.user.email ?? '';
-    final avatarUrl = authState.credentials?.user.pictureUrl?.toString();
+    final authState = ref.watch(authNotifierProvider);
+    final name =
+        authState.user?['name'] ?? authState.user?['nickname'] ?? 'Usuario';
+    final email = authState.user?['email'] ?? '';
+    final avatarUrl = authState.user?['picture'];
 
     return Row(
       children: [

@@ -87,9 +87,9 @@ class AppShell extends ConsumerWidget {
               right: 12,
               child: Consumer(
                 builder: (context, ref, _) {
-                  final authState = ref.watch(authProvider);
-                  final authNotifier = ref.read(authProvider.notifier);
-                  final userEmail = authState.credentials?.user.email;
+                  final authState = ref.watch(authNotifierProvider);
+                  final authNotifier = ref.read(authNotifierProvider.notifier);
+                  final userEmail = authState.user?['email'];
                   return ActionChip(
                     label: Text(
                       userEmail != null && userEmail.isNotEmpty

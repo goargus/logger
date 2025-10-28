@@ -19,7 +19,7 @@ class CreateActivityDialog extends StatefulWidget {
     required this.baseUrl,
     required this.getAccessToken,
     this.onRequireLogin,
-    this.typesPath = '/activity-types',
+    this.typesPath = '/activity-types/my-activity-types',
   });
 
   @override
