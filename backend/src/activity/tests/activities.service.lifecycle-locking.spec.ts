@@ -6,6 +6,7 @@ import { ActivitiesService } from '../activities.service';
 import { Activity } from '../activity.entity';
 import { ActivityType } from '../../activities-type/activity-type.entity';
 import { ReportingPeriod } from '../../reporting-periods/reporting-period.entity';
+import { UserRoleAssignment } from '../../roles/user-role-assignment.entity';
 import { ActivityStatus } from '../activity-status.enum';
 import { ReportingPeriodStatus } from '../../reporting-periods/reporting-period-status.enum';
 import { CreateActivityDto } from '../dto/create-activity.dto';
@@ -16,6 +17,7 @@ describe('ActivitiesService - Lifecycle Locking', () => {
   let activityRepo: jest.Mocked<Repository<Activity>>;
   let activityTypeRepo: jest.Mocked<Repository<ActivityType>>;
   let reportingPeriodRepo: jest.Mocked<Repository<ReportingPeriod>>;
+  let userRoleAssignmentRepo: jest.Mocked<Repository<UserRoleAssignment>>;
 
   const mockActivity: Activity = {
     id: 'activity-id',
@@ -82,6 +84,11 @@ describe('ActivitiesService - Lifecycle Locking', () => {
       createQueryBuilder: jest.fn(),
     };
 
+    const mockUserRoleAssignmentRepo = {
+      findOne: jest.fn(),
+      find: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ActivitiesService,
@@ -97,6 +104,10 @@ describe('ActivitiesService - Lifecycle Locking', () => {
           provide: getRepositoryToken(ReportingPeriod),
           useValue: mockReportingPeriodRepo,
         },
+        {
+          provide: getRepositoryToken(UserRoleAssignment),
+          useValue: mockUserRoleAssignmentRepo,
+        },
       ],
     }).compile();
 
@@ -104,6 +115,7 @@ describe('ActivitiesService - Lifecycle Locking', () => {
     activityRepo = module.get(getRepositoryToken(Activity));
     activityTypeRepo = module.get(getRepositoryToken(ActivityType));
     reportingPeriodRepo = module.get(getRepositoryToken(ReportingPeriod));
+    userRoleAssignmentRepo = module.get(getRepositoryToken(UserRoleAssignment));
   });
 
   describe('create', () => {
