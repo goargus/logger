@@ -11,6 +11,7 @@ import {
 import { ActivityStatus } from './activity-status.enum';
 import { User } from '../users/user.entity';
 import { ActivityType } from '../activities-type/activity-type.entity';
+import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
 
 @Entity({ name: 'activity' })
 export class Activity {
@@ -44,6 +45,14 @@ export class Activity {
   @ManyToOne(() => User, { eager: false, nullable: false })
   @JoinColumn({ name: 'user_id' })
   user!: User;
+
+  @Index()
+  @Column({ type: 'uuid', name: 'reporting_period_id', nullable: true })
+  reportingPeriodId?: string | null;
+
+  @ManyToOne(() => ReportingPeriod, (period) => period.activities, { eager: false, nullable: true })
+  @JoinColumn({ name: 'reporting_period_id' })
+  reportingPeriod?: ReportingPeriod | null;
 
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt!: Date;

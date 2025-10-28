@@ -1,12 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { In } from 'typeorm';
-import { ForbiddenException, BadRequestException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException } from '@nestjs/common';
 
 import { ActivitiesService } from './activities.service';
 import { Activity } from './activity.entity';
 import { ActivityType } from '../activities-type/activity-type.entity';
 import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
+import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
 
 import { CreateActivityDto } from './dto/create-activity.dto';
 
@@ -31,6 +32,12 @@ describe('ActivitiesService', () => {
     find: jest.fn(),
   };
 
+  const mockReportingPeriodRepo = {
+    findOne: jest.fn(),
+    find: jest.fn(),
+    createQueryBuilder: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -46,6 +53,10 @@ describe('ActivitiesService', () => {
         {
           provide: getRepositoryToken(UserRoleAssignment),
           useValue: mockUserRoleAssignmentRepo,
+        },
+        {
+          provide: getRepositoryToken(ReportingPeriod),
+          useValue: mockReportingPeriodRepo,
         },
       ],
     }).compile();
@@ -173,7 +184,7 @@ describe('ActivitiesService', () => {
     it('should throw BadRequestException if activity type does not exist', async () => {
       mockActivityTypeRepo.findOne.mockResolvedValue(null);
 
-      await expect(service.create(createActivityDto, userId)).rejects.toThrow(BadRequestException);
+      await expect(service.create(createActivityDto, userId)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException if user is not authorized', async () => {
@@ -221,6 +232,12 @@ describe('ActivitiesService', () => {
       // Mock authorization check to pass
       mockUserRoleAssignmentRepo.findOne.mockResolvedValue(mockUserRoleAssignment);
 
+      // Mock reporting period check
+      mockReportingPeriodRepo.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      } as any);
+
       // Mock activity creation
       mockActivityRepo.create.mockReturnValue(mockCreatedActivity);
       mockActivityRepo.save.mockResolvedValue(mockCreatedActivity);
@@ -256,6 +273,13 @@ describe('ActivitiesService', () => {
         .mockResolvedValueOnce(mockActivityType)
         .mockResolvedValueOnce(mockActivityType);
       mockUserRoleAssignmentRepo.findOne.mockResolvedValue(mockUserRoleAssignment);
+      
+      // Mock reporting period check
+      mockReportingPeriodRepo.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        getOne: jest.fn().mockResolvedValue(null),
+      } as any);
+      
       mockActivityRepo.create.mockReturnValue(mockCreatedActivity);
       mockActivityRepo.save.mockResolvedValue(mockCreatedActivity);
 

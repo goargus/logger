@@ -11,6 +11,8 @@ import { CreateActivityDto } from './dto/create-activity.dto';
 import { UpdateActivityDto } from './dto/update-activity.dto';
 import { ActivityStatus } from './activity-status.enum';
 import { ActivityType } from '../activities-type/activity-type.entity';
+import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
+import { ReportingPeriodStatus } from '../reporting-periods/reporting-period-status.enum';
 import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
 
 @Injectable()
@@ -18,7 +20,10 @@ export class ActivitiesService {
   constructor(
     @InjectRepository(Activity) private readonly repo: Repository<Activity>,
     @InjectRepository(ActivityType) private readonly typesRepo: Repository<ActivityType>,
-    @InjectRepository(UserRoleAssignment) private readonly uraRepo: Repository<UserRoleAssignment>,
+    @InjectRepository(ReportingPeriod)
+    private readonly reportingPeriodsRepo: Repository<ReportingPeriod>,
+    @InjectRepository(UserRoleAssignment)
+    private readonly uraRepo: Repository<UserRoleAssignment>,
   ) {}
 
   private ensureOwnershipOrThrow(activity: Activity, userId: string) {
@@ -28,9 +33,29 @@ export class ActivitiesService {
   }
 
   private async ensureTypeOrThrow(typeId: string): Promise<ActivityType> {
-    const t = await this.typesRepo.findOne({ where: { id: typeId } });
-    if (!t) throw new BadRequestException('activityTypeId does not exist.');
-    return t;
+    const type = await this.typesRepo.findOne({ where: { id: typeId } });
+    if (!type) throw new NotFoundException('ActivityType not found.');
+    return type;
+  }
+
+  private async findReportingPeriodForDate(date: string): Promise<ReportingPeriod | null> {
+    return this.reportingPeriodsRepo
+      .createQueryBuilder('period')
+      .where('period.startDate <= :date AND period.endDate >= :date', { date })
+      .getOne();
+  }
+
+  private async ensureActivityNotLocked(activity: Activity): Promise<void> {
+    if (activity.reportingPeriodId) {
+      const reportingPeriod = await this.reportingPeriodsRepo.findOne({
+        where: { id: activity.reportingPeriodId },
+      });
+      if (reportingPeriod && reportingPeriod.status === ReportingPeriodStatus.LOCKED) {
+        throw new ForbiddenException(
+          'This activity is locked because its reporting period has ended',
+        );
+      }
+    }
   }
 
   async canUserSubmitActivityType(userId: string, activityTypeId: string): Promise<boolean> {
@@ -71,12 +96,18 @@ export class ActivitiesService {
       throw new BadRequestException('expenseAmount is required when hasExpense is true.');
     }
 
+    const reportingPeriod = await this.findReportingPeriodForDate(dto.activityDate);
+    if (reportingPeriod && reportingPeriod.status === ReportingPeriodStatus.LOCKED) {
+      throw new ForbiddenException('Cannot create activity in a locked reporting period');
+    }
+
     const entity = this.repo.create({
       activityTypeId: dto.activityTypeId,
       activityDate: dto.activityDate,
       description: dto.description ?? null,
       hasExpense: dto.hasExpense,
       expenseAmount: dto.hasExpense ? dto.expenseAmount : null,
+      reportingPeriodId: reportingPeriod?.id ?? null,
       userId: actorUserId,
       createdBy: actorUserId,
       updatedBy: actorUserId,
@@ -110,6 +141,8 @@ export class ActivitiesService {
     if (!a) throw new NotFoundException('Activity not found.');
     this.ensureOwnershipOrThrow(a, userId);
 
+    await this.ensureActivityNotLocked(a);
+
     if (dto.activityTypeId) {
       await this.ensureTypeOrThrow(dto.activityTypeId);
       const isAuthorized = await this.canUserSubmitActivityType(userId, dto.activityTypeId);
@@ -117,6 +150,14 @@ export class ActivitiesService {
         throw new ForbiddenException('You are not authorized to submit this activity type');
       }
       a.activityTypeId = dto.activityTypeId;
+    }
+
+    if (dto.activityDate && dto.activityDate !== a.activityDate) {
+      const newReportingPeriod = await this.findReportingPeriodForDate(dto.activityDate);
+      if (newReportingPeriod && newReportingPeriod.status === ReportingPeriodStatus.LOCKED) {
+        throw new ForbiddenException('Cannot move activity to a locked reporting period');
+      }
+      a.reportingPeriodId = newReportingPeriod?.id ?? null;
     }
 
     if (dto.hasExpense === true && (dto.expenseAmount == null || dto.expenseAmount === '')) {
@@ -138,6 +179,8 @@ export class ActivitiesService {
     const a = await this.repo.findOne({ where: { id } });
     if (!a) throw new NotFoundException('Activity not found.');
     this.ensureOwnershipOrThrow(a, userId);
+
+    await this.ensureActivityNotLocked(a);
 
     a.status = ActivityStatus.ARCHIVED;
     a.archivedAt = new Date();

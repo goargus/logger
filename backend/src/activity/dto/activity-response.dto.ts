@@ -1,4 +1,5 @@
 import { Activity } from '../activity.entity';
+import { ReportingPeriod } from '../../reporting-periods/reporting-period.entity';
 
 export class ActivityResponseDto {
   id!: string;
@@ -9,6 +10,9 @@ export class ActivityResponseDto {
   hasExpense!: boolean;
   expenseAmount?: string | null;
   status!: string;
+  locked!: boolean;
+  reportingPeriodId?: string | null;
+  reportingPeriodName?: string | null;
   createdAt!: Date;
   updatedAt!: Date;
 
@@ -19,6 +23,7 @@ export class ActivityResponseDto {
     a: Activity,
     ownerUsername: string,
     activityTypeName: string,
+    reportingPeriod?: ReportingPeriod | null,
   ): ActivityResponseDto {
     const dto = new ActivityResponseDto();
     dto.id = a.id;
@@ -29,6 +34,9 @@ export class ActivityResponseDto {
     dto.hasExpense = a.hasExpense;
     dto.expenseAmount = a.expenseAmount ?? null;
     dto.status = a.status;
+    dto.locked = reportingPeriod?.isLocked ?? false;
+    dto.reportingPeriodId = a.reportingPeriodId ?? null;
+    dto.reportingPeriodName = reportingPeriod?.name ?? null;
     dto.createdAt = a.createdAt;
     dto.updatedAt = a.updatedAt;
     dto.ownerUserId = a.userId;
