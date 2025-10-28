@@ -12,6 +12,7 @@ import { UsersModule } from './users/users.module';
 import { ActivityTypesModule } from './activities-type/activity-types.module';
 import { IdpIdentitiesModule } from './idp-identities/idp-identities.module';
 import { ActivitiesModule } from './activity/activities.module';
+import { TermsModule } from './terms/terms.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { ActivitiesModule } from './activity/activities.module';
     ActivityTypesModule,
     IdpIdentitiesModule,
     ActivitiesModule,
+    TermsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
