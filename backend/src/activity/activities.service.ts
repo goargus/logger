@@ -13,6 +13,7 @@ import { ActivityStatus } from './activity-status.enum';
 import { ActivityType } from '../activities-type/activity-type.entity';
 import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
 import { ReportingPeriodStatus } from '../reporting-periods/reporting-period-status.enum';
+import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
 
 @Injectable()
 export class ActivitiesService {
@@ -21,6 +22,8 @@ export class ActivitiesService {
     @InjectRepository(ActivityType) private readonly typesRepo: Repository<ActivityType>,
     @InjectRepository(ReportingPeriod)
     private readonly reportingPeriodsRepo: Repository<ReportingPeriod>,
+    @InjectRepository(UserRoleAssignment)
+    private readonly uraRepo: Repository<UserRoleAssignment>,
   ) {}
 
   private ensureOwnershipOrThrow(activity: Activity, userId: string) {
