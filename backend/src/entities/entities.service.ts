@@ -3,6 +3,9 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
+  Inject,
+  forwardRef,
+  Optional,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Not, Repository } from 'typeorm';
@@ -10,6 +13,8 @@ import { Entity, EntityType } from './entity.entity';
 import { CreateEntityDto } from './dto/create-entity.dto';
 import { UpdateEntityDto } from './dto/update-entity.dto';
 import { HierarchyValidationService } from './hierarchy-validation.service';
+import { ReportingPeriodsService } from '../reporting-periods/reporting-periods.service';
+import { TermsService } from '../terms/terms.service';
 
 @Injectable()
 export class EntitiesService {
@@ -17,6 +22,12 @@ export class EntitiesService {
     @InjectRepository(Entity)
     private readonly repo: Repository<Entity>,
     private readonly hierarchyValidation: HierarchyValidationService,
+    @Optional()
+    @Inject(forwardRef(() => ReportingPeriodsService))
+    private readonly reportingPeriodsService?: ReportingPeriodsService,
+    @Optional()
+    @Inject(forwardRef(() => TermsService))
+    private readonly termsService?: TermsService,
   ) {}
 
   private normalizeName(name?: string) {
@@ -57,7 +68,24 @@ export class EntitiesService {
       parent_id: dto.parentId || null,
     };
     const entity = this.repo.create(entityData);
-    return this.repo.save(entity);
+    const saved = await this.repo.save(entity);
+
+    if (this.termsService && this.reportingPeriodsService) {
+      try {
+        const activeTerm = await this.termsService.getActiveTermForEntity(saved.id);
+        if (activeTerm) {
+          await this.reportingPeriodsService.createFirstPeriodForEntity(
+            saved.id,
+            activeTerm.id,
+            'system',
+          );
+        }
+      } catch (error) {
+        console.error('Failed to create first reporting period:', error);
+      }
+    }
+
+    return saved;
   }
 
   async findAll(): Promise<Entity[]> {
@@ -144,7 +172,7 @@ export class EntitiesService {
   }
 
   async remove(id: string): Promise<{ affected: number }> {
-    const entity = await this.findOne(id);
+    await this.findOne(id);
     const activeChildren = await this.repo.count({
       where: { parent_id: id, is_active: true },
     });
