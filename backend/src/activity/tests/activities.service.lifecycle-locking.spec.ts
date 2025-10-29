@@ -45,6 +45,10 @@ describe('ActivitiesService - Lifecycle Locking', () => {
 
   const mockActivePeriod: ReportingPeriod = {
     id: 'period-id',
+    entityId: 'entity-id',
+    entity: {} as any,
+    termId: 'term-id',
+    term: {} as any,
     name: 'January 2024',
     description: 'January reporting period',
     startDate: '2024-01-01',
