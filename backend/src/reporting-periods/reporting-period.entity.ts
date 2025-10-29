@@ -6,17 +6,41 @@ import {
   UpdateDateColumn,
   Index,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
   Check,
 } from 'typeorm';
 import { ReportingPeriodStatus } from './reporting-period-status.enum';
 import { Activity } from '../activity/activity.entity';
+import { Entity as OrganizationalEntity } from '../entities/entity.entity';
+import { Term } from '../terms/term.entity';
 
 @Entity({ name: 'reporting_period' })
 @Check(`status IN ('active','locked')`)
 @Index(['start_date', 'end_date'])
+@Index(['entity_id', 'term_id'])
+@Index(['entity_id', 'status'])
+@Index('idx_one_active_per_entity', ['entity_id', 'status'], {
+  unique: true,
+  where: "status = 'active'",
+})
 export class ReportingPeriod {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
+
+  @Column({ type: 'uuid', name: 'entity_id', nullable: false })
+  entityId!: string;
+
+  @ManyToOne(() => OrganizationalEntity, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'entity_id' })
+  entity!: OrganizationalEntity;
+
+  @Column({ type: 'uuid', name: 'term_id', nullable: false })
+  termId!: string;
+
+  @ManyToOne(() => Term, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'term_id' })
+  term!: Term;
 
   @Column({ type: 'varchar', length: 100, nullable: false })
   name!: string;
