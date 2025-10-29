@@ -1,7 +1,15 @@
-import { IsNotEmpty, IsString, IsOptional, IsDateString, IsEnum } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsDateString, IsEnum, IsUUID } from 'class-validator';
 import { ReportingPeriodStatus } from '../reporting-period-status.enum';
 
 export class CreateReportingPeriodDto {
+  @IsNotEmpty()
+  @IsUUID()
+  entityId!: string;
+
+  @IsNotEmpty()
+  @IsUUID()
+  termId!: string;
+
   @IsNotEmpty()
   @IsString()
   name!: string;
