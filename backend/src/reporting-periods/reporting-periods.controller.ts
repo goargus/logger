@@ -9,6 +9,7 @@ import {
   UseGuards,
   Req,
   ParseUUIDPipe,
+  Query,
 } from '@nestjs/common';
 import { ReportingPeriodsService } from './reporting-periods.service';
 import { CreateReportingPeriodDto } from './dto/create-reporting-period.dto';
@@ -28,7 +29,7 @@ export class ReportingPeriodsController {
     private readonly identity: IdentityResolutionService,
   ) {}
 
-  @Post()
+  @Post('admin')
   @Roles('admin')
   async create(
     @Req() req: Request,
@@ -42,8 +43,11 @@ export class ReportingPeriodsController {
   }
 
   @Get()
-  async findAll(): Promise<ReportingPeriodResponseDto[]> {
-    const periods = await this.reportingPeriodsService.findAll();
+  async findAll(
+    @Query('entityId') entityId?: string,
+    @Query('termId') termId?: string,
+  ): Promise<ReportingPeriodResponseDto[]> {
+    const periods = await this.reportingPeriodsService.findAll(entityId, termId);
     return periods.map((period) => ReportingPeriodResponseDto.fromEntity(period));
   }
 
@@ -91,6 +95,19 @@ export class ReportingPeriodsController {
 
     const unlocked = await this.reportingPeriodsService.unlock(id, user.id);
     return ReportingPeriodResponseDto.fromEntity(unlocked);
+  }
+
+  @Patch(':id/close')
+  @Roles('admin')
+  async close(
+    @Req() req: Request,
+    @Param('id', new ParseUUIDPipe()) id: string,
+  ): Promise<ReportingPeriodResponseDto> {
+    const { sub, iss } = (req.user as any) ?? {};
+    const user = await this.identity.resolveUserBySubAndIssuer(sub, iss);
+
+    const closed = await this.reportingPeriodsService.close(id, user.id);
+    return ReportingPeriodResponseDto.fromEntity(closed);
   }
 
   @Delete(':id')

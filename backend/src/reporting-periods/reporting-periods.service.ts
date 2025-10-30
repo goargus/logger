@@ -3,9 +3,10 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, LessThanOrEqual } from 'typeorm';
 import { ReportingPeriod } from './reporting-period.entity';
 import { CreateReportingPeriodDto } from './dto/create-reporting-period.dto';
 import { UpdateReportingPeriodDto } from './dto/update-reporting-period.dto';
@@ -13,6 +14,8 @@ import { ReportingPeriodStatus } from './reporting-period-status.enum';
 
 @Injectable()
 export class ReportingPeriodsService {
+  private readonly logger = new Logger(ReportingPeriodsService.name);
+
   constructor(
     @InjectRepository(ReportingPeriod)
     private readonly repo: Repository<ReportingPeriod>,
@@ -25,7 +28,8 @@ export class ReportingPeriodsService {
 
     const overlapping = await this.repo
       .createQueryBuilder('period')
-      .where('(period.startDate <= :endDate AND period.endDate >= :startDate)', {
+      .where('period.entity_id = :entityId', { entityId: dto.entityId })
+      .andWhere('(period.startDate <= :endDate AND period.endDate >= :startDate)', {
         startDate: dto.startDate,
         endDate: dto.endDate,
       })
@@ -37,12 +41,30 @@ export class ReportingPeriodsService {
       );
     }
 
+    const status = dto.status ?? ReportingPeriodStatus.ACTIVE;
+    if (status === ReportingPeriodStatus.ACTIVE) {
+      const activeExists = await this.repo.findOne({
+        where: {
+          entityId: dto.entityId,
+          status: ReportingPeriodStatus.ACTIVE,
+        },
+      });
+
+      if (activeExists) {
+        throw new ConflictException(
+          `Entity already has an active reporting period: "${activeExists.name}"`,
+        );
+      }
+    }
+
     const entity = this.repo.create({
+      entityId: dto.entityId,
+      termId: dto.termId,
       name: dto.name,
       description: dto.description ?? null,
       startDate: dto.startDate,
       endDate: dto.endDate,
-      status: dto.status ?? ReportingPeriodStatus.ACTIVE,
+      status,
       createdBy: actorUserId,
       updatedBy: actorUserId,
     });
@@ -50,10 +72,173 @@ export class ReportingPeriodsService {
     return this.repo.save(entity);
   }
 
-  async findAll(): Promise<ReportingPeriod[]> {
-    return this.repo.find({
-      order: { startDate: 'DESC' },
+  async createFirstPeriodForEntity(
+    entityId: string,
+    termId: string,
+    actorUserId: string,
+  ): Promise<ReportingPeriod | null> {
+    try {
+      const existing = await this.repo.findOne({
+        where: { entityId },
+      });
+
+      if (existing) {
+        this.logger.warn(`Entity ${entityId} already has a reporting period, skipping creation`);
+        return null;
+      }
+
+      const today = new Date();
+      const startDate = this.formatDate(today);
+      const endDate = this.formatDate(this.addDays(today, 14));
+
+      const period = this.repo.create({
+        entityId,
+        termId,
+        name: `Reporting Period ${startDate}`,
+        startDate,
+        endDate,
+        status: ReportingPeriodStatus.ACTIVE,
+        createdBy: actorUserId,
+        updatedBy: actorUserId,
+      });
+
+      const saved = await this.repo.save(period);
+      this.logger.log(`Created first reporting period for entity ${entityId}: ${saved.id}`);
+      return saved;
+    } catch (error) {
+      this.logger.error(`Failed to create first period for entity ${entityId}:`, error);
+      return null;
+    }
+  }
+
+  async createNextPeriod(
+    entityId: string,
+    termId: string,
+    actorUserId: string,
+  ): Promise<ReportingPeriod> {
+    const previousPeriod = await this.repo.findOne({
+      where: {
+        entityId,
+        status: ReportingPeriodStatus.LOCKED,
+      },
+      order: { endDate: 'DESC' },
     });
+
+    if (!previousPeriod) {
+      throw new NotFoundException('No previous period found to create next period');
+    }
+
+    const startDate = this.formatDate(this.addDays(new Date(previousPeriod.endDate), 1));
+    const endDate = this.formatDate(this.addDays(new Date(startDate), 14));
+
+    const period = this.repo.create({
+      entityId,
+      termId,
+      name: `Reporting Period ${startDate}`,
+      startDate,
+      endDate,
+      status: ReportingPeriodStatus.ACTIVE,
+      createdBy: actorUserId,
+      updatedBy: actorUserId,
+    });
+
+    const saved = await this.repo.save(period);
+    this.logger.log(`Created next reporting period for entity ${entityId}: ${saved.id}`);
+    return saved;
+  }
+
+  async transitionExpiredPeriods(actorUserId: string): Promise<number> {
+    const today = this.formatDate(new Date());
+
+    const expiredPeriods = await this.repo.find({
+      where: {
+        status: ReportingPeriodStatus.ACTIVE,
+        endDate: LessThanOrEqual(today),
+      },
+      relations: ['term'],
+    });
+
+    let transitioned = 0;
+
+    for (const period of expiredPeriods) {
+      try {
+        period.status = ReportingPeriodStatus.LOCKED;
+        period.updatedBy = actorUserId;
+        await this.repo.save(period);
+
+        if (period.term && period.term.is_active) {
+          await this.createNextPeriod(period.entityId, period.termId, actorUserId);
+          transitioned++;
+        } else {
+          this.logger.warn(
+            `Locked period ${period.id} but did not create next period (term is inactive)`,
+          );
+        }
+      } catch (error) {
+        this.logger.error(`Failed to transition period ${period.id}:`, error);
+      }
+    }
+
+    this.logger.log(`Transitioned ${transitioned} expired reporting periods`);
+    return transitioned;
+  }
+
+  async lockPeriodsForTerm(termId: string, actorUserId: string): Promise<number> {
+    const result = await this.repo
+      .createQueryBuilder()
+      .update(ReportingPeriod)
+      .set({
+        status: ReportingPeriodStatus.LOCKED,
+        updatedBy: actorUserId,
+      })
+      .where('term_id = :termId', { termId })
+      .andWhere('status = :status', { status: ReportingPeriodStatus.ACTIVE })
+      .execute();
+
+    const affected = result.affected || 0;
+    this.logger.log(`Locked ${affected} active periods for term ${termId}`);
+    return affected;
+  }
+
+  async findActiveByEntity(entityId: string): Promise<ReportingPeriod | null> {
+    return this.repo.findOne({
+      where: {
+        entityId,
+        status: ReportingPeriodStatus.ACTIVE,
+      },
+      relations: ['entity', 'term'],
+    });
+  }
+
+  async findByEntityAndTerm(entityId: string, termId?: string): Promise<ReportingPeriod[]> {
+    const query = this.repo
+      .createQueryBuilder('period')
+      .where('period.entity_id = :entityId', { entityId })
+      .orderBy('period.start_date', 'DESC');
+
+    if (termId) {
+      query.andWhere('period.term_id = :termId', { termId });
+    }
+
+    return query.getMany();
+  }
+
+  async findAll(entityId?: string, termId?: string): Promise<ReportingPeriod[]> {
+    const query = this.repo
+      .createQueryBuilder('period')
+      .leftJoinAndSelect('period.entity', 'entity')
+      .leftJoinAndSelect('period.term', 'term')
+      .orderBy('period.start_date', 'DESC');
+
+    if (entityId) {
+      query.andWhere('period.entity_id = :entityId', { entityId });
+    }
+
+    if (termId) {
+      query.andWhere('period.term_id = :termId', { termId });
+    }
+
+    return query.getMany();
   }
 
   async findOne(id: string): Promise<ReportingPeriod> {
@@ -132,10 +317,27 @@ export class ReportingPeriodsService {
       throw new BadRequestException('Reporting period is already active');
     }
 
+    const activeExists = await this.repo.findOne({
+      where: {
+        entityId: period.entityId,
+        status: ReportingPeriodStatus.ACTIVE,
+      },
+    });
+
+    if (activeExists) {
+      throw new ConflictException(
+        `Entity already has an active reporting period: "${activeExists.name}"`,
+      );
+    }
+
     period.status = ReportingPeriodStatus.ACTIVE;
     period.updatedBy = actorUserId;
 
     return this.repo.save(period);
+  }
+
+  async close(id: string, actorUserId: string): Promise<ReportingPeriod> {
+    return this.lock(id, actorUserId);
   }
 
   async remove(id: string): Promise<void> {
@@ -153,5 +355,15 @@ export class ReportingPeriodsService {
     }
 
     await this.repo.remove(period);
+  }
+
+  private formatDate(date: Date): string {
+    return date.toISOString().split('T')[0];
+  }
+
+  private addDays(date: Date, days: number): Date {
+    const result = new Date(date);
+    result.setDate(result.getDate() + days);
+    return result;
   }
 }

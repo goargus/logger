@@ -14,6 +14,10 @@ describe('ReportingPeriodsService', () => {
 
   const mockReportingPeriod: ReportingPeriod = {
     id: 'period-id',
+    entityId: 'entity-id',
+    entity: {} as any,
+    termId: 'term-id',
+    term: {} as any,
     name: 'January 2024',
     description: 'January reporting period',
     startDate: '2024-01-01',
@@ -56,6 +60,8 @@ describe('ReportingPeriodsService', () => {
   describe('create', () => {
     it('should create a new reporting period successfully', async () => {
       const createDto: CreateReportingPeriodDto = {
+        entityId: 'entity-id',
+        termId: 'term-id',
         name: 'February 2024',
         description: 'February reporting period',
         startDate: '2024-02-01',
@@ -65,10 +71,12 @@ describe('ReportingPeriodsService', () => {
 
       const queryBuilder = {
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(null),
       };
 
       repo.createQueryBuilder.mockReturnValue(queryBuilder as any);
+      repo.findOne.mockResolvedValue(null);
       repo.create.mockReturnValue(mockReportingPeriod);
       repo.save.mockResolvedValue(mockReportingPeriod);
 
@@ -76,6 +84,8 @@ describe('ReportingPeriodsService', () => {
 
       expect(result).toEqual(mockReportingPeriod);
       expect(repo.create).toHaveBeenCalledWith({
+        entityId: 'entity-id',
+        termId: 'term-id',
         name: 'February 2024',
         description: 'February reporting period',
         startDate: '2024-02-01',
@@ -88,6 +98,8 @@ describe('ReportingPeriodsService', () => {
 
     it('should throw BadRequestException when start date is after end date', async () => {
       const createDto: CreateReportingPeriodDto = {
+        entityId: 'entity-id',
+        termId: 'term-id',
         name: 'Invalid Period',
         startDate: '2024-02-29',
         endDate: '2024-02-01',
@@ -100,6 +112,8 @@ describe('ReportingPeriodsService', () => {
 
     it('should throw ConflictException when period overlaps with existing', async () => {
       const createDto: CreateReportingPeriodDto = {
+        entityId: 'entity-id',
+        termId: 'term-id',
         name: 'Overlapping Period',
         startDate: '2024-01-15',
         endDate: '2024-02-15',
@@ -114,6 +128,7 @@ describe('ReportingPeriodsService', () => {
 
       const queryBuilder = {
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(existingPeriod),
       };
 
@@ -215,7 +230,8 @@ describe('ReportingPeriodsService', () => {
         containsDate: jest.fn().mockReturnValue(true),
       };
 
-      repo.findOne.mockResolvedValue(lockedPeriod);
+      // First call returns the locked period, second call checks for existing active (returns null)
+      repo.findOne.mockResolvedValueOnce(lockedPeriod).mockResolvedValueOnce(null);
       repo.save.mockResolvedValue(activePeriod);
 
       const result = await service.unlock('period-id', 'admin-id');

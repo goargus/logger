@@ -1,10 +1,18 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Inject,
+  forwardRef,
+  Optional,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Term } from './term.entity';
 import { CreateTermDto } from './dto/create-term.dto';
 import { UpdateTermDto } from './dto/update-term.dto';
 import { Entity as OrganizationalEntity } from '../entities/entity.entity';
+import { ReportingPeriodsService } from '../reporting-periods/reporting-periods.service';
 
 @Injectable()
 export class TermsService {
@@ -13,6 +21,9 @@ export class TermsService {
     private readonly termRepository: Repository<Term>,
     @InjectRepository(OrganizationalEntity)
     private readonly entityRepository: Repository<OrganizationalEntity>,
+    @Optional()
+    @Inject(forwardRef(() => ReportingPeriodsService))
+    private readonly reportingPeriodsService?: ReportingPeriodsService,
   ) {}
 
   async create(createTermDto: CreateTermDto): Promise<Term> {
@@ -103,13 +114,43 @@ export class TermsService {
     const term = await this.findOne(id);
     await this.deactivateOtherTerms(term.entity_id, id);
     term.is_active = true;
-    return await this.termRepository.save(term);
+    const saved = await this.termRepository.save(term);
+
+    if (this.reportingPeriodsService) {
+      try {
+        const entities = await this.entityRepository.find({
+          where: { is_active: true },
+        });
+
+        for (const entity of entities) {
+          await this.reportingPeriodsService.createFirstPeriodForEntity(
+            entity.id,
+            term.id,
+            'system',
+          );
+        }
+      } catch (error) {
+        console.error('Failed to create reporting periods for activated term:', error);
+      }
+    }
+
+    return saved;
   }
 
   async deactivateTerm(id: string): Promise<Term> {
     const term = await this.findOne(id);
     term.is_active = false;
-    return await this.termRepository.save(term);
+    const saved = await this.termRepository.save(term);
+
+    if (this.reportingPeriodsService) {
+      try {
+        await this.reportingPeriodsService.lockPeriodsForTerm(term.id, 'system');
+      } catch (error) {
+        console.error('Failed to lock reporting periods for deactivated term:', error);
+      }
+    }
+
+    return saved;
   }
 
   private async deactivateOtherTerms(entityId: string, excludeTermId: string): Promise<void> {
