@@ -1,20 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import '../models/activity.dart';
 import '../models/dashboard_config.dart';
 import '../routes.dart';
-import '../theme/app_theme.dart';
 
-import '../widgets/stats/stat_card.dart';
-import '../widgets/stats/stat_grid.dart';
-import '../widgets/stats/cta_report_card.dart';
+import '../core/layout_constants.dart';
+import '../core/snackbars.dart';
+import '../core/auth_utils.dart';
+
+import '../widgets/nav/sidebar_nav.dart';
+import '../widgets/headers/welcome_header.dart';
+import '../widgets/pills/month_header_pill.dart';
+import '../widgets/pills/fields_chips.dart';
+import '../widgets/lists/association_row.dart';
+import '../widgets/lists/activities_section.dart';
+import '../widgets/stats/stats_section.dart';
 import '../widgets/buttons/primary_action_button.dart';
-import '../widgets/lists/activities_table.dart';
 import '../widgets/dialogs/create_activity_dialog.dart';
 
-import '../auth/session.dart';
 import '../providers/auth.dart';
 import '../services/activity.dart';
 
@@ -41,7 +45,7 @@ class _DashboardMissionaryPageState
   void initState() {
     super.initState();
     _activityService = ActivityService.localhost(
-        () async => await _getAccessTokenEnsured() ?? '');
+        () async => await AuthUtils.getAccessTokenEnsured(ref) ?? '');
   }
 
   Future<void> _initializeData() async {
@@ -61,7 +65,7 @@ class _DashboardMissionaryPageState
     });
 
     try {
-      final token = await _getAccessTokenEnsured();
+      final token = await AuthUtils.getAccessTokenEnsured(ref);
 
       if (token != null && token.isNotEmpty && mounted) {
         await _loadMonthlyExpenses();
@@ -83,27 +87,6 @@ class _DashboardMissionaryPageState
           _isLoadingActivities = false;
         });
       }
-    }
-  }
-
-  Future<String?> _getAccessTokenEnsured() async {
-    try {
-      final authState = ref.read(authNotifierProvider);
-      if (authState.isAuthenticated && authState.accessToken != null) {
-        final token = authState.accessToken!;
-
-        await Session.instance.setAccessToken(token);
-        return token;
-      }
-
-      final sessionToken = await Session.instance.getAccessToken();
-      if (sessionToken != null && sessionToken.isNotEmpty) {
-        return sessionToken;
-      }
-
-      return null;
-    } catch (e) {
-      return null;
     }
   }
 
@@ -176,17 +159,7 @@ class _DashboardMissionaryPageState
         builder: (_) => CreateActivityDialog(
           baseUrl: _apiBaseUrl,
           getAccessToken: () async {
-            final authState = ref.read(authNotifierProvider);
-            if (authState.isAuthenticated && authState.accessToken != null) {
-              return authState.accessToken!;
-            }
-
-            final sessionToken = await Session.instance.getAccessToken();
-            if (sessionToken != null && sessionToken.isNotEmpty) {
-              return sessionToken;
-            }
-
-            return '';
+            return await AuthUtils.getAccessTokenEnsured(ref) ?? '';
           },
           onRequireLogin: () {
             Navigator.of(context).pop();
@@ -210,23 +183,16 @@ class _DashboardMissionaryPageState
         }
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Actividad creada exitosamente'),
-              backgroundColor: Colors.green,
-            ),
+          Snackbars.showSuccess(
+            context,
+            'Actividad creada exitosamente',
           );
         }
       }
     } catch (e) {
       debugPrint('Error en _openCreateDialog: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        Snackbars.showError(context, 'Error: $e');
       }
     }
   }
@@ -288,514 +254,47 @@ class _DashboardMissionaryPageState
                 mainAxisSize: MainAxisSize.max,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Sidebar Navigation
-                  if (MediaQuery.of(context).size.width > 900)
-                    Container(
-                      width: 270.0,
-                      height: double.infinity,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [
-                            AppTheme.sidebarStart,
-                            AppTheme.sidebarEnd,
-                          ],
-                          stops: [0.0, 1.0],
-                          begin: AlignmentDirectional(0.0, -1.0),
-                          end: AlignmentDirectional(0, 1.0),
-                        ),
-                        border: Border.all(
-                          color: Theme.of(context).dividerColor,
-                          width: 1.0,
-                        ),
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsetsDirectional.fromSTEB(
-                            0.0, 24.0, 0.0, 16.0),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.max,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Logo
-                            Padding(
-                              padding: const EdgeInsetsDirectional.fromSTEB(
-                                  16.0, 0.0, 16.0, 12.0),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.max,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(8.0),
-                                    child: Image.asset(
-                                      'assets/images/LOGO2.png',
-                                      width: 150.0,
-                                      height: 150.0,
-                                      fit: BoxFit.cover,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Container(
-                                          width: 150.0,
-                                          height: 150.0,
-                                          color: Colors.white24,
-                                          child: const Icon(
-                                            Icons.church,
-                                            size: 60,
-                                            color: Colors.white,
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Divider(
-                              height: 12.0,
-                              thickness: 2.0,
-                              color: Theme.of(context).dividerColor,
-                            ),
-                            Expanded(
-                              child: Padding(
-                                padding: const EdgeInsetsDirectional.fromSTEB(
-                                    0.0, 80.0, 0.0, 0.0),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.max,
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Padding(
-                                      padding:
-                                          const EdgeInsetsDirectional.fromSTEB(
-                                              16.0, 12.0, 0.0, 0.0),
-                                      child: Text(
-                                        'Platform Navigation',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelMedium
-                                            ?.copyWith(
-                                              color: Colors.white70,
-                                              letterSpacing: 0.0,
-                                            ),
-                                      ),
-                                    ),
-                                    // Dashboard Nav Item
-                                    Padding(
-                                      padding:
-                                          const EdgeInsetsDirectional.fromSTEB(
-                                              16.0, 0.0, 16.0, 0.0),
-                                      child: Container(
-                                        width: double.infinity,
-                                        height: 44.0,
-                                        decoration: BoxDecoration(
-                                          color: Colors.white.withOpacity(0.2),
-                                          borderRadius:
-                                              BorderRadius.circular(12.0),
-                                        ),
-                                        child: Padding(
-                                          padding: const EdgeInsetsDirectional
-                                              .fromSTEB(8.0, 0.0, 6.0, 0.0),
-                                          child: Row(
-                                            mainAxisSize: MainAxisSize.max,
-                                            children: [
-                                              const Icon(
-                                                Icons.dashboard,
-                                                color: Colors.white,
-                                                size: 24.0,
-                                              ),
-                                              Padding(
-                                                padding:
-                                                    const EdgeInsetsDirectional
-                                                        .fromSTEB(
-                                                        12.0, 0.0, 0.0, 0.0),
-                                                child: Text(
-                                                  'Dashboard',
-                                                  style: Theme.of(context)
-                                                      .textTheme
-                                                      .bodyMedium
-                                                      ?.copyWith(
-                                                        color: Colors.white,
-                                                        letterSpacing: 0.0,
-                                                      ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    // Create Activity Nav Item
-                                    Padding(
-                                      padding:
-                                          const EdgeInsetsDirectional.fromSTEB(
-                                              16.0, 0.0, 16.0, 0.0),
-                                      child: InkWell(
-                                        onTap: _openCreateDialog,
-                                        child: Container(
-                                          width: double.infinity,
-                                          height: 44.0,
-                                          decoration: BoxDecoration(
-                                            color: Colors.transparent,
-                                            borderRadius:
-                                                BorderRadius.circular(12.0),
-                                          ),
-                                          child: Padding(
-                                            padding:
-                                                const EdgeInsetsDirectional
-                                                    .fromSTEB(
-                                                    8.0, 0.0, 6.0, 0.0),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.max,
-                                              children: [
-                                                const Icon(
-                                                  Icons.add_circle_outline,
-                                                  color: Colors.white,
-                                                  size: 24.0,
-                                                ),
-                                                Padding(
-                                                  padding:
-                                                      const EdgeInsetsDirectional
-                                                          .fromSTEB(12.0, 0.0,
-                                                          0.0, 0.0),
-                                                  child: Text(
-                                                    'Nueva Actividad',
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .bodyMedium
-                                                        ?.copyWith(
-                                                          color: Colors.white,
-                                                          letterSpacing: 0.0,
-                                                        ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    // Reports Nav Item
-                                    Padding(
-                                      padding:
-                                          const EdgeInsetsDirectional.fromSTEB(
-                                              16.0, 0.0, 16.0, 0.0),
-                                      child: InkWell(
-                                        onTap: () => Navigator.pushNamed(
-                                            context, Routes.reports),
-                                        child: Container(
-                                          width: double.infinity,
-                                          height: 44.0,
-                                          decoration: BoxDecoration(
-                                            color: Colors.transparent,
-                                            borderRadius:
-                                                BorderRadius.circular(12.0),
-                                          ),
-                                          child: Padding(
-                                            padding:
-                                                const EdgeInsetsDirectional
-                                                    .fromSTEB(
-                                                    8.0, 0.0, 6.0, 0.0),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.max,
-                                              children: [
-                                                const Icon(
-                                                  Icons.bar_chart,
-                                                  color: Colors.white,
-                                                  size: 24.0,
-                                                ),
-                                                Padding(
-                                                  padding:
-                                                      const EdgeInsetsDirectional
-                                                          .fromSTEB(12.0, 0.0,
-                                                          0.0, 0.0),
-                                                  child: Text(
-                                                    'Reportes',
-                                                    style: Theme.of(context)
-                                                        .textTheme
-                                                        .bodyMedium
-                                                        ?.copyWith(
-                                                          color: Colors.white,
-                                                          letterSpacing: 0.0,
-                                                        ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12.0),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            Divider(
-                              height: 12.0,
-                              thickness: 2.0,
-                              color: Theme.of(context).dividerColor,
-                            ),
-                            // User Profile Section
-                            Padding(
-                              padding: const EdgeInsetsDirectional.fromSTEB(
-                                  16.0, 12.0, 16.0, 12.0),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.max,
-                                children: [
-                                  Container(
-                                    width: 50.0,
-                                    height: 50.0,
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(12.0),
-                                      border: Border.all(
-                                        color: Colors.white,
-                                        width: 2.0,
-                                      ),
-                                    ),
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(2.0),
-                                      child: ClipRRect(
-                                        borderRadius:
-                                            BorderRadius.circular(8.0),
-                                        child: authState.user?['picture'] != null
-                                            ? Image.network(
-                                                authState.user!['picture'],
-                                                width: 44.0,
-                                                height: 44.0,
-                                                fit: BoxFit.cover,
-                                                errorBuilder: (context, error,
-                                                    stackTrace) {
-                                                  return Container(
-                                                    width: 44.0,
-                                                    height: 44.0,
-                                                    color: Colors.white24,
-                                                    child: const Icon(
-                                                      Icons.person,
-                                                      color: Colors.white,
-                                                    ),
-                                                  );
-                                                },
-                                              )
-                                            : Container(
-                                                width: 44.0,
-                                                height: 44.0,
-                                                color: Colors.white24,
-                                                child: const Icon(
-                                                  Icons.person,
-                                                  color: Colors.white,
-                                                ),
-                                              ),
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Padding(
-                                      padding:
-                                          const EdgeInsetsDirectional.fromSTEB(
-                                              12.0, 0.0, 0.0, 0.0),
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.max,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            userName,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodyLarge
-                                                ?.copyWith(
-                                                  color: Colors.white,
-                                                  letterSpacing: 0.0,
-                                                ),
-                                          ),
-                                          Text(
-                                            userEmail,
-                                            style: Theme.of(context)
-                                                .textTheme
-                                                .bodySmall
-                                                ?.copyWith(
-                                                  color: Colors.white70,
-                                                  letterSpacing: 0.0,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                  if (MediaQuery.of(context).size.width >
+                      LayoutConstants.desktopBreakpoint)
+                    SidebarNav(
+                      userName: userName,
+                      userEmail: userEmail,
+                      userPicture: authState.user?['picture'],
+                      onCreateActivity: _openCreateDialog,
                     ),
-                  // Main Content Area
                   Expanded(
                     child: Padding(
                       padding: const EdgeInsetsDirectional.fromSTEB(
-                          20.0, 20.0, 20.0, 0.0),
+                        LayoutConstants.spacing20,
+                        LayoutConstants.spacing20,
+                        LayoutConstants.spacing20,
+                        0.0,
+                      ),
                       child: SingleChildScrollView(
                         child: Column(
                           mainAxisSize: MainAxisSize.max,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // Welcome Header
-                            Text(
-                              'Bienvenido, Hno $userName',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .headlineLarge
-                                  ?.copyWith(
-                                    color: const Color(0xFFFFB547),
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 0.0,
-                                  ),
+                            WelcomeHeader(userName: userName),
+                            const SizedBox(height: LayoutConstants.spacing12),
+                            const FieldsChips(
+                              fields: fields,
                             ),
-                            const SizedBox(height: 12),
-                            // Campos a Cargo
-                            Row(
-                              children: [
-                                Text(
-                                  'Campos a Cargo:',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyLarge
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.black87,
-                                      ),
-                                ),
-                                const SizedBox(width: 12),
-                                ...fields.map((field) => Padding(
-                                      padding: const EdgeInsets.only(right: 8.0),
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 16.0,
-                                          vertical: 6.0,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFEFEFFF),
-                                          borderRadius: BorderRadius.circular(20.0),
-                                        ),
-                                        child: Text(
-                                          field,
-                                          style: const TextStyle(
-                                            color: Color.fromARGB(255, 0, 0, 0),
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ),
-                                    )),
-                              ],
+                            const SizedBox(height: LayoutConstants.spacing12),
+                            const AssociationRow(
+                              association: association,
                             ),
-                            const SizedBox(height: 12),
-                            // Asociación
-                            Row(
-                              children: [
-                                Text(
-                                  'Asociación:',
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyLarge
-                                      ?.copyWith(
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.black87,
-                                      ),
-                                ),
-                                const SizedBox(width: 12),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16.0,
-                                    vertical: 6.0,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFEFEFFF),
-                                    borderRadius: BorderRadius.circular(20.0),
-                                  ),
-                                  child: Text(
-                                    association,
-                                    style: const TextStyle(
-                                      color: Color.fromARGB(255, 0, 0, 0),
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ),
-                              ],
+                            const SizedBox(height: LayoutConstants.spacing20),
+                            const MonthHeaderPill(),
+                            const SizedBox(height: LayoutConstants.spacing20),
+                            StatsSection(
+                              config: _cfg,
+                              isLoadingExpenses: _isLoadingExpenses,
+                              monthlyExpenseTotal: _monthlyExpenseTotal,
+                              onReportsTap: () =>
+                                  Navigator.pushNamed(context, Routes.reports),
                             ),
-                            const SizedBox(height: 20),
-                            // Month Header
-                            Row(
-                              children: [
-                                Text(
-                                  'Actividades en el Mes',
-                                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFFF5A623),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.calendar_today,
-                                        size: 16,
-                                        color: Colors.white,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        DateFormat('MMMM yyyy', 'es').format(DateTime.now()),
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 20),
-                            // Stats Grid
-                            StatGrid(
-                              children: [
-                                StatCard(
-                                  title: 'Visitas Misioneras',
-                                  value: '${_cfg.visits}',
-                                  icon: Icons.groups_2,
-                                  backgroundImage: const AssetImage(
-                                      'assets/high-angle-children-holding-hands.jpg'),
-                                ),
-                                StatCard(
-                                  title: 'Estudios Bíblicos',
-                                  value: '${_cfg.bibleStudies}',
-                                  icon: Icons.menu_book_outlined,
-                                  backgroundImage: const AssetImage(
-                                      'assets/medium-shot-people-book-club.jpg'),
-                                ),
-                                StatCard(
-                                  title: 'Viático Utilizado',
-                                  value: _isLoadingExpenses
-                                      ? 'Cargando...'
-                                      : 'L.${_monthlyExpenseTotal.toStringAsFixed(0)}',
-                                  icon: Icons.payments_outlined,
-                                  backgroundImage: const AssetImage(
-                                      'assets/financial-data-analysis.jpg'),
-                                ),
-                                CtaReportCard(
-                                  reports: _cfg.reportsCount,
-                                  onTap: () =>
-                                      Navigator.pushNamed(context, Routes.reports),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 40),
-                            // Add Activity Button
+                            const SizedBox(height: LayoutConstants.spacing40),
                             Row(
                               children: [
                                 PrimaryActionButton(
@@ -803,7 +302,7 @@ class _DashboardMissionaryPageState
                                   icon: Icons.add,
                                   onPressed: _openCreateDialog,
                                 ),
-                                const SizedBox(width: 12),
+                                const SizedBox(width: LayoutConstants.spacing12),
                                 if (authState.isAuthenticated &&
                                     _recentActivities.isEmpty &&
                                     !_isLoadingActivities &&
@@ -820,44 +319,19 @@ class _DashboardMissionaryPageState
                                   ),
                               ],
                             ),
-                            const SizedBox(height: 24),
-                            // Recent Activities Section
-                            _isLoadingActivities
-                                ? const Center(
-                                    child: CircularProgressIndicator())
-                                : _recentActivities.isEmpty
-                                    ? Card(
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(32.0),
-                                          child: Column(
-                                            children: [
-                                              const Icon(Icons.info_outline,
-                                                  size: 48, color: Colors.grey),
-                                              const SizedBox(height: 8),
-                                              Text(
-                                                'No hay actividades recientes',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .titleMedium,
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                authState.isAuthenticated
-                                                    ? 'Agrega tu primera actividad para verla aquí'
-                                                    : 'Inicia sesión para ver tus actividades',
-                                                style: Theme.of(context)
-                                                    .textTheme
-                                                    .bodyMedium
-                                                    ?.copyWith(
-                                                      color: Colors.grey[600],
-                                                    ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      )
-                                    : ActivitiesTable(items: _recentActivities),
-                            const SizedBox(height: 24),
+                            const SizedBox(height: LayoutConstants.spacing24),
+                            ActivitiesSection(
+                              isLoading: _isLoadingActivities,
+                              isAuthenticated: authState.isAuthenticated,
+                              activities: _recentActivities,
+                              onRefresh: () {
+                                setState(() {
+                                  _hasAttemptedLoad = false;
+                                });
+                                _initializeData();
+                              },
+                            ),
+                            const SizedBox(height: LayoutConstants.spacing24),
                           ],
                         ),
                       ),
