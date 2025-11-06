@@ -157,7 +157,7 @@ class SidebarNav extends StatelessWidget {
         width: double.infinity,
         height: LayoutConstants.navItemHeight,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.2),
+          color: Colors.white.withValues(alpha: 0.2),
           borderRadius: BorderRadius.circular(LayoutConstants.borderRadius12),
         ),
         child: Padding(
@@ -322,7 +322,7 @@ class SidebarNav extends StatelessWidget {
             width: LayoutConstants.profileImageSize,
             height: LayoutConstants.profileImageSize,
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(LayoutConstants.borderRadius12),
               border: Border.all(
                 color: Colors.white,
