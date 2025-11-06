@@ -17,10 +17,10 @@ import { Term } from '../terms/term.entity';
 
 @Entity({ name: 'reporting_period' })
 @Check(`status IN ('active','locked')`)
-@Index(['start_date', 'end_date'])
-@Index(['entity_id', 'term_id'])
-@Index(['entity_id', 'status'])
-@Index('idx_one_active_per_entity', ['entity_id', 'status'], {
+@Index(['startDate', 'endDate'])
+@Index(['entityId', 'termId'])
+@Index(['entityId', 'status'])
+@Index('idx_one_active_per_entity', ['entityId', 'status'], {
   unique: true,
   where: "status = 'active'",
 })
