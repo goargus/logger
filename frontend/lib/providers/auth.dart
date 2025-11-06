@@ -123,8 +123,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
       };
 
       if (profile.firstName != null) result['first_name'] = profile.firstName;
-      if (profile.familyName != null)
+      if (profile.familyName != null) {
         result['family_name'] = profile.familyName;
+      }
       if (profile.fullName != null) result['full_name'] = profile.fullName;
 
       result['primary_role'] = {
