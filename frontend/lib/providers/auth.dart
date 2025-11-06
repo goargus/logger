@@ -105,38 +105,41 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<Map<String, dynamic>> _fetchBackendUserProfile(String accessToken) async {
+  Future<Map<String, dynamic>> _fetchBackendUserProfile(
+      String accessToken) async {
     try {
       debugPrint('[AuthNotifier] Fetching backend user profile...');
       final userService = UserService.localhost(() async => accessToken);
       final profile = await userService.getMyProfile();
-      
-      debugPrint('[AuthNotifier] Backend profile fetched: ${profile.firstName} ${profile.familyName}');
-      
+
+      debugPrint(
+          '[AuthNotifier] Backend profile fetched: ${profile.firstName} ${profile.familyName}');
+
       final result = <String, dynamic>{
         'id': profile.id,
         'email': profile.email,
         'username': profile.username,
         'status': profile.status,
       };
-      
+
       if (profile.firstName != null) result['first_name'] = profile.firstName;
-      if (profile.familyName != null) result['family_name'] = profile.familyName;
+      if (profile.familyName != null)
+        result['family_name'] = profile.familyName;
       if (profile.fullName != null) result['full_name'] = profile.fullName;
-      
+
       result['primary_role'] = {
         'id': profile.primaryRole.id,
         'name': profile.primaryRole.name,
         'description': profile.primaryRole.description,
       };
-      
+
       result['primary_entity'] = {
         'id': profile.primaryEntity.id,
         'name': profile.primaryEntity.name,
         'description': profile.primaryEntity.description,
         'type': profile.primaryEntity.type,
       };
-      
+
       return result;
     } catch (e) {
       debugPrint('[AuthNotifier] Error fetching backend user profile: $e');
@@ -174,10 +177,11 @@ class AuthNotifier extends StateNotifier<AuthState> {
         );
 
         if (userResponse.statusCode == 200) {
-          final userInfo = jsonDecode(userResponse.body) as Map<String, dynamic>;
-          
+          final userInfo =
+              jsonDecode(userResponse.body) as Map<String, dynamic>;
+
           final backendProfile = await _fetchBackendUserProfile(accessToken);
-          
+
           final mergedUserInfo = {...userInfo, ...backendProfile};
 
           web.window.localStorage.setItem('auth_token', accessToken);
@@ -219,9 +223,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       if (userResponse.statusCode == 200) {
         final userInfo = jsonDecode(userResponse.body) as Map<String, dynamic>;
-        
+
         final backendProfile = await _fetchBackendUserProfile(accessToken);
-        
+
         final mergedUserInfo = {...userInfo, ...backendProfile};
 
         await _session.saveToken(accessToken);

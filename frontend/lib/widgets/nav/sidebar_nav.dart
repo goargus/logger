@@ -323,7 +323,8 @@ class SidebarNav extends StatelessWidget {
             height: LayoutConstants.profileImageSize,
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(LayoutConstants.borderRadius12),
+              borderRadius:
+                  BorderRadius.circular(LayoutConstants.borderRadius12),
               border: Border.all(
                 color: Colors.white,
                 width: LayoutConstants.borderWidth2,
@@ -332,7 +333,8 @@ class SidebarNav extends StatelessWidget {
             child: Padding(
               padding: const EdgeInsets.all(2.0),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(LayoutConstants.borderRadius8),
+                borderRadius:
+                    BorderRadius.circular(LayoutConstants.borderRadius8),
                 child: userPicture != null
                     ? Image.network(
                         userPicture!,

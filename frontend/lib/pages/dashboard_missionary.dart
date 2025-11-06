@@ -302,7 +302,8 @@ class _DashboardMissionaryPageState
                                   icon: Icons.add,
                                   onPressed: _openCreateDialog,
                                 ),
-                                const SizedBox(width: LayoutConstants.spacing12),
+                                const SizedBox(
+                                    width: LayoutConstants.spacing12),
                                 if (authState.isAuthenticated &&
                                     _recentActivities.isEmpty &&
                                     !_isLoadingActivities &&

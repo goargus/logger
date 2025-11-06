@@ -8,9 +8,9 @@ class ActivitiesTable extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hdrStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
-      fontWeight: FontWeight.w600,
-    );
-    
+          fontWeight: FontWeight.w600,
+        );
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -23,15 +23,15 @@ class ActivitiesTable extends StatelessWidget {
           Text(
             'Actividades Recientes',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
+                  fontWeight: FontWeight.w600,
+                ),
           ),
           const SizedBox(height: 16),
           const Divider(height: 1),
           LayoutBuilder(
             builder: (context, constraints) {
               final availableWidth = constraints.maxWidth;
-              
+
               return SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: ConstrainedBox(
@@ -82,7 +82,8 @@ class ActivitiesTable extends StatelessWidget {
                         DataCell(
                           SizedBox(
                             width: availableWidth * 0.15,
-                            child: Text('${a.date.day} ${_month(a.date.month)} ${a.date.year}'),
+                            child: Text(
+                                '${a.date.day} ${_month(a.date.month)} ${a.date.year}'),
                           ),
                         ),
                         DataCell(
@@ -126,7 +127,8 @@ class ActivitiesTable extends StatelessWidget {
                                     minHeight: 36,
                                   ),
                                   onPressed: () {},
-                                  icon: const Icon(Icons.delete_outline, size: 16),
+                                  icon: const Icon(Icons.delete_outline,
+                                      size: 16),
                                 ),
                               ],
                             ),

@@ -31,7 +31,8 @@ class FieldsChips extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFEFEFFF),
-                  borderRadius: BorderRadius.circular(LayoutConstants.borderRadius20),
+                  borderRadius:
+                      BorderRadius.circular(LayoutConstants.borderRadius20),
                 ),
                 child: Text(
                   field,
