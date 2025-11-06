@@ -110,6 +110,7 @@ services:
     volumes:
       - ./frontend/lib:/app/lib
       - ./frontend/web:/app/web
+      - ./frontend/assets:/app/assets
       - ./frontend/pubspec.yaml:/app/pubspec.yaml
 
 volumes:
