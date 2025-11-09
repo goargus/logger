@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { JwtStrategy } from './jwt.strategy';
 import { AuthService } from './auth.service';
+import { IdentityResolutionService } from './identity-resolution.service';
 import { IdpIdentitiesModule } from '../idp-identities/idp-identities.module';
 import { User } from '../users/user.entity';
 import { AuthController } from './auth.controller';
@@ -20,7 +21,7 @@ import { IdpIdentity } from '../idp-identities/idp-identity.entity';
     TypeOrmModule.forFeature([IdpIdentity, User]),
   ],
   controllers: [AuthController],
-  providers: [JwtStrategy, AuthService],
-  exports: [AuthService],
+  providers: [JwtStrategy, AuthService, IdentityResolutionService],
+  exports: [AuthService, IdentityResolutionService],
 })
 export class AuthModule {}

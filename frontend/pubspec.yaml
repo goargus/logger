@@ -26,7 +26,12 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
-  
+
 flutter:
+  uses-material-design: true
   assets:
     - assets/logo.png
+    - assets/images/LOGO2.png
+    - assets/high-angle-children-holding-hands.jpg
+    - assets/medium-shot-people-book-club.jpg
+    - assets/financial-data-analysis.jpg

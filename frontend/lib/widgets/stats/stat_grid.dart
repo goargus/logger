@@ -19,7 +19,7 @@ class StatGrid extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(),
         mainAxisSpacing: 12,
         crossAxisSpacing: 12,
-        childAspectRatio: 3.6,
+        childAspectRatio: 2.8,
         children: children,
       );
     });

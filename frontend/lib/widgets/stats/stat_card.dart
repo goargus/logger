@@ -19,37 +19,28 @@ class StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primary = Theme.of(context).colorScheme.primary;
-    final radius = BorderRadius.circular(16);
+    final radius = BorderRadius.circular(24);
 
     final content = Padding(
-      padding: const EdgeInsets.all(16),
-      child: Row(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          CircleAvatar(
-            backgroundColor: Colors.white.withValues(alpha: 0.22),
-            child: Icon(icon, color: Colors.white),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    )),
-                const SizedBox(height: 6),
-                Text(value,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w800,
-                    )),
-              ],
-            ),
-          ),
-          const Icon(Icons.chevron_right, color: Colors.white),
+          Text(title,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              )),
+          const SizedBox(height: 8),
+          Text(value,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 48,
+                fontWeight: FontWeight.w700,
+                height: 1.0,
+              )),
         ],
       ),
     );
@@ -78,16 +69,16 @@ class StatCard extends StatelessWidget {
           children: [
             // imagen
             Image(image: backgroundImage!, fit: BoxFit.cover),
-            // overlay degradado
+            // overlay con blur morado/azul
             Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    Colors.black.withValues(alpha: 0.55),
-                    Colors.black.withValues(alpha: 0.25)
+                    const Color(0xFF4A3F8F).withValues(alpha: 0.85),
+                    const Color(0xFF2E1F5F).withValues(alpha: 0.75)
                   ],
-                  begin: Alignment.bottomLeft,
-                  end: Alignment.topRight,
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
               ),
             ),

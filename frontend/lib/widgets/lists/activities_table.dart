@@ -7,49 +7,141 @@ class ActivitiesTable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hdrStyle = Theme.of(context).textTheme.titleMedium;
+    final hdrStyle = Theme.of(context).textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.w600,
+        );
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
       ),
-      padding: const EdgeInsets.all(8),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: DataTable(
-          columnSpacing: 28,
-          headingRowHeight: 48,
-          headingTextStyle: hdrStyle,
-          columns: const [
-            DataColumn(label: Text('Fecha')),
-            DataColumn(label: Text('Categoría')),
-            DataColumn(label: Text('Descripción')),
-            DataColumn(label: Text('Gasto')),
-            DataColumn(label: Text('Acciones')),
-          ],
-          rows: items.map((a) {
-            return DataRow(cells: [
-              DataCell(
-                  Text('${a.date.day} ${_month(a.date.month)} ${a.date.year}')),
-              DataCell(Text(a.category)),
-              DataCell(Text(a.description)),
-              DataCell(Text('L.${a.expense.toStringAsFixed(2)}')),
-              DataCell(Row(
-                children: [
-                  IconButton.filledTonal(
-                    onPressed: () {},
-                    icon: const Icon(Icons.edit, size: 18),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Actividades Recientes',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final availableWidth = constraints.maxWidth;
+
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minWidth: availableWidth,
                   ),
-                  const SizedBox(width: 6),
-                  IconButton.filledTonal(
-                    onPressed: () {},
-                    icon: const Icon(Icons.delete_outline, size: 18),
+                  child: DataTable(
+                    columnSpacing: 20,
+                    headingRowHeight: 44,
+                    headingTextStyle: hdrStyle,
+                    dataRowMinHeight: 48,
+                    dataRowMaxHeight: 52,
+                    horizontalMargin: 0,
+                    columns: [
+                      DataColumn(
+                        label: SizedBox(
+                          width: availableWidth * 0.15,
+                          child: const Text('Fecha'),
+                        ),
+                      ),
+                      DataColumn(
+                        label: SizedBox(
+                          width: availableWidth * 0.20,
+                          child: const Text('Categoría'),
+                        ),
+                      ),
+                      DataColumn(
+                        label: SizedBox(
+                          width: availableWidth * 0.35,
+                          child: const Text('Descripción'),
+                        ),
+                      ),
+                      DataColumn(
+                        label: SizedBox(
+                          width: availableWidth * 0.15,
+                          child: const Text('Gasto'),
+                        ),
+                      ),
+                      DataColumn(
+                        label: SizedBox(
+                          width: availableWidth * 0.12,
+                          child: const Text('Acciones'),
+                        ),
+                      ),
+                    ],
+                    rows: items.map((a) {
+                      return DataRow(cells: [
+                        DataCell(
+                          SizedBox(
+                            width: availableWidth * 0.15,
+                            child: Text(
+                                '${a.date.day} ${_month(a.date.month)} ${a.date.year}'),
+                          ),
+                        ),
+                        DataCell(
+                          SizedBox(
+                            width: availableWidth * 0.20,
+                            child: Text(a.category),
+                          ),
+                        ),
+                        DataCell(
+                          SizedBox(
+                            width: availableWidth * 0.35,
+                            child: Text(a.description),
+                          ),
+                        ),
+                        DataCell(
+                          SizedBox(
+                            width: availableWidth * 0.15,
+                            child: Text('L.${a.expense.toStringAsFixed(2)}'),
+                          ),
+                        ),
+                        DataCell(
+                          SizedBox(
+                            width: availableWidth * 0.12,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton.filledTonal(
+                                  padding: const EdgeInsets.all(8),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 36,
+                                    minHeight: 36,
+                                  ),
+                                  onPressed: () {},
+                                  icon: const Icon(Icons.edit, size: 16),
+                                ),
+                                const SizedBox(width: 4),
+                                IconButton.filledTonal(
+                                  padding: const EdgeInsets.all(8),
+                                  constraints: const BoxConstraints(
+                                    minWidth: 36,
+                                    minHeight: 36,
+                                  ),
+                                  onPressed: () {},
+                                  icon: const Icon(Icons.delete_outline,
+                                      size: 16),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ]);
+                    }).toList(),
                   ),
-                ],
-              )),
-            ]);
-          }).toList(),
-        ),
+                ),
+              );
+            },
+          ),
+        ],
       ),
     );
   }

@@ -5,18 +5,20 @@ import '../models/activity.dart';
 import '../models/dashboard_config.dart';
 import '../routes.dart';
 
-import '../widgets/layouts/app_shell.dart';
-import '../widgets/layouts/responsive_container.dart';
-import '../widgets/headers/page_title.dart';
-import '../widgets/pills/info_pill.dart';
-import '../widgets/stats/stat_card.dart';
-import '../widgets/stats/stat_grid.dart';
-import '../widgets/stats/cta_report_card.dart';
+import '../core/layout_constants.dart';
+import '../core/snackbars.dart';
+import '../core/auth_utils.dart';
+
+import '../widgets/nav/sidebar_nav.dart';
+import '../widgets/headers/welcome_header.dart';
+import '../widgets/pills/month_header_pill.dart';
+import '../widgets/pills/fields_chips.dart';
+import '../widgets/lists/association_row.dart';
+import '../widgets/lists/activities_section.dart';
+import '../widgets/stats/stats_section.dart';
 import '../widgets/buttons/primary_action_button.dart';
-import '../widgets/lists/activities_table.dart';
 import '../widgets/dialogs/create_activity_dialog.dart';
 
-import '../auth/session.dart';
 import '../providers/auth.dart';
 import '../services/activity.dart';
 
@@ -43,7 +45,7 @@ class _DashboardMissionaryPageState
   void initState() {
     super.initState();
     _activityService = ActivityService.localhost(
-        () async => await _getAccessTokenEnsured() ?? '');
+        () async => await AuthUtils.getAccessTokenEnsured(ref) ?? '');
   }
 
   Future<void> _initializeData() async {
@@ -63,7 +65,7 @@ class _DashboardMissionaryPageState
     });
 
     try {
-      final token = await _getAccessTokenEnsured();
+      final token = await AuthUtils.getAccessTokenEnsured(ref);
 
       if (token != null && token.isNotEmpty && mounted) {
         await _loadMonthlyExpenses();
@@ -85,27 +87,6 @@ class _DashboardMissionaryPageState
           _isLoadingActivities = false;
         });
       }
-    }
-  }
-
-  Future<String?> _getAccessTokenEnsured() async {
-    try {
-      final authState = ref.read(authNotifierProvider);
-      if (authState.isAuthenticated && authState.accessToken != null) {
-        final token = authState.accessToken!;
-
-        await Session.instance.setAccessToken(token);
-        return token;
-      }
-
-      final sessionToken = await Session.instance.getAccessToken();
-      if (sessionToken != null && sessionToken.isNotEmpty) {
-        return sessionToken;
-      }
-
-      return null;
-    } catch (e) {
-      return null;
     }
   }
 
@@ -178,17 +159,7 @@ class _DashboardMissionaryPageState
         builder: (_) => CreateActivityDialog(
           baseUrl: _apiBaseUrl,
           getAccessToken: () async {
-            final authState = ref.read(authNotifierProvider);
-            if (authState.isAuthenticated && authState.accessToken != null) {
-              return authState.accessToken!;
-            }
-
-            final sessionToken = await Session.instance.getAccessToken();
-            if (sessionToken != null && sessionToken.isNotEmpty) {
-              return sessionToken;
-            }
-
-            return '';
+            return await AuthUtils.getAccessTokenEnsured(ref) ?? '';
           },
           onRequireLogin: () {
             Navigator.of(context).pop();
@@ -212,23 +183,16 @@ class _DashboardMissionaryPageState
         }
 
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Actividad creada exitosamente'),
-              backgroundColor: Colors.green,
-            ),
+          Snackbars.showSuccess(
+            context,
+            'Actividad creada exitosamente',
           );
         }
       }
     } catch (e) {
       debugPrint('Error en _openCreateDialog: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        Snackbars.showError(context, 'Error: $e');
       }
     }
   }
@@ -237,9 +201,6 @@ class _DashboardMissionaryPageState
   Widget build(BuildContext context) {
     const association = 'Asociación Central';
     const fields = ['Siguatepeque', 'Comayagua'];
-
-    final subtitle =
-        'Asociación: $association\nCampos a Cargo: ${fields.join(', ')}';
 
     return Consumer(
       builder: (context, ref, _) {
@@ -274,155 +235,115 @@ class _DashboardMissionaryPageState
           });
         }
 
-        return AppShell(
-          activeRoute: Routes.dashboardMissionary,
-          body: ResponsiveContainer(
-            child: ListView(
-              children: [
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Consumer(
-                        builder: (context, ref, _) {
-                          final authState = ref.watch(authNotifierProvider);
-                          final userName = authState.user?['name'] ??
-                              authState.user?['nickname'] ??
-                              'Usuario';
-                          return PageTitle(
-                            title: 'Bienvenido, $userName',
-                            subtitle: subtitle,
-                          );
-                        },
+        final userName = authState.user?['first_name'] ??
+            authState.user?['name'] ??
+            authState.user?['nickname'] ??
+            'Usuario';
+        final userEmail = authState.user?['first_name'] ?? '';
+
+        return GestureDetector(
+          onTap: () {
+            FocusScope.of(context).unfocus();
+            FocusManager.instance.primaryFocus?.unfocus();
+          },
+          child: Scaffold(
+            backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+            body: SafeArea(
+              top: true,
+              child: Row(
+                mainAxisSize: MainAxisSize.max,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (MediaQuery.of(context).size.width >
+                      LayoutConstants.desktopBreakpoint)
+                    SidebarNav(
+                      userName: userName,
+                      userEmail: userEmail,
+                      userPicture: authState.user?['picture'],
+                      onCreateActivity: _openCreateDialog,
+                    ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsetsDirectional.fromSTEB(
+                        LayoutConstants.spacing20,
+                        LayoutConstants.spacing20,
+                        LayoutConstants.spacing20,
+                        0.0,
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    const InfoPill(
-                        label: 'Actividades en el Mes', icon: Icons.checklist),
-                    const SizedBox(width: 8),
-                    InfoPill(
-                        label: _monthLabel(_cfg.month, _cfg.year),
-                        icon: Icons.calendar_month),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                StatGrid(
-                  children: [
-                    StatCard(
-                      title: 'Visitas Misioneras',
-                      value: '${_cfg.visits}',
-                      icon: Icons.groups_2,
-                    ),
-                    StatCard(
-                      title: 'Estudios Bíblicos',
-                      value: '${_cfg.bibleStudies}',
-                      icon: Icons.menu_book_outlined,
-                    ),
-                    StatCard(
-                      title: 'Viático Utilizado',
-                      value: _isLoadingExpenses
-                          ? 'Cargando...'
-                          : 'L.${_monthlyExpenseTotal.toStringAsFixed(0)}',
-                      icon: Icons.payments_outlined,
-                    ),
-                    CtaReportCard(
-                      reports: _cfg.reportsCount,
-                      onTap: () => Navigator.pushNamed(context, Routes.reports),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.only(top: 4.0, bottom: 8.0),
-                  child: Row(
-                    children: [
-                      PrimaryActionButton(
-                        label: 'Agregar Actividad',
-                        icon: Icons.add,
-                        onPressed: _openCreateDialog,
-                      ),
-                      const SizedBox(width: 12),
-                      if (authState.isAuthenticated &&
-                          _recentActivities.isEmpty &&
-                          !_isLoadingActivities &&
-                          _hasAttemptedLoad)
-                        TextButton.icon(
-                          onPressed: () {
-                            setState(() {
-                              _hasAttemptedLoad = false;
-                            });
-                            _initializeData();
-                          },
-                          icon: const Icon(Icons.refresh),
-                          label: const Text('Recargar'),
-                        ),
-                    ],
-                  ),
-                ),
-                Text('Actividades Recientes',
-                    style: Theme.of(context).textTheme.titleMedium),
-                const SizedBox(height: 8),
-                _isLoadingActivities
-                    ? const Center(child: CircularProgressIndicator())
-                    : _recentActivities.isEmpty
-                        ? Card(
-                            child: Padding(
-                              padding: const EdgeInsets.all(16.0),
-                              child: Column(
-                                children: [
-                                  const Icon(Icons.info_outline,
-                                      size: 48, color: Colors.grey),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'No hay actividades recientes',
-                                    style:
-                                        Theme.of(context).textTheme.titleMedium,
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    authState.isAuthenticated
-                                        ? 'Agrega tu primera actividad para verla aquí'
-                                        : 'Inicia sesión para ver tus actividades',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(
-                                          color: Colors.grey[600],
-                                        ),
-                                  ),
-                                ],
-                              ),
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.max,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            WelcomeHeader(userName: userName),
+                            const SizedBox(height: LayoutConstants.spacing12),
+                            const FieldsChips(
+                              fields: fields,
                             ),
-                          )
-                        : ActivitiesTable(items: _recentActivities),
-                const SizedBox(height: 24),
-              ],
+                            const SizedBox(height: LayoutConstants.spacing12),
+                            const AssociationRow(
+                              association: association,
+                            ),
+                            const SizedBox(height: LayoutConstants.spacing20),
+                            const MonthHeaderPill(),
+                            const SizedBox(height: LayoutConstants.spacing20),
+                            StatsSection(
+                              config: _cfg,
+                              isLoadingExpenses: _isLoadingExpenses,
+                              monthlyExpenseTotal: _monthlyExpenseTotal,
+                              onReportsTap: () =>
+                                  Navigator.pushNamed(context, Routes.reports),
+                            ),
+                            const SizedBox(height: LayoutConstants.spacing40),
+                            Row(
+                              children: [
+                                PrimaryActionButton(
+                                  label: 'Agregar Actividad',
+                                  icon: Icons.add,
+                                  onPressed: _openCreateDialog,
+                                ),
+                                const SizedBox(
+                                    width: LayoutConstants.spacing12),
+                                if (authState.isAuthenticated &&
+                                    _recentActivities.isEmpty &&
+                                    !_isLoadingActivities &&
+                                    _hasAttemptedLoad)
+                                  TextButton.icon(
+                                    onPressed: () {
+                                      setState(() {
+                                        _hasAttemptedLoad = false;
+                                      });
+                                      _initializeData();
+                                    },
+                                    icon: const Icon(Icons.refresh),
+                                    label: const Text('Recargar'),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: LayoutConstants.spacing24),
+                            ActivitiesSection(
+                              isLoading: _isLoadingActivities,
+                              isAuthenticated: authState.isAuthenticated,
+                              activities: _recentActivities,
+                              onRefresh: () {
+                                setState(() {
+                                  _hasAttemptedLoad = false;
+                                });
+                                _initializeData();
+                              },
+                            ),
+                            const SizedBox(height: LayoutConstants.spacing24),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         );
       },
     );
-  }
-
-  String _monthLabel(int month, int year) {
-    const m = [
-      'Enero',
-      'Febrero',
-      'Marzo',
-      'Abril',
-      'Mayo',
-      'Junio',
-      'Julio',
-      'Agosto',
-      'Septiembre',
-      'Octubre',
-      'Noviembre',
-      'Diciembre'
-    ];
-    return '${m[month - 1]} $year';
   }
 }

@@ -24,9 +24,9 @@ class UserProfile {
   final String id;
   final String username;
   final String email;
-  final String fullName;
-  final String firstName;
-  final String familyName;
+  final String? fullName;
+  final String? firstName;
+  final String? familyName;
   final String status;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -38,9 +38,9 @@ class UserProfile {
     required this.id,
     required this.username,
     required this.email,
-    required this.fullName,
-    required this.firstName,
-    required this.familyName,
+    this.fullName,
+    this.firstName,
+    this.familyName,
     required this.status,
     required this.createdAt,
     required this.updatedAt,
@@ -54,9 +54,9 @@ class UserProfile {
       id: json['id'] as String,
       username: json['username'] as String,
       email: json['email'] as String,
-      fullName: json['full_name'] as String,
-      firstName: json['first_name'] as String,
-      familyName: json['family_name'] as String,
+      fullName: json['full_name'] as String?,
+      firstName: json['first_name'] as String?,
+      familyName: json['family_name'] as String?,
       status: json['status'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
