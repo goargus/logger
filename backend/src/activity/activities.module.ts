@@ -11,7 +11,16 @@ import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
 import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Activity, ActivityType, IdpIdentity, User, ReportingPeriod, UserRoleAssignment])],
+  imports: [
+    TypeOrmModule.forFeature([
+      Activity,
+      ActivityType,
+      IdpIdentity,
+      User,
+      ReportingPeriod,
+      UserRoleAssignment,
+    ]),
+  ],
   controllers: [ActivitiesController],
   providers: [ActivitiesService, IdentityResolutionService],
   exports: [ActivitiesService],

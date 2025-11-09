@@ -273,13 +273,13 @@ describe('ActivitiesService', () => {
         .mockResolvedValueOnce(mockActivityType)
         .mockResolvedValueOnce(mockActivityType);
       mockUserRoleAssignmentRepo.findOne.mockResolvedValue(mockUserRoleAssignment);
-      
+
       // Mock reporting period check
       mockReportingPeriodRepo.createQueryBuilder.mockReturnValue({
         where: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(null),
       } as any);
-      
+
       mockActivityRepo.create.mockReturnValue(mockCreatedActivity);
       mockActivityRepo.save.mockResolvedValue(mockCreatedActivity);
 
