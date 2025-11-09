@@ -33,8 +33,8 @@ export class ActivityTypesController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('my-activity-types')
-  async getMyActivityTypes(@Req() req: Request) {
+  @Get('authorized')
+  async getAuthorized(@Req() req: Request) {
     const { sub, iss } = (req.user as JwtValidatedUser) ?? {};
     const user = await this.identityService.resolveUserBySubAndIssuer(sub, iss);
     return this.service.findAllByUserRole(user.role_id);
