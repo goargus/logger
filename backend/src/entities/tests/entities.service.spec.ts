@@ -37,6 +37,7 @@ describe('EntitiesService', () => {
     description: 'Cobertura nacional',
     location: 'Honduras',
     is_active: true,
+    term_length_years: 5,
     parent_id: null,
     created_at: new Date('2025-08-12T17:34:14.503Z') as never,
     updated_at: new Date('2025-08-12T17:34:14.503Z') as never,

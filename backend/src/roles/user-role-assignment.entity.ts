@@ -3,17 +3,19 @@ import {
   PrimaryGeneratedColumn,
   ManyToOne,
   JoinColumn,
-  Unique,
   CreateDateColumn,
   UpdateDateColumn,
   Column,
+  Index,
 } from 'typeorm';
 import { User } from '../users/user.entity';
 import { Role } from './role.entity';
 import { Entity as OrgEntity } from '../entities/entity.entity';
 
 @OrmEntity({ name: 'user_role_assignments' })
-@Unique(['user', 'role', 'entity'])
+@Index(['user', 'end_date'])
+@Index(['entity', 'end_date'])
+@Index(['user', 'role', 'entity', 'start_date', 'end_date'])
 export class UserRoleAssignment {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -30,6 +32,12 @@ export class UserRoleAssignment {
   @JoinColumn({ name: 'entity_id' })
   entity!: OrgEntity;
 
+  @Column({ type: 'date', name: 'start_date' })
+  start_date!: string;
+
+  @Column({ type: 'date', name: 'end_date' })
+  end_date!: string;
+
   @Column({ type: 'varchar', length: 120, nullable: true })
   created_by?: string;
 
@@ -41,4 +49,9 @@ export class UserRoleAssignment {
 
   @UpdateDateColumn()
   updated_at!: Date;
+
+  isActive(): boolean {
+    const today = new Date().toISOString().split('T')[0];
+    return this.end_date >= today;
+  }
 }

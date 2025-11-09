@@ -8,6 +8,7 @@ import {
   OneToMany,
   ManyToOne,
   JoinColumn,
+  Check,
 } from 'typeorm';
 import { User } from '../users/user.entity';
 
@@ -20,6 +21,7 @@ export enum EntityType {
 
 @OrmEntity('entities')
 @Unique(['name', 'type'])
+@Check('term_length_years >= 1 AND term_length_years <= 20')
 export class Entity {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
@@ -41,6 +43,9 @@ export class Entity {
 
   @Column({ default: true })
   is_active!: boolean;
+
+  @Column({ type: 'int', default: 5, name: 'term_length_years' })
+  term_length_years!: number;
 
   @Column({ type: 'uuid', nullable: true })
   parent_id?: string | null;

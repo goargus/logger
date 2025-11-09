@@ -1,4 +1,4 @@
-import { IsUUID, IsEnum } from 'class-validator';
+import { IsUUID, IsEnum, IsOptional, IsDateString } from 'class-validator';
 import { Transform } from 'class-transformer';
 
 export enum RoleEnum {
@@ -21,4 +21,8 @@ export class AssignRoleDto {
 
   @IsUUID()
   entityId!: string;
+
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
 }

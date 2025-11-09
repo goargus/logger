@@ -1,4 +1,4 @@
-import { IsUUID, IsEnum, IsArray, ArrayNotEmpty } from 'class-validator';
+import { IsUUID, IsEnum, IsArray, ArrayNotEmpty, IsOptional, IsDateString } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { RoleEnum } from './assign-role.dto';
 
@@ -16,4 +16,8 @@ export class BulkAssignRoleDto {
   @ArrayNotEmpty()
   @IsUUID('4', { each: true })
   entityIds!: string[];
+
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
 }

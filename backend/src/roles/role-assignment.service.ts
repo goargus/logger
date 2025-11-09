@@ -28,6 +28,45 @@ export class RoleAssignmentService {
     private readonly dataSource: DataSource,
   ) {}
 
+  private calculateEndDate(startDate: string, termLengthYears: number): string {
+    const start = new Date(startDate);
+    const end = new Date(start);
+    end.setFullYear(end.getFullYear() + termLengthYears);
+    end.setDate(end.getDate() - 1);
+    return end.toISOString().split('T')[0];
+  }
+
+  private async checkOverlap(
+    userId: string,
+    roleId: string,
+    entityId: string,
+    startDate: string,
+    endDate: string,
+    excludeId?: string,
+  ): Promise<void> {
+    const qb = this.uraRepo
+      .createQueryBuilder('assignment')
+      .where('assignment.user_id = :userId', { userId })
+      .andWhere('assignment.role_id = :roleId', { roleId })
+      .andWhere('assignment.entity_id = :entityId', { entityId })
+      .andWhere(
+        '(assignment.start_date <= :endDate AND assignment.end_date >= :startDate)',
+        { startDate, endDate },
+      );
+
+    if (excludeId) {
+      qb.andWhere('assignment.id != :excludeId', { excludeId });
+    }
+
+    const overlapping = await qb.getOne();
+
+    if (overlapping) {
+      throw new ConflictException(
+        `An overlapping assignment already exists for this user, role, and entity from ${overlapping.start_date} to ${overlapping.end_date}`,
+      );
+    }
+  }
+
   async assign(dto: AssignRoleDto, adminUserId?: string) {
     const user = await this.usersRepo.findOne({ where: { id: dto.userId } });
     if (!user) throw new NotFoundException('User not found');
@@ -47,16 +86,19 @@ export class RoleAssignmentService {
       throw new BadRequestException('Cannot assign roles to inactive entities');
     }
 
-    const existing = await this.uraRepo.findOne({
-      where: { user: { id: user.id }, role: { id: role.id }, entity: { id: entity.id } },
-    });
-    if (existing) throw new ConflictException('This user already has that role in this entity');
+    const startDate = dto.startDate || new Date().toISOString().split('T')[0];
+    const endDate = this.calculateEndDate(startDate, entity.term_length_years);
+
+    // Check for overlapping assignments
+    await this.checkOverlap(user.id, role.id, entity.id, startDate, endDate);
 
     return this.dataSource.transaction(async (manager) => {
       const assignment = manager.create(UserRoleAssignment, {
         user,
         role,
         entity,
+        start_date: startDate,
+        end_date: endDate,
         created_by: adminUserId,
         updated_by: adminUserId,
       });
@@ -146,16 +188,30 @@ export class RoleAssignmentService {
       };
     }
 
+    const startDate = dto.startDate || new Date().toISOString().split('T')[0];
+
+    // Check for overlaps in all entities
+    for (const entityId of newEntityIds) {
+      const entity = entities.find((e) => e.id === entityId);
+      if (entity) {
+        const endDate = this.calculateEndDate(startDate, entity.term_length_years);
+        await this.checkOverlap(user.id, role.id, entity.id, startDate, endDate);
+      }
+    }
+
     return this.dataSource.transaction(async (manager) => {
       const newAssignments = newEntityIds.map((entityId) => {
         const entity = entities.find((e) => e.id === entityId);
         if (!entity) {
           throw new NotFoundException(`Entity ${entityId} not found`);
         }
+        const endDate = this.calculateEndDate(startDate, entity.term_length_years);
         return manager.create(UserRoleAssignment, {
           user,
           role,
           entity,
+          start_date: startDate,
+          end_date: endDate,
           created_by: adminUserId,
           updated_by: adminUserId,
         });
@@ -191,5 +247,61 @@ export class RoleAssignmentService {
       entities: assignments.map((assignment) => assignment.entity),
       totalEntities: assignments.length,
     };
+  }
+
+  async listAssignments(entityId?: string, userId?: string, active?: boolean) {
+    const where: any = {};
+    if (entityId) where.entity = { id: entityId };
+    if (userId) where.user = { id: userId };
+
+    const assignments = await this.uraRepo.find({ where });
+
+    if (active !== undefined) {
+      const today = new Date().toISOString().split('T')[0];
+      return assignments.filter((a) => {
+        const isActive = a.end_date >= today;
+        return active ? isActive : !isActive;
+      });
+    }
+
+    return assignments;
+  }
+
+  async getAssignment(id: string) {
+    const assignment = await this.uraRepo.findOne({ where: { id } });
+    if (!assignment) throw new NotFoundException('Assignment not found');
+    return assignment;
+  }
+
+  async updateAssignment(id: string, endDate: string, adminUserId?: string) {
+    const assignment = await this.uraRepo.findOne({ where: { id } });
+    if (!assignment) throw new NotFoundException('Assignment not found');
+
+    if (endDate < assignment.start_date) {
+      throw new BadRequestException('End date cannot be before start date');
+    }
+
+    // Check for overlaps when extending the assignment
+    await this.checkOverlap(
+      assignment.user.id,
+      assignment.role.id,
+      assignment.entity.id,
+      assignment.start_date,
+      endDate,
+      id, // Exclude current assignment
+    );
+
+    assignment.end_date = endDate;
+    assignment.updated_by = adminUserId;
+
+    return this.uraRepo.save(assignment);
+  }
+
+  async deleteAssignment(id: string) {
+    const assignment = await this.uraRepo.findOne({ where: { id } });
+    if (!assignment) throw new NotFoundException('Assignment not found');
+
+    await this.uraRepo.remove(assignment);
+    return { deleted: true };
   }
 }
