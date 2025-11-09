@@ -29,7 +29,7 @@ export class UserRoleAssignment {
   @ManyToOne(() => OrgEntity, { eager: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'entity_id' })
   entity!: OrgEntity;
-  
+
   @Column({ type: 'varchar', length: 120, nullable: true })
   created_by?: string;
 
