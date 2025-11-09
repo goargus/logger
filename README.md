@@ -137,8 +137,7 @@ Secretary is a monorepo containing both backend (NestJS/TypeScript) and frontend
 - Issue #80: Historical tracking for role assignments with start/end dates
 - Issue #76: Admin endpoint to view all activities with role context
 - Issue #75: Activity locked indicator in response DTOs (PARTIALLY IMPLEMENTED)
-- Issue #74: Role-based validation on activity updates (IMPLEMENTED but issue open)
-- Issue #72: Activity type endpoint naming (implemented as /my-activity-types instead of /my-authorized)
+- Issue #72: Activity type endpoint renamed to /authorized
 
 ### Milestone 4: Data Retrieval for Reporting (PLANNED)
 - Aggregated activity views by user, role, organization, time

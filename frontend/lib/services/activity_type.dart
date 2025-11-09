@@ -30,7 +30,7 @@ class ActivityTypeService {
   ActivityTypeService({
     required this.baseUrl,
     required this.getAccessToken,
-    this.path = '/activity-types/my-activity-types',
+    this.path = '/activity-types/authorized',
     http.Client? client,
   }) : _client = client ?? http.Client();
 
