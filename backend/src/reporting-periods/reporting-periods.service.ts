@@ -8,8 +8,10 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThanOrEqual } from 'typeorm';
 import { ReportingPeriod } from './reporting-period.entity';
+import { ReportingPeriodException } from './reporting-period-exception.entity';
 import { CreateReportingPeriodDto } from './dto/create-reporting-period.dto';
 import { UpdateReportingPeriodDto } from './dto/update-reporting-period.dto';
+import { CreateExceptionDto } from './dto/create-exception.dto';
 import { ReportingPeriodStatus } from './reporting-period-status.enum';
 
 @Injectable()
@@ -19,6 +21,8 @@ export class ReportingPeriodsService {
   constructor(
     @InjectRepository(ReportingPeriod)
     private readonly repo: Repository<ReportingPeriod>,
+    @InjectRepository(ReportingPeriodException)
+    private readonly exceptionsRepo: Repository<ReportingPeriodException>,
   ) {}
 
   async create(dto: CreateReportingPeriodDto, actorUserId: string): Promise<ReportingPeriod> {
@@ -355,6 +359,92 @@ export class ReportingPeriodsService {
     }
 
     await this.repo.remove(period);
+  }
+
+  async createOrUpdateException(
+    periodId: string,
+    dto: CreateExceptionDto,
+    actorUserId: string,
+  ): Promise<ReportingPeriodException> {
+    const period = await this.findOne(periodId);
+
+    if (dto.startDate >= dto.endDate) {
+      throw new BadRequestException('Start date must be before end date');
+    }
+
+    if (dto.startDate < period.startDate || dto.endDate > period.endDate) {
+      throw new BadRequestException(
+        `Exception dates must be within period boundaries (${period.startDate} - ${period.endDate})`,
+      );
+    }
+
+    const existing = await this.exceptionsRepo.findOne({
+      where: {
+        userId: dto.userId,
+        reportingPeriodId: periodId,
+      },
+    });
+
+    if (existing) {
+      existing.startDate = dto.startDate;
+      existing.endDate = dto.endDate;
+      existing.reason = dto.reason ?? null;
+      existing.grantedBy = actorUserId;
+      return this.exceptionsRepo.save(existing);
+    }
+
+    const exception = this.exceptionsRepo.create({
+      userId: dto.userId,
+      reportingPeriodId: periodId,
+      startDate: dto.startDate,
+      endDate: dto.endDate,
+      reason: dto.reason ?? null,
+      grantedBy: actorUserId,
+    });
+
+    return this.exceptionsRepo.save(exception);
+  }
+
+  async revokeException(periodId: string, userId: string): Promise<void> {
+    const exception = await this.exceptionsRepo.findOne({
+      where: {
+        userId,
+        reportingPeriodId: periodId,
+      },
+    });
+
+    if (!exception) {
+      throw new NotFoundException('Exception not found');
+    }
+
+    await this.exceptionsRepo.remove(exception);
+  }
+
+  async findExceptionsByPeriod(periodId: string): Promise<ReportingPeriodException[]> {
+    return this.exceptionsRepo.find({
+      where: { reportingPeriodId: periodId },
+      relations: ['user'],
+      order: { grantedAt: 'DESC' },
+    });
+  }
+
+  async hasUserExceptionForDate(
+    userId: string,
+    reportingPeriodId: string,
+    activityDate: string,
+  ): Promise<boolean> {
+    const exception = await this.exceptionsRepo.findOne({
+      where: {
+        userId,
+        reportingPeriodId,
+      },
+    });
+
+    if (!exception) {
+      return false;
+    }
+
+    return activityDate >= exception.startDate && activityDate <= exception.endDate;
   }
 
   private formatDate(date: Date): string {

@@ -4,6 +4,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { BadRequestException, ConflictException, NotFoundException } from '@nestjs/common';
 import { ReportingPeriodsService } from '../reporting-periods.service';
 import { ReportingPeriod } from '../reporting-period.entity';
+import { ReportingPeriodException } from '../reporting-period-exception.entity';
 import { ReportingPeriodStatus } from '../reporting-period-status.enum';
 import { CreateReportingPeriodDto } from '../dto/create-reporting-period.dto';
 import { UpdateReportingPeriodDto } from '../dto/update-reporting-period.dto';
@@ -11,6 +12,7 @@ import { UpdateReportingPeriodDto } from '../dto/update-reporting-period.dto';
 describe('ReportingPeriodsService', () => {
   let service: ReportingPeriodsService;
   let repo: jest.Mocked<Repository<ReportingPeriod>>;
+  let exceptionsRepo: jest.Mocked<Repository<ReportingPeriodException>>;
 
   const mockReportingPeriod: ReportingPeriod = {
     id: 'period-id',
@@ -43,6 +45,14 @@ describe('ReportingPeriodsService', () => {
       update: jest.fn(),
     };
 
+    const mockExceptionsRepo = {
+      create: jest.fn(),
+      save: jest.fn(),
+      find: jest.fn(),
+      findOne: jest.fn(),
+      remove: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ReportingPeriodsService,
@@ -50,11 +60,16 @@ describe('ReportingPeriodsService', () => {
           provide: getRepositoryToken(ReportingPeriod),
           useValue: mockRepo,
         },
+        {
+          provide: getRepositoryToken(ReportingPeriodException),
+          useValue: mockExceptionsRepo,
+        },
       ],
     }).compile();
 
     service = module.get<ReportingPeriodsService>(ReportingPeriodsService);
     repo = module.get(getRepositoryToken(ReportingPeriod));
+    exceptionsRepo = module.get(getRepositoryToken(ReportingPeriodException));
   });
 
   describe('create', () => {

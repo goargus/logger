@@ -83,9 +83,16 @@ describe('ActivitiesService - Lifecycle Locking', () => {
       findOne: jest.fn(),
     };
 
+    const mockExceptionRepo = {
+      findOne: jest.fn(),
+    };
+
     const mockReportingPeriodRepo = {
       findOne: jest.fn(),
       createQueryBuilder: jest.fn(),
+      manager: {
+        getRepository: jest.fn().mockReturnValue(mockExceptionRepo),
+      },
     };
 
     const mockUserRoleAssignmentRepo = {
@@ -172,6 +179,9 @@ describe('ActivitiesService - Lifecycle Locking', () => {
         getOne: jest.fn().mockResolvedValue(mockLockedPeriod),
       } as any);
 
+      const mockExceptionRepo = (reportingPeriodRepo.manager as any).getRepository();
+      mockExceptionRepo.findOne.mockResolvedValue(null);
+
       await expect(service.create(createDto, 'user-id')).rejects.toThrow(
         new ForbiddenException('Cannot create activity in a locked reporting period'),
       );
@@ -224,6 +234,9 @@ describe('ActivitiesService - Lifecycle Locking', () => {
       activityRepo.findOne.mockResolvedValue(activityInLockedPeriod);
       reportingPeriodRepo.findOne.mockResolvedValue(mockLockedPeriod);
 
+      const mockExceptionRepo = (reportingPeriodRepo.manager as any).getRepository();
+      mockExceptionRepo.findOne.mockResolvedValue(null);
+
       await expect(service.updateMine('activity-id', updateDto, 'user-id')).rejects.toThrow(
         new ForbiddenException('This activity is locked because its reporting period has ended'),
       );
@@ -240,6 +253,9 @@ describe('ActivitiesService - Lifecycle Locking', () => {
         where: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(mockLockedPeriod), // New period is locked
       } as any);
+
+      const mockExceptionRepo = (reportingPeriodRepo.manager as any).getRepository();
+      mockExceptionRepo.findOne.mockResolvedValue(null);
 
       await expect(service.updateMine('activity-id', updateDto, 'user-id')).rejects.toThrow(
         new ForbiddenException('Cannot move activity to a locked reporting period'),
@@ -297,6 +313,9 @@ describe('ActivitiesService - Lifecycle Locking', () => {
       const activityInLockedPeriod = { ...mockActivity, reportingPeriodId: 'locked-period-id' };
       activityRepo.findOne.mockResolvedValue(activityInLockedPeriod);
       reportingPeriodRepo.findOne.mockResolvedValue(mockLockedPeriod);
+
+      const mockExceptionRepo = (reportingPeriodRepo.manager as any).getRepository();
+      mockExceptionRepo.findOne.mockResolvedValue(null);
 
       await expect(service.archiveMine('activity-id', 'user-id')).rejects.toThrow(
         new ForbiddenException('This activity is locked because its reporting period has ended'),

@@ -45,12 +45,29 @@ export class ActivitiesService {
       .getOne();
   }
 
-  private async ensureActivityNotLocked(activity: Activity): Promise<void> {
+  private async ensureActivityNotLocked(activity: Activity, userId: string): Promise<void> {
     if (activity.reportingPeriodId) {
       const reportingPeriod = await this.reportingPeriodsRepo.findOne({
         where: { id: activity.reportingPeriodId },
       });
       if (reportingPeriod && reportingPeriod.status === ReportingPeriodStatus.LOCKED) {
+        const hasException = await this.reportingPeriodsRepo.manager
+          .getRepository('reporting_period_exception')
+          .findOne({
+            where: {
+              userId,
+              reportingPeriodId: activity.reportingPeriodId,
+            },
+          });
+
+        if (hasException) {
+          const activityDate = activity.activityDate;
+          const { startDate, endDate } = hasException as any;
+          if (activityDate >= startDate && activityDate <= endDate) {
+            return;
+          }
+        }
+
         throw new ForbiddenException(
           'This activity is locked because its reporting period has ended',
         );
@@ -98,7 +115,24 @@ export class ActivitiesService {
 
     const reportingPeriod = await this.findReportingPeriodForDate(dto.activityDate);
     if (reportingPeriod && reportingPeriod.status === ReportingPeriodStatus.LOCKED) {
-      throw new ForbiddenException('Cannot create activity in a locked reporting period');
+      const hasException = await this.reportingPeriodsRepo.manager
+        .getRepository('reporting_period_exception')
+        .findOne({
+          where: {
+            userId: actorUserId,
+            reportingPeriodId: reportingPeriod.id,
+          },
+        });
+
+      if (hasException) {
+        const activityDate = dto.activityDate;
+        const { startDate, endDate } = hasException as any;
+        if (!(activityDate >= startDate && activityDate <= endDate)) {
+          throw new ForbiddenException('Cannot create activity in a locked reporting period');
+        }
+      } else {
+        throw new ForbiddenException('Cannot create activity in a locked reporting period');
+      }
     }
 
     const entity = this.repo.create({
@@ -141,7 +175,7 @@ export class ActivitiesService {
     if (!a) throw new NotFoundException('Activity not found.');
     this.ensureOwnershipOrThrow(a, userId);
 
-    await this.ensureActivityNotLocked(a);
+    await this.ensureActivityNotLocked(a, userId);
 
     if (dto.activityTypeId) {
       await this.ensureTypeOrThrow(dto.activityTypeId);
@@ -155,7 +189,24 @@ export class ActivitiesService {
     if (dto.activityDate && dto.activityDate !== a.activityDate) {
       const newReportingPeriod = await this.findReportingPeriodForDate(dto.activityDate);
       if (newReportingPeriod && newReportingPeriod.status === ReportingPeriodStatus.LOCKED) {
-        throw new ForbiddenException('Cannot move activity to a locked reporting period');
+        const hasException = await this.reportingPeriodsRepo.manager
+          .getRepository('reporting_period_exception')
+          .findOne({
+            where: {
+              userId,
+              reportingPeriodId: newReportingPeriod.id,
+            },
+          });
+
+        if (hasException) {
+          const activityDate = dto.activityDate;
+          const { startDate, endDate } = hasException as any;
+          if (!(activityDate >= startDate && activityDate <= endDate)) {
+            throw new ForbiddenException('Cannot move activity to a locked reporting period');
+          }
+        } else {
+          throw new ForbiddenException('Cannot move activity to a locked reporting period');
+        }
       }
       a.reportingPeriodId = newReportingPeriod?.id ?? null;
     }
@@ -180,7 +231,7 @@ export class ActivitiesService {
     if (!a) throw new NotFoundException('Activity not found.');
     this.ensureOwnershipOrThrow(a, userId);
 
-    await this.ensureActivityNotLocked(a);
+    await this.ensureActivityNotLocked(a, userId);
 
     a.status = ActivityStatus.ARCHIVED;
     a.archivedAt = new Date();
