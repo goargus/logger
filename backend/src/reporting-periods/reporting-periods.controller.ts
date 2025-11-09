@@ -14,11 +14,16 @@ import {
 import { ReportingPeriodsService } from './reporting-periods.service';
 import { CreateReportingPeriodDto } from './dto/create-reporting-period.dto';
 import { UpdateReportingPeriodDto } from './dto/update-reporting-period.dto';
+import { CreateExceptionDto } from './dto/create-exception.dto';
 import { ReportingPeriodResponseDto } from './dto/reporting-period-response.dto';
+import { ExceptionResponseDto } from './dto/exception-response.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { IdentityResolutionService } from '../auth/identity-resolution.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { User } from '../users/user.entity';
 import { Request } from 'express';
 
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -27,6 +32,8 @@ export class ReportingPeriodsController {
   constructor(
     private readonly reportingPeriodsService: ReportingPeriodsService,
     private readonly identity: IdentityResolutionService,
+    @InjectRepository(User)
+    private readonly usersRepo: Repository<User>,
   ) {}
 
   @Post('admin')
@@ -108,6 +115,47 @@ export class ReportingPeriodsController {
 
     const closed = await this.reportingPeriodsService.close(id, user.id);
     return ReportingPeriodResponseDto.fromEntity(closed);
+  }
+
+  @Post(':periodId/exceptions')
+  @Roles('admin')
+  async createException(
+    @Req() req: Request,
+    @Param('periodId', new ParseUUIDPipe()) periodId: string,
+    @Body() dto: CreateExceptionDto,
+  ): Promise<ExceptionResponseDto> {
+    const { sub, iss } = (req.user as any) ?? {};
+    const admin = await this.identity.resolveUserBySubAndIssuer(sub, iss);
+
+    const exception = await this.reportingPeriodsService.createOrUpdateException(
+      periodId,
+      dto,
+      admin.id,
+    );
+
+    const user = await this.usersRepo.findOneByOrFail({ id: exception.userId });
+    return ExceptionResponseDto.fromEntity(exception, user.username, user.email);
+  }
+
+  @Delete(':periodId/exceptions/:userId')
+  @Roles('admin')
+  async revokeException(
+    @Param('periodId', new ParseUUIDPipe()) periodId: string,
+    @Param('userId', new ParseUUIDPipe()) userId: string,
+  ): Promise<{ ok: boolean }> {
+    await this.reportingPeriodsService.revokeException(periodId, userId);
+    return { ok: true };
+  }
+
+  @Get(':periodId/exceptions')
+  @Roles('admin')
+  async listExceptions(
+    @Param('periodId', new ParseUUIDPipe()) periodId: string,
+  ): Promise<ExceptionResponseDto[]> {
+    const exceptions = await this.reportingPeriodsService.findExceptionsByPeriod(periodId);
+    return exceptions.map((ex) =>
+      ExceptionResponseDto.fromEntity(ex, ex.user.username, ex.user.email),
+    );
   }
 
   @Delete(':id')
