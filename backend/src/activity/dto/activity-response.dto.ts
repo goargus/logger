@@ -23,7 +23,8 @@ export class ActivityResponseDto {
     a: Activity,
     ownerUsername: string,
     activityTypeName: string,
-    reportingPeriod?: ReportingPeriod | null,
+    reportingPeriod: ReportingPeriod | null,
+    locked: boolean,
   ): ActivityResponseDto {
     const dto = new ActivityResponseDto();
     dto.id = a.id;
@@ -34,7 +35,7 @@ export class ActivityResponseDto {
     dto.hasExpense = a.hasExpense;
     dto.expenseAmount = a.expenseAmount ?? null;
     dto.status = a.status;
-    dto.locked = reportingPeriod?.isLocked ?? false;
+    dto.locked = locked;
     dto.reportingPeriodId = a.reportingPeriodId ?? null;
     dto.reportingPeriodName = reportingPeriod?.name ?? null;
     dto.createdAt = a.createdAt;
