@@ -14,6 +14,7 @@ describe('TermsService Integration - One Active Term Constraint', () => {
     name: 'Test Union',
     type: EntityType.UNION,
     is_active: true,
+    term_length_years: 5,
     created_at: new Date('2023-01-01T00:00:00Z'),
     updated_at: new Date('2023-01-01T00:00:00Z'),
     parent_id: null,
