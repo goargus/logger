@@ -144,6 +144,7 @@ async function ensurePlatform(entityRepo: Repository<OrgEntity>): Promise<OrgEnt
       description: 'Global Seventh-day Adventist Church Platform',
       location: 'Worldwide',
       is_active: true,
+      term_length_years: 5,
     });
     platform = await entityRepo.save(platform);
     console.log('Platform created');
@@ -175,6 +176,7 @@ async function ensureUnions(
         description: `${unionName} of the Seventh-day Adventist Church`,
         location: unionName.includes('Mexicana') ? 'Mexico' : 'Brazil',
         is_active: true,
+        term_length_years: 5,
         parent_id: platform.id,
       });
       union = await entityRepo.save(union);
@@ -222,6 +224,7 @@ async function ensureAssociations(
         description: `${assocData.name} under ${assocData.union}`,
         location: assocData.location,
         is_active: true,
+        term_length_years: 5,
         parent_id: parentUnion.id,
       });
       association = await entityRepo.save(association);
@@ -288,6 +291,7 @@ async function ensureFields(
         description: `${fieldDataItem.name} under ${fieldDataItem.association}`,
         location: fieldDataItem.location,
         is_active: true,
+        term_length_years: 5,
         parent_id: parentAssociation.id,
       });
       field = await entityRepo.save(field);
