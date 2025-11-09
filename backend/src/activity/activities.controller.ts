@@ -20,12 +20,14 @@ import { UpdateActivityDto } from './dto/update-activity.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { IdentityResolutionService } from '../auth/identity-resolution.service';
 import { ActivityResponseDto } from './dto/activity-response.dto';
+import { ReportingPeriodsService } from '../reporting-periods/reporting-periods.service';
 import { Request } from 'express';
 import { Repository, In } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../users/user.entity';
 import { ActivityType } from '../activities-type/activity-type.entity';
 import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
+import { Activity } from './activity.entity';
 
 @UseGuards(JwtAuthGuard)
 @Controller('activities')
@@ -33,6 +35,7 @@ export class ActivitiesController {
   constructor(
     private readonly activities: ActivitiesService,
     private readonly identity: IdentityResolutionService,
+    private readonly reportingPeriods: ReportingPeriodsService,
     @InjectRepository(User) private readonly usersRepo: Repository<User>,
     @InjectRepository(ActivityType) private readonly typesRepo: Repository<ActivityType>,
     @InjectRepository(ReportingPeriod)
@@ -42,6 +45,28 @@ export class ActivitiesController {
   private async getReportingPeriodForActivity(activity: any): Promise<ReportingPeriod | null> {
     if (!activity.reportingPeriodId) return null;
     return this.reportingPeriodsRepo.findOne({ where: { id: activity.reportingPeriodId } });
+  }
+
+  private async calculateLockedStatus(
+    activity: Activity,
+    userId: string,
+    reportingPeriod: ReportingPeriod | null,
+  ): Promise<boolean> {
+    if (!reportingPeriod || !reportingPeriod.isLocked) {
+      return false;
+    }
+
+    if (!activity.reportingPeriodId) {
+      return false;
+    }
+
+    const hasException = await this.reportingPeriods.hasUserExceptionForDate(
+      userId,
+      activity.reportingPeriodId,
+      activity.activityDate,
+    );
+
+    return !hasException;
   }
 
   @Post()
@@ -57,11 +82,14 @@ export class ActivitiesController {
       this.getReportingPeriodForActivity(created),
     ]);
 
+    const locked = await this.calculateLockedStatus(created, user.id, reportingPeriod);
+
     return ActivityResponseDto.fromEntity(
       created,
       owner.username,
       (type as any).name,
       reportingPeriod,
+      locked,
     );
   }
 
@@ -92,18 +120,25 @@ export class ActivitiesController {
       })(),
     ]);
 
+    const itemsWithLocked = await Promise.all(
+      items.map(async (a) => {
+        const reportingPeriod = reportingPeriodsMap.get(a.reportingPeriodId || '') ?? null;
+        const locked = await this.calculateLockedStatus(a, user.id, reportingPeriod);
+        return ActivityResponseDto.fromEntity(
+          a,
+          owner.username,
+          typesMap.get(a.activityTypeId) ?? '',
+          reportingPeriod,
+          locked,
+        );
+      }),
+    );
+
     return {
       page,
       limit,
       total,
-      items: items.map((a) =>
-        ActivityResponseDto.fromEntity(
-          a,
-          owner.username,
-          typesMap.get(a.activityTypeId) ?? '',
-          reportingPeriodsMap.get(a.reportingPeriodId || '') ?? null,
-        ),
-      ),
+      items: itemsWithLocked,
     };
   }
 
@@ -118,7 +153,10 @@ export class ActivitiesController {
       this.typesRepo.findOneByOrFail({ id: a.activityTypeId }),
       this.getReportingPeriodForActivity(a),
     ]);
-    return ActivityResponseDto.fromEntity(a, owner.username, (type as any).name, reportingPeriod);
+
+    const locked = await this.calculateLockedStatus(a, user.id, reportingPeriod);
+
+    return ActivityResponseDto.fromEntity(a, owner.username, (type as any).name, reportingPeriod, locked);
   }
 
   @Patch(':id')
@@ -136,11 +174,15 @@ export class ActivitiesController {
       this.typesRepo.findOneByOrFail({ id: updated.activityTypeId }),
       this.getReportingPeriodForActivity(updated),
     ]);
+
+    const locked = await this.calculateLockedStatus(updated, user.id, reportingPeriod);
+
     return ActivityResponseDto.fromEntity(
       updated,
       owner.username,
       (type as any).name,
       reportingPeriod,
+      locked,
     );
   }
 
