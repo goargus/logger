@@ -99,7 +99,7 @@ class ActivityService {
   }
 
   Future<List<Map<String, dynamic>>> getRecentActivities(
-      {int limit = 3}) async {
+      {int limit = 5}) async {
     final token = await getAccessToken();
 
     if (token.isEmpty) {
