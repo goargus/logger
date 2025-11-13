@@ -21,7 +21,8 @@
     "migration:generate": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate -d src/database/data-source.ts -n",
     "migration:run": "ts-node -r tsconfig-paths/register ./node_modules",
     "admin:bootstrap": "ts-node -r tsconfig-paths/register scripts/bootstrap-admin.ts",
-    "db:init": "ts-node -r tsconfig-paths/register scripts/init-database.ts"
+    "db:init": "ts-node -r tsconfig-paths/register scripts/init-database.ts",
+    "db:migrate-roles": "ts-node -r tsconfig-paths/register scripts/migrate-role-assignments.ts"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.5",
