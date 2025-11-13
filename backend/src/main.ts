@@ -13,11 +13,6 @@ async function bootstrap() {
     credentials: true,
   });
 
-  const port = Number(process.env.PORT ?? 3000);
-  Logger.log(`Starting on port: ${port}`);
-
-  await app.listen(process.env.PORT ?? 3000);
-
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -26,6 +21,11 @@ async function bootstrap() {
       transformOptions: { enableImplicitConversion: true },
     }),
   );
+
+  const port = Number(process.env.PORT ?? 3000);
+  Logger.log(`Starting on port: ${port}`);
+
+  await app.listen(port);
 }
 
 bootstrap();
