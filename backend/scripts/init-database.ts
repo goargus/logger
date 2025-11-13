@@ -8,6 +8,7 @@ import { Entity as OrgEntity, EntityType } from '../src/entities/entity.entity';
 import { IdpIdentitiesService } from '../src/idp-identities/idp-identities.service';
 import { UserStatus } from '../src/users/user-status.enum';
 import { ActivityType } from '../src/activities-type/activity-type.entity';
+import { UserRoleAssignment } from '../src/roles/user-role-assignment.entity';
 
 interface StaffConfig {
   email: string;
@@ -399,6 +400,7 @@ async function createUser(
   staffConfig: StaffConfig,
   roleMap: Map<string, Role>,
   entityRepo: Repository<OrgEntity>,
+  roleAssignmentRepo: Repository<UserRoleAssignment>,
 ): Promise<void> {
   const existingUser = await userRepo.findOne({ where: { email: staffConfig.email } });
   if (existingUser) {
@@ -435,6 +437,18 @@ async function createUser(
   const savedUser = await userRepo.save(user);
   console.log(`User ${staffConfig.fullName} created with ID: ${savedUser.id}`);
 
+  // Create UserRoleAssignment
+  const today = new Date().toISOString().split('T')[0];
+  const farFuture = '9999-12-31';
+  const roleAssignment = roleAssignmentRepo.create({
+    user: savedUser,
+    role: role,
+    entity: entity,
+    start_date: today,
+    end_date: farFuture,
+  });
+  await roleAssignmentRepo.save(roleAssignment);
+
   await idpService.create({
     user_id: savedUser.id,
     provider: 'auth0',
@@ -456,6 +470,7 @@ async function createAdminUser(
   config: DatabaseInitConfig,
   roleMap: Map<string, Role>,
   platform: OrgEntity,
+  roleAssignmentRepo: Repository<UserRoleAssignment>,
 ): Promise<void> {
   const existingUser = await userRepo.findOne({ where: { email: config.adminEmail } });
   if (existingUser) {
@@ -481,6 +496,19 @@ async function createAdminUser(
 
   const savedUser = await userRepo.save(adminUser);
   console.log(`Admin user created with ID: ${savedUser.id}`);
+  
+  // Create UserRoleAssignment
+  const today = new Date().toISOString().split('T')[0];
+  const farFuture = '9999-12-31';
+  const roleAssignment = roleAssignmentRepo.create({
+    user: savedUser,
+    role: adminRole,
+    entity: platform,
+    start_date: today,
+    end_date: farFuture,
+  });
+  await roleAssignmentRepo.save(roleAssignment);
+  
   await idpService.create({
     user_id: savedUser.id,
     provider: 'auth0',
@@ -507,6 +535,7 @@ async function initializeDatabase() {
     const roleRepo = app.get<Repository<Role>>(getRepositoryToken(Role));
     const entityRepo = app.get<Repository<OrgEntity>>(getRepositoryToken(OrgEntity));
     const activityTypeRepo = app.get<Repository<ActivityType>>(getRepositoryToken(ActivityType));
+    const roleAssignmentRepo = app.get<Repository<UserRoleAssignment>>(getRepositoryToken(UserRoleAssignment));
     const idpService = app.get<IdpIdentitiesService>(IdpIdentitiesService);
 
     console.log('\n=== Creating Organizational Hierarchy ===');
@@ -522,11 +551,11 @@ async function initializeDatabase() {
     await ensureActivityTypes(activityTypeRepo, roleMap);
 
     console.log('\n=== Creating Admin User ===');
-    await createAdminUser(userRepo, idpService, config, roleMap, platform);
+    await createAdminUser(userRepo, idpService, config, roleMap, platform, roleAssignmentRepo);
 
     console.log('\n=== Creating Staff Users ===');
     for (const staffConfig of config.staffMembers) {
-      await createUser(userRepo, idpService, staffConfig, roleMap, entityRepo);
+      await createUser(userRepo, idpService, staffConfig, roleMap, entityRepo, roleAssignmentRepo);
     }
 
     console.log('\n=== Database Initialization Complete ===');
