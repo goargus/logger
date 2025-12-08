@@ -1,4 +1,3 @@
-#!/usr/bin/env ts-node
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../src/app.module';
 import { Repository } from 'typeorm';
@@ -8,6 +7,7 @@ import { Role } from '../src/roles/role.entity';
 import { Entity as OrgEntity, EntityType } from '../src/entities/entity.entity';
 import { IdpIdentitiesService } from '../src/idp-identities/idp-identities.service';
 import { UserStatus } from '../src/users/user-status.enum';
+import { UserRoleAssignment } from '../src/roles/user-role-assignment.entity';
 
 interface AdminConfig {
   email: string;
@@ -73,7 +73,10 @@ async function ensureAdminRole(roleRepo: Repository<Role>, roleId?: string): Pro
   return role;
 }
 
-async function ensureDefaultUnion(entityRepo: Repository<OrgEntity>, entityId?: string): Promise<OrgEntity> {
+async function ensureDefaultUnion(
+  entityRepo: Repository<OrgEntity>,
+  entityId?: string,
+): Promise<OrgEntity> {
   if (entityId) {
     const entity = await entityRepo.findOne({ where: { id: entityId } });
     if (!entity) {
@@ -83,7 +86,9 @@ async function ensureDefaultUnion(entityRepo: Repository<OrgEntity>, entityId?: 
     return entity;
   }
 
-  let entity = await entityRepo.findOne({ where: { name: 'Default Union', type: EntityType.UNION } });
+  let entity = await entityRepo.findOne({
+    where: { name: 'Default Union', type: EntityType.UNION },
+  });
   if (!entity) {
     console.log('Creating default union for admin user...');
     entity = entityRepo.create({
@@ -108,15 +113,17 @@ async function bootstrapAdmin() {
     const userRepo = app.get<Repository<User>>(getRepositoryToken(User));
     const roleRepo = app.get<Repository<Role>>(getRepositoryToken(Role));
     const entityRepo = app.get<Repository<OrgEntity>>(getRepositoryToken(OrgEntity));
+    const roleAssignmentRepo = app.get<Repository<UserRoleAssignment>>(
+      getRepositoryToken(UserRoleAssignment),
+    );
     const idpService = app.get<IdpIdentitiesService>(IdpIdentitiesService);
 
-    const existingUser = await userRepo.findOne({ 
-      where: { email: config.email } 
+    const existingUser = await userRepo.findOne({
+      where: { email: config.email },
     });
-    
     const existingIdp = await idpService.findByIssuerAndSubject(
-      config.idpIssuer, 
-      config.idpSubject
+      config.idpIssuer,
+      config.idpSubject,
     );
 
     if (existingUser) {
@@ -163,6 +170,19 @@ async function bootstrapAdmin() {
 
     const savedUser = await userRepo.save(adminUser);
     console.log(`Admin user created with ID: ${savedUser.id}`);
+
+    const today = new Date().toISOString().split('T')[0];
+    const farFuture = '9999-12-31';
+    console.log('Creating role assignment...');
+    const roleAssignment = roleAssignmentRepo.create({
+      user: savedUser,
+      role: role,
+      entity: entity,
+      start_date: today,
+      end_date: farFuture,
+    });
+    await roleAssignmentRepo.save(roleAssignment);
+    console.log('Role assignment created.');
 
     console.log('Creating IdP identity...');
     await idpService.create({

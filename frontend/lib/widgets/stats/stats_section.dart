@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../models/dashboard_config.dart';
 import '../stats/stat_card.dart';
 import '../stats/stat_grid.dart';
-import '../stats/cta_report_card.dart';
 
 class StatsSection extends StatelessWidget {
   final DashboardConfig config;
@@ -48,10 +47,6 @@ class StatsSection extends StatelessWidget {
           backgroundImage: const AssetImage(
             'assets/financial-data-analysis.jpg',
           ),
-        ),
-        CtaReportCard(
-          reports: config.reportsCount,
-          onTap: onReportsTap,
         ),
       ],
     );

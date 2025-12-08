@@ -12,8 +12,6 @@ import '../core/auth_utils.dart';
 import '../widgets/nav/sidebar_nav.dart';
 import '../widgets/headers/welcome_header.dart';
 import '../widgets/pills/month_header_pill.dart';
-import '../widgets/pills/fields_chips.dart';
-import '../widgets/lists/association_row.dart';
 import '../widgets/lists/activities_section.dart';
 import '../widgets/stats/stats_section.dart';
 import '../widgets/buttons/primary_action_button.dart';
@@ -120,7 +118,7 @@ class _DashboardMissionaryPageState
 
     try {
       final activitiesData =
-          await _activityService.getRecentActivities(limit: 3);
+          await _activityService.getRecentActivities(limit: 5);
       final activities =
           activitiesData.map((data) => Activity.fromApi(data)).toList();
 
@@ -199,9 +197,6 @@ class _DashboardMissionaryPageState
 
   @override
   Widget build(BuildContext context) {
-    const association = 'Asociación Central';
-    const fields = ['Siguatepeque', 'Comayagua'];
-
     return Consumer(
       builder: (context, ref, _) {
         final authState = ref.watch(authNotifierProvider);
@@ -276,14 +271,6 @@ class _DashboardMissionaryPageState
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             WelcomeHeader(userName: userName),
-                            const SizedBox(height: LayoutConstants.spacing12),
-                            const FieldsChips(
-                              fields: fields,
-                            ),
-                            const SizedBox(height: LayoutConstants.spacing12),
-                            const AssociationRow(
-                              association: association,
-                            ),
                             const SizedBox(height: LayoutConstants.spacing20),
                             const MonthHeaderPill(),
                             const SizedBox(height: LayoutConstants.spacing20),
