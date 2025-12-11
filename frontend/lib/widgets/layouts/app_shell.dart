@@ -19,9 +19,8 @@ class AppShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isWide = MediaQuery.of(context).size.width >= 1000;
     final authState = ref.watch(authNotifierProvider);
-    final userName = authState.user?['name'] ?? 
-                     authState.user?['nickname'] ?? 
-                     'Usuario';
+    final userName =
+        authState.user?['name'] ?? authState.user?['nickname'] ?? 'Usuario';
     final userEmail = authState.user?['email'] ?? '';
     final userPicture = authState.user?['picture'];
 
@@ -40,7 +39,8 @@ class AppShell extends ConsumerWidget {
                       userName: userName,
                       userEmail: userEmail,
                       userPicture: userPicture,
-                      onCreateActivity: () => Navigator.pushNamed(context, '/activities/new'),
+                      onCreateActivity: () =>
+                          Navigator.pushNamed(context, '/activities/new'),
                     ),
                   Expanded(
                     child: Padding(
