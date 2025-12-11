@@ -24,12 +24,10 @@ class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
 
   @override
-  ConsumerState<DashboardPage> createState() =>
-      _DashboardPageState();
+  ConsumerState<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState
-    extends ConsumerState<DashboardPage> {
+class _DashboardPageState extends ConsumerState<DashboardPage> {
   static const String _apiBaseUrl = 'http://localhost:3000';
 
   late ActivityService _activityService;
