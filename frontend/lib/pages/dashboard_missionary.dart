@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/activity.dart';
-import '../models/dashboard_config.dart';
+import '../models/dashboard_stats.dart';
 import '../routes.dart';
 
 import '../core/layout_constants.dart';

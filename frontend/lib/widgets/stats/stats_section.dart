@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../models/dashboard_config.dart';
+import '../../models/dashboard_stats.dart';
 import '../stats/stat_card.dart';
 import '../stats/stat_grid.dart';
 
