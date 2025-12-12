@@ -31,18 +31,12 @@ class ActivityService {
     final iso = date.toUtc().toIso8601String();
 
     final payload = <String, dynamic>{
-      'activity_type_id': typeId,
-      'type_id': typeId,
-      'activity_date': iso,
-      'date': iso,
+      'activityTypeId': typeId,
+      'activityDate': iso,
       if (description != null && description.trim().isNotEmpty)
         'description': description.trim(),
       'hasExpense': hasExpense,
-      'has_expense': hasExpense,
-      if (hasExpense) ...{
-        'expenseAmount': (expenseAmount ?? '0').trim(),
-        'expense_amount': (expenseAmount ?? '0').trim(),
-      },
+      if (hasExpense) 'expenseAmount': (expenseAmount ?? '0').trim(),
     };
 
     final resp = await http.post(
