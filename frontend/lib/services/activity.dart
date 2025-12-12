@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import '../config/api_config.dart';
 
 typedef AccessTokenProvider = Future<String> Function();
 
@@ -15,7 +16,7 @@ class ActivityService {
 
   factory ActivityService.localhost(AccessTokenProvider getAccessToken) {
     return ActivityService(
-      baseUrl: 'http://localhost:3000',
+      baseUrl: ApiConfig.baseUrl,
       getAccessToken: getAccessToken,
     );
   }
