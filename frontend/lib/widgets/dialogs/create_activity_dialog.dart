@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../dialogs/calendar_dialog.dart';
 import '../../models/activity_type.dart';
 import '../../services/activity_type.dart';
+import '../../core/validators.dart';
 
 class CreateActivityDialog extends StatefulWidget {
   final String baseUrl;
@@ -306,8 +307,10 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                           onChanged: _submitting
                               ? null
                               : (v) => setState(() => _selectedType = v),
-                          validator: (v) =>
-                              v == null ? 'Selecciona un tipo' : null,
+                          validator: (v) => Validators.requiredField(
+                            v,
+                            fieldName: 'El tipo de actividad',
+                          ),
                           decoration: const InputDecoration(
                             border: OutlineInputBorder(),
                             hintText: 'Selecciona un tipo',
@@ -336,9 +339,10 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                           icon: const Icon(Icons.calendar_today),
                         ),
                       ),
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Selecciona una fecha'
-                          : null,
+                      validator: (v) => Validators.required(
+                        v,
+                        fieldName: 'La fecha',
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Align(
@@ -374,12 +378,15 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                           hintText: 'Monto del gasto',
                           border: OutlineInputBorder(),
                         ),
-                        validator: (v) {
-                          if (_hasExpense && (v == null || v.trim().isEmpty)) {
-                            return 'Ingresa el monto del gasto';
-                          }
-                          return null;
-                        },
+                        validator: (v) => Validators.combine([
+                          () => _hasExpense
+                              ? Validators.required(
+                                  v,
+                                  fieldName: 'El monto del gasto',
+                                )
+                              : null,
+                          () => Validators.positiveNumber(v),
+                        ]),
                       ),
                       const SizedBox(height: 16),
                     ],
