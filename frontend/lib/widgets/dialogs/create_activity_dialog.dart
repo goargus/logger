@@ -105,20 +105,11 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
       final amount = (hasExp ? _amountCtrl.text.trim() : null);
 
       final payload = <String, dynamic>{
-        'activity_type_id': typeId,
-        'type_id': typeId,
         'activityTypeId': typeId,
-        'typeId': typeId,
-        'activity_date': iso,
-        'date': iso,
         'activityDate': iso,
         if (desc.isNotEmpty) 'description': desc,
         'hasExpense': hasExp,
-        'has_expense': hasExp,
-        if (hasExp) ...{
-          'expenseAmount': amount,
-          'expense_amount': amount,
-        },
+        if (hasExp) 'expenseAmount': amount,
       };
 
       final resp = await http.post(
