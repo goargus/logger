@@ -84,7 +84,8 @@ void main() {
       expect(PrimaryActionButton.bgcolor, const Color(0xFF391A7C));
     });
 
-    testWidgets('should render as a button widget', (WidgetTester tester) async {
+    testWidgets('should render as a button widget',
+        (WidgetTester tester) async {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(

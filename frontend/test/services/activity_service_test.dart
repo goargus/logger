@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:logger/services/activity.dart';
 
 void main() {
-
   group('ActivityService', () {
     late ActivityService service;
     late String Function() mockGetToken;
@@ -17,8 +16,7 @@ void main() {
 
     group('localhost factory', () {
       test('should create service with localhost URL', () {
-        final localService =
-            ActivityService.localhost(() async => 'token-abc');
+        final localService = ActivityService.localhost(() async => 'token-abc');
 
         expect(localService.baseUrl, 'http://localhost:3000');
       });
