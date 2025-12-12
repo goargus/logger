@@ -17,40 +17,32 @@ void main() {
 
     group('localhost factory', () {
       test('should create service with localhost URL', () {
-        // Act
         final localService =
             ActivityService.localhost(() async => 'token-abc');
 
-        // Assert
         expect(localService.baseUrl, 'http://localhost:3000');
       });
     });
 
     group('createActivity', () {
       test('should format date to ISO string', () {
-        // Arrange
         final date = DateTime(2024, 1, 15, 10, 30);
 
-        // Act & Assert - Verify service method exists and accepts parameters
         expect(service.baseUrl, 'http://test-api.com');
         expect(date.toUtc().toIso8601String(), isNotEmpty);
       });
 
       test('should accept description parameter', () {
-        // Arrange & Act
         const description = 'Test description';
 
-        // Assert - Verify parameters can be passed
         expect(description.trim(), 'Test description');
         expect(service.baseUrl, 'http://test-api.com');
       });
 
       test('should accept expense parameters', () {
-        // Arrange
         const hasExpense = true;
         const expenseAmount = '150.50';
 
-        // Assert - Verify expense parameters
         expect(hasExpense, isTrue);
         expect(double.tryParse(expenseAmount), 150.50);
       });
@@ -66,13 +58,11 @@ void main() {
       });
 
       test('should throw exception when token is empty', () async {
-        // Arrange
         final serviceWithEmptyToken = ActivityService(
           baseUrl: 'http://test-api.com',
           getAccessToken: () async => '',
         );
 
-        // Act & Assert
         expect(
           () => serviceWithEmptyToken.getMonthlyExpenseTotal(
             year: 2024,
@@ -91,7 +81,6 @@ void main() {
 
     group('getRecentActivities', () {
       test('should accept limit parameter', () async {
-        // Act & Assert - Verify method accepts limit
         expect(
           () => service.getRecentActivities(limit: 10),
           throwsA(isA<Exception>()),
@@ -99,7 +88,6 @@ void main() {
       });
 
       test('should use default limit of 5', () async {
-        // Act & Assert
         expect(
           () => service.getRecentActivities(),
           throwsA(isA<Exception>()),
@@ -107,13 +95,11 @@ void main() {
       });
 
       test('should throw exception when token is empty', () async {
-        // Arrange
         final serviceWithEmptyToken = ActivityService(
           baseUrl: 'http://test-api.com',
           getAccessToken: () async => '',
         );
 
-        // Act & Assert
         expect(
           () => serviceWithEmptyToken.getRecentActivities(),
           throwsA(
@@ -129,7 +115,6 @@ void main() {
 
     group('authentication', () {
       test('should use access token provider', () async {
-        // Arrange
         String? capturedToken;
         final service = ActivityService(
           baseUrl: 'http://test-api.com',
@@ -139,14 +124,12 @@ void main() {
           },
         );
 
-        // Act
         try {
           await service.getMonthlyExpenseTotal(year: 2024, month: 1);
         } catch (_) {
           // Expected to fail, we're just testing token capture
         }
 
-        // Assert
         expect(capturedToken, 'captured-token-456');
       });
     });
