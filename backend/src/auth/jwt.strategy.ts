@@ -3,13 +3,17 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy, StrategyOptions } from 'passport-jwt';
 import * as jwksRsa from 'jwks-rsa';
 import { ConfigService } from '@nestjs/config';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { IdentityResolutionService } from './identity-resolution.service';
+import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
+import { User } from '../users/user.entity';
 
-export interface JwtValidatedUser {
+export interface JwtValidatedUser extends User {
   sub: string;
   iss?: string;
   aud?: string | string[];
-  roles: string[];
-  permissions: string[];
+  roleAssignments?: UserRoleAssignment[];
   [k: string]: any;
 }
 
@@ -31,7 +35,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   private readonly expectedIssuer: string;
   private readonly expectedAudience: string;
 
-  constructor(config: ConfigService) {
+  constructor(
+    config: ConfigService,
+    private readonly identityResolution: IdentityResolutionService,
+    @InjectRepository(UserRoleAssignment)
+    private readonly userRoleAssignmentRepo: Repository<UserRoleAssignment>,
+  ) {
     const issuerFromCfg =
       firstDefined<string>(
         () => config.get<string>('auth.issuer'),
@@ -100,13 +109,27 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Invalid token audience');
     }
 
-    const roles = this.readArrayClaim(payload, ['roles', 'https://roles', 'https://app/roles']);
-    const permissions = this.readArrayClaim(payload, [
-      'permissions',
-      'https://permissions',
-      'https://app/permissions',
-    ]);
+    // Resolve user from database via identity resolution
+    const user = await this.identityResolution.resolveUserBySubAndIssuer(sub, iss);
 
-    return { sub, iss, aud: payload?.aud, roles, permissions, ...payload };
+    // Load active role assignments for the user
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const roleAssignments = await this.userRoleAssignmentRepo.find({
+      where: {
+        user: { id: user.id },
+      },
+      relations: ['role', 'entity', 'user'],
+    }).then((assignments) =>
+      assignments.filter((a) => a.start_date <= today && today <= a.end_date),
+    );
+
+    // Return user with role assignments and JWT claims
+    return {
+      ...user,
+      sub,
+      iss,
+      aud: payload?.aud,
+      roleAssignments,
+    };
   }
 }
