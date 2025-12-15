@@ -10,6 +10,7 @@ import { IdpIdentitiesModule } from '../idp-identities/idp-identities.module';
 import { User } from '../users/user.entity';
 import { AuthController } from './auth.controller';
 import { IdpIdentity } from '../idp-identities/idp-identity.entity';
+import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { IdpIdentity } from '../idp-identities/idp-identity.entity';
     JwtModule.register({}),
     TypeOrmModule.forFeature([User]),
     IdpIdentitiesModule,
-    TypeOrmModule.forFeature([IdpIdentity, User]),
+    TypeOrmModule.forFeature([IdpIdentity, User, UserRoleAssignment]),
   ],
   controllers: [AuthController],
   providers: [JwtStrategy, AuthService, IdentityResolutionService],
