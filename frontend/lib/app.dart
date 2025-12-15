@@ -24,7 +24,7 @@ class MissionaryApp extends ConsumerWidget {
       ],
       locale: const Locale('es'),
       routes: appRoutes(),
-      initialRoute: Routes.dashboardMissionary,
+      initialRoute: Routes.dashboard,
     );
   }
 }

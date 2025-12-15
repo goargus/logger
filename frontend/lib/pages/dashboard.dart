@@ -7,7 +7,7 @@ import '../routes.dart';
 
 import '../core/layout_constants.dart';
 import '../core/snackbars.dart';
-import '../core/auth_utils.dart';
+import '../auth/auth_utils.dart';
 
 import '../widgets/nav/sidebar_nav.dart';
 import '../widgets/headers/welcome_header.dart';
@@ -21,16 +21,16 @@ import '../providers/auth.dart';
 import '../services/activity.dart';
 import '../config/api_config.dart';
 
-class DashboardMissionaryPage extends ConsumerStatefulWidget {
-  const DashboardMissionaryPage({super.key});
+class DashboardPage extends ConsumerStatefulWidget {
+  const DashboardPage({super.key});
 
   @override
-  ConsumerState<DashboardMissionaryPage> createState() =>
-      _DashboardMissionaryPageState();
+  ConsumerState<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardMissionaryPageState
-    extends ConsumerState<DashboardMissionaryPage> {
+class _DashboardPageState extends ConsumerState<DashboardPage> {
+  static const String _apiBaseUrl = 'http://localhost:3000';
+
   late ActivityService _activityService;
   double _monthlyExpenseTotal = 0.0;
   bool _isLoadingExpenses = false;

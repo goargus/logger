@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'pages/dashboard_missionary.dart';
+import 'pages/dashboard.dart';
 import 'pages/reports_view.dart';
 
 class Routes {
-  static const dashboardMissionary = '/';
+  static const dashboard = '/';
   static const reports = '/reports';
 }
 
 Map<String, WidgetBuilder> appRoutes() {
   return {
-    Routes.dashboardMissionary: (_) => const DashboardMissionaryPage(),
+    Routes.dashboard: (_) => const DashboardPage(),
     Routes.reports: (_) => const ReportsViewPage(),
   };
 }
