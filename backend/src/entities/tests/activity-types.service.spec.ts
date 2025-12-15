@@ -37,6 +37,7 @@ describe('ActivityTypesService', () => {
     users: [],
     created_at: new Date(),
     updated_at: new Date(),
+    canViewReports: false,
   };
 
   const rolePastor: Role = {
@@ -46,6 +47,7 @@ describe('ActivityTypesService', () => {
     users: [],
     created_at: new Date(),
     updated_at: new Date(),
+    canViewReports: false,
   };
 
   const atype: ActivityType = {

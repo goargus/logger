@@ -5,6 +5,7 @@ import { IdentityResolutionService } from '../auth/identity-resolution.service';
 import { JwtValidatedUser } from '../auth/jwt.strategy';
 import { Request } from 'express';
 import { ActivityType } from './activity-type.entity';
+import { UserStatus } from '../users/user-status.enum';
 
 describe('ActivityTypesController', () => {
   let controller: ActivityTypesController;
@@ -29,6 +30,35 @@ describe('ActivityTypesController', () => {
     username: 'john.doe',
     email: 'john.doe@example.com',
     role_id: 'role-missionary',
+    status: UserStatus.ACTIVE,
+    created_at: new Date(),
+    updated_at: new Date(),
+    archived_at: null,
+    full_name: 'John Doe',
+    first_name: 'John',
+    family_name: 'Doe',
+    role: {
+      id: 'role-missionary',
+      name: 'Missionary',
+      description: 'Missionary role',
+      canViewReports: false,
+      created_at: new Date(),
+      updated_at: new Date(),
+      users: [],
+    },
+    entity: {
+      id: 'entity-123',
+      name: 'Mission Field',
+      description: 'Mission field entity',
+      type: 'field',
+      parent_id: null,
+      is_active: true,
+      term_length_years: 5,
+      children: [],
+      created_at: new Date(),
+      updated_at: new Date(),
+    },
+    entity_id: 'entity-123',
   };
 
   beforeEach(async () => {
@@ -83,11 +113,12 @@ describe('ActivityTypesController', () => {
   describe('getAuthorized', () => {
     it('should return only authorized activity types for the current user', async () => {
       const mockJwtUser: JwtValidatedUser = {
+        ...mockUser,
         sub: 'auth0|123456',
         iss: 'https://test.auth0.com/',
         roles: ['missionary'],
         permissions: [],
-      };
+      } as unknown as JwtValidatedUser;
 
       const mockRequest = {
         user: mockJwtUser,
@@ -110,11 +141,12 @@ describe('ActivityTypesController', () => {
 
     it('should handle user with no authorized activity types', async () => {
       const mockJwtUser: JwtValidatedUser = {
+        ...mockUser,
         sub: 'auth0|123456',
         iss: 'https://test.auth0.com/',
         roles: ['guest'],
         permissions: [],
-      };
+      } as unknown as JwtValidatedUser;
 
       const mockRequest = {
         user: mockJwtUser,

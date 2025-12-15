@@ -6,6 +6,9 @@ import { EntityType, Entity } from '../entity.entity';
 import { ConflictException } from '@nestjs/common';
 import { CreateEntityDto } from '../dto/create-entity.dto';
 import { UpdateEntityDto } from '../dto/update-entity.dto';
+import { CaslAbilityFactory } from '../../casl/casl-ability.factory';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { UserRoleAssignment } from '../../roles/user-role-assignment.entity';
 
 describe('EntitiesController', () => {
   let controller: EntitiesController;
@@ -50,6 +53,24 @@ describe('EntitiesController', () => {
             getAllowedParentTypes: jest.fn(),
             getAllowedChildTypes: jest.fn(),
             canHaveChildren: jest.fn(),
+          },
+        },
+        {
+          provide: CaslAbilityFactory,
+          useValue: {
+            createForUser: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(UserRoleAssignment),
+          useValue: {
+            find: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(Entity),
+          useValue: {
+            find: jest.fn(),
           },
         },
       ],

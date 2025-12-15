@@ -27,6 +27,10 @@ describe('UsersController', () => {
       id: 'role-123',
       name: 'User',
       description: 'Regular user role',
+      canViewReports: false,
+      created_at: new Date('2023-01-01T00:00:00Z'),
+      updated_at: new Date('2023-01-01T00:00:00Z'),
+      users: [],
     },
     entity: {
       id: 'entity-123',
@@ -34,6 +38,11 @@ describe('UsersController', () => {
       description: 'Main organizational entity',
       type: 'organization',
       parent_id: null,
+      is_active: true,
+      term_length_years: 5,
+      children: [],
+      created_at: new Date('2023-01-01T00:00:00Z'),
+      updated_at: new Date('2023-01-01T00:00:00Z'),
     },
     role_id: 'role-123',
     entity_id: 'entity-123',
@@ -54,8 +63,16 @@ describe('UsersController', () => {
         description: 'Department A entity',
         type: 'department',
         parent_id: 'entity-123',
+        is_active: true,
+        term_length_years: 5,
+        children: [],
+        created_at: new Date('2023-01-01T00:00:00Z'),
+        updated_at: new Date('2023-01-01T00:00:00Z'),
       },
       user: mockUser,
+      start_date: '2023-01-01',
+      end_date: '2025-12-31',
+      isActive: true,
       created_at: new Date('2023-01-01T00:00:00Z'),
       updated_at: new Date('2023-01-01T00:00:00Z'),
       created_by: 'admin',
@@ -98,20 +115,21 @@ describe('UsersController', () => {
   describe('getMyProfile', () => {
     it('should return user profile with role assignments', async () => {
       const mockJwtUser: JwtValidatedUser = {
+        ...mockUser,
         sub: 'auth0|123456',
         iss: 'https://test.auth0.com/',
         roles: ['user'],
         permissions: [],
-      };
+      } as unknown as JwtValidatedUser;
 
       const mockRequest = {
         user: mockJwtUser,
       } as Request & { user: JwtValidatedUser };
 
-      identityService.resolveUserBySubAndIssuer.mockResolvedValue(mockUser as User);
+      identityService.resolveUserBySubAndIssuer.mockResolvedValue(mockUser as unknown as User);
       usersService.findUserProfile.mockResolvedValue({
-        user: mockUser as User,
-        roleAssignments: mockRoleAssignments as UserRoleAssignment[],
+        user: mockUser as unknown as User,
+        roleAssignments: mockRoleAssignments as unknown as UserRoleAssignment[],
       });
 
       const result = await controller.getMyProfile(mockRequest);
@@ -168,19 +186,20 @@ describe('UsersController', () => {
 
     it('should handle user with no role assignments', async () => {
       const mockJwtUser: JwtValidatedUser = {
+        ...mockUser,
         sub: 'auth0|123456',
         iss: 'https://test.auth0.com/',
         roles: ['user'],
         permissions: [],
-      };
+      } as unknown as JwtValidatedUser;
 
       const mockRequest = {
         user: mockJwtUser,
       } as Request & { user: JwtValidatedUser };
 
-      identityService.resolveUserBySubAndIssuer.mockResolvedValue(mockUser as User);
+      identityService.resolveUserBySubAndIssuer.mockResolvedValue(mockUser as unknown as User);
       usersService.findUserProfile.mockResolvedValue({
-        user: mockUser as User,
+        user: mockUser as unknown as User,
         roleAssignments: [],
       });
 

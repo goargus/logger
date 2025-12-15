@@ -28,6 +28,7 @@ describe('RolesService', () => {
     created_at: now,
     updated_at: now,
     users: [] as never,
+    canViewReports: false,
   };
 
   beforeEach(async () => {
