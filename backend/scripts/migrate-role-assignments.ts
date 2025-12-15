@@ -23,6 +23,7 @@ async function migrateRoleAssignments() {
         WHERE user_id = $1 AND role_id = $2 AND entity_id = $3
       `,
         [user.id, user.role_id, user.entity_id],
+      );
       
       if (existing.length > 0) {
         console.log(`Role assignment already exists for user ${user.id}, skipping...`);
