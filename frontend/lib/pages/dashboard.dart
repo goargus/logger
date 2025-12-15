@@ -20,16 +20,14 @@ import '../widgets/dialogs/create_activity_dialog.dart';
 import '../providers/auth.dart';
 import '../services/activity.dart';
 
-class DashboardMissionaryPage extends ConsumerStatefulWidget {
-  const DashboardMissionaryPage({super.key});
+class DashboardPage extends ConsumerStatefulWidget {
+  const DashboardPage({super.key});
 
   @override
-  ConsumerState<DashboardMissionaryPage> createState() =>
-      _DashboardMissionaryPageState();
+  ConsumerState<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardMissionaryPageState
-    extends ConsumerState<DashboardMissionaryPage> {
+class _DashboardPageState extends ConsumerState<DashboardPage> {
   static const String _apiBaseUrl = 'http://localhost:3000';
 
   late ActivityService _activityService;
