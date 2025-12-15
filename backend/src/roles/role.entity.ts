@@ -19,6 +19,9 @@ export class Role {
   @Column({ type: 'varchar', length: 255, nullable: true })
   description?: string | null;
 
+  @Column({ type: 'boolean', default: false, name: 'can_view_reports' })
+  canViewReports!: boolean;
+
   @CreateDateColumn()
   created_at!: Date;
 
