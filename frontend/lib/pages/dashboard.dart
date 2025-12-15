@@ -7,7 +7,7 @@ import '../routes.dart';
 
 import '../core/layout_constants.dart';
 import '../core/snackbars.dart';
-import '../core/auth_utils.dart';
+import '../auth/auth_utils.dart';
 
 import '../widgets/nav/sidebar_nav.dart';
 import '../widgets/headers/welcome_header.dart';

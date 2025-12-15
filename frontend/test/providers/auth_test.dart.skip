@@ -1,0 +1,190 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:logger/providers/auth.dart';
+
+void main() {
+  group('AuthState', () {
+    test('should create initial state correctly', () {
+      // Act
+      final state = AuthState.initial();
+
+      // Assert
+      expect(state.isLoading, true);
+      expect(state.isAuthenticated, false);
+      expect(state.user, isNull);
+      expect(state.accessToken, isNull);
+      expect(state.lastError, isNull);
+    });
+
+    test('should create state with all parameters', () {
+      // Act
+      final state = AuthState(
+        isLoading: false,
+        isAuthenticated: true,
+        user: {'id': 'user-123', 'name': 'John Doe'},
+        accessToken: 'token-abc',
+        lastError: null,
+      );
+
+      // Assert
+      expect(state.isLoading, false);
+      expect(state.isAuthenticated, true);
+      expect(state.user, {'id': 'user-123', 'name': 'John Doe'});
+      expect(state.accessToken, 'token-abc');
+      expect(state.lastError, isNull);
+    });
+
+    group('copyWith', () {
+      test('should copy state with updated isLoading', () {
+        // Arrange
+        final originalState = AuthState.initial();
+
+        // Act
+        final newState = originalState.copyWith(isLoading: false);
+
+        // Assert
+        expect(newState.isLoading, false);
+        expect(newState.isAuthenticated, originalState.isAuthenticated);
+        expect(newState.user, originalState.user);
+        expect(newState.accessToken, originalState.accessToken);
+      });
+
+      test('should copy state with updated isAuthenticated', () {
+        // Arrange
+        final originalState = AuthState.initial();
+
+        // Act
+        final newState = originalState.copyWith(
+          isLoading: false,
+          isAuthenticated: true,
+        );
+
+        // Assert
+        expect(newState.isLoading, false);
+        expect(newState.isAuthenticated, true);
+        expect(originalState.isAuthenticated, false);
+      });
+
+      test('should copy state with user data', () {
+        // Arrange
+        final originalState = AuthState.initial();
+        final userData = {'id': 'user-456', 'email': 'test@example.com'};
+
+        // Act
+        final newState = originalState.copyWith(user: userData);
+
+        // Assert
+        expect(newState.user, userData);
+        expect(originalState.user, isNull);
+      });
+
+      test('should copy state with access token', () {
+        // Arrange
+        final originalState = AuthState.initial();
+        const token = 'new-access-token';
+
+        // Act
+        final newState = originalState.copyWith(accessToken: token);
+
+        // Assert
+        expect(newState.accessToken, token);
+        expect(originalState.accessToken, isNull);
+      });
+
+      test('should copy state with error', () {
+        // Arrange
+        final originalState = AuthState.initial();
+        const error = 'Authentication failed';
+
+        // Act
+        final newState = originalState.copyWith(lastError: error);
+
+        // Assert
+        expect(newState.lastError, error);
+        expect(originalState.lastError, isNull);
+      });
+
+      test('should copy state with multiple changes', () {
+        // Arrange
+        final originalState = AuthState.initial();
+        final userData = {'id': 'user-789', 'name': 'Jane Doe'};
+        const token = 'multi-change-token';
+
+        // Act
+        final newState = originalState.copyWith(
+          isLoading: false,
+          isAuthenticated: true,
+          user: userData,
+          accessToken: token,
+        );
+
+        // Assert
+        expect(newState.isLoading, false);
+        expect(newState.isAuthenticated, true);
+        expect(newState.user, userData);
+        expect(newState.accessToken, token);
+        expect(originalState.isLoading, true);
+        expect(originalState.isAuthenticated, false);
+      });
+
+      test('should preserve unchanged fields', () {
+        // Arrange
+        final originalState = AuthState(
+          isLoading: false,
+          isAuthenticated: true,
+          user: {'id': 'user-123'},
+          accessToken: 'token-123',
+          lastError: null,
+        );
+
+        // Act
+        final newState = originalState.copyWith(isLoading: true);
+
+        // Assert
+        expect(newState.isLoading, true);
+        expect(newState.isAuthenticated, originalState.isAuthenticated);
+        expect(newState.user, originalState.user);
+        expect(newState.accessToken, originalState.accessToken);
+        expect(newState.lastError, originalState.lastError);
+      });
+    });
+
+    test('should support state transitions from loading to authenticated', () {
+      // Arrange
+      final initialState = AuthState.initial();
+
+      // Act - Simulate login flow
+      final loadingState = initialState.copyWith(isLoading: true);
+      final authenticatedState = loadingState.copyWith(
+        isLoading: false,
+        isAuthenticated: true,
+        user: {'id': 'user-flow', 'email': 'flow@example.com'},
+        accessToken: 'flow-token',
+      );
+
+      // Assert
+      expect(initialState.isLoading, true);
+      expect(initialState.isAuthenticated, false);
+      expect(authenticatedState.isLoading, false);
+      expect(authenticatedState.isAuthenticated, true);
+      expect(authenticatedState.user, isNotNull);
+      expect(authenticatedState.accessToken, isNotNull);
+    });
+
+    test('should support state transition to error state', () {
+      // Arrange
+      final initialState = AuthState.initial();
+
+      // Act - Simulate failed login
+      final errorState = initialState.copyWith(
+        isLoading: false,
+        isAuthenticated: false,
+        lastError: 'Invalid credentials',
+      );
+
+      // Assert
+      expect(errorState.isLoading, false);
+      expect(errorState.isAuthenticated, false);
+      expect(errorState.lastError, 'Invalid credentials');
+    });
+  });
+}
