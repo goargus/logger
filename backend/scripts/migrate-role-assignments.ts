@@ -4,43 +4,39 @@ import { DataSource } from 'typeorm';
 
 async function migrateRoleAssignments() {
   console.log('Starting role assignment migration...');
-  
   const app = await NestFactory.createApplicationContext(AppModule);
-  
   try {
     const dataSource = app.get(DataSource);
-    
     const users = await dataSource.query(`
       SELECT id, role_id, entity_id
       FROM "user"
       WHERE id IS NOT NULL
     `);
-    
     console.log(`Found ${users.length} users to process`);
-    
     const today = new Date().toISOString().split('T')[0];
     const farFuture = '9999-12-31';
-    
     let created = 0;
     let skipped = 0;
-    
     for (const user of users) {
       const existing = await dataSource.query(`
         SELECT id FROM user_role_assignments
         WHERE user_id = $1 AND role_id = $2 AND entity_id = $3
-      `, [user.id, user.role_id, user.entity_id]);
+      `,
+        [user.id, user.role_id, user.entity_id],
       
       if (existing.length > 0) {
         console.log(`Role assignment already exists for user ${user.id}, skipping...`);
         skipped++;
         continue;
       }
-      await dataSource.query(`
+      await dataSource.query(
+        `
         INSERT INTO user_role_assignments (user_id, role_id, entity_id, start_date, end_date, created_at, updated_at)
         VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
       `,
         [user.id, user.role_id, user.entity_id, today, farFuture],
-      
+      );
+
       console.log(`Created role assignment for user ${user.id}`);
       created++;
     }
