@@ -7,12 +7,14 @@ import { HierarchyValidationService } from './hierarchy-validation.service';
 import { User } from '../users/user.entity';
 import { ReportingPeriodsModule } from '../reporting-periods/reporting-periods.module';
 import { TermsModule } from '../terms/terms.module';
+import { CaslModule } from '../casl/casl.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Entity, User]),
     forwardRef(() => ReportingPeriodsModule),
     forwardRef(() => TermsModule),
+    CaslModule,
   ],
   controllers: [EntitiesController],
   providers: [EntitiesService, HierarchyValidationService],
