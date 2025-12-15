@@ -13,6 +13,7 @@ import { ActivityTypesModule } from './activities-type/activity-types.module';
 import { IdpIdentitiesModule } from './idp-identities/idp-identities.module';
 import { ActivitiesModule } from './activity/activities.module';
 import { ReportingPeriodsModule } from './reporting-periods/reporting-periods.module';
+import { CaslModule } from './casl/casl.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { ReportingPeriodsModule } from './reporting-periods/reporting-periods.mo
       load: [authConfig],
     }),
     AuthModule,
+    CaslModule,
     TypeOrmModule.forRoot({
       type: 'postgres',
       host: process.env.DB_HOST,
