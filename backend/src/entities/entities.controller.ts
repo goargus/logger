@@ -13,15 +13,16 @@ import {
   Query,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
-import { Roles } from '../auth/roles.decorator';
-import { RolesGuard } from '../auth/roles.guard';
+import { PoliciesGuard } from '../casl/policies.guard';
+import { CheckPolicies } from '../casl/check-policies.decorator';
+import { Action } from '../casl/types';
 import { EntitiesService } from './entities.service';
 import { CreateEntityDto } from './dto/create-entity.dto';
 import { UpdateEntityDto } from './dto/update-entity.dto';
-import { EntityType } from './entity.entity';
+import { EntityType, Entity } from './entity.entity';
 
 @Controller('entities')
-@UseGuards(AuthGuard('jwt'), RolesGuard)
+@UseGuards(AuthGuard('jwt'), PoliciesGuard)
 export class EntitiesController {
   constructor(private readonly entitiesService: EntitiesService) {}
 
@@ -35,7 +36,7 @@ export class EntitiesController {
   }
 
   @Post(':type')
-  @Roles('admin')
+  @CheckPolicies((ability) => ability.can(Action.Create, Entity))
   async createAny(@Param('type') typeStr: string, @Body() dto: CreateEntityDto) {
     const type = this.parseType(typeStr);
     try {
@@ -59,13 +60,13 @@ export class EntitiesController {
   }
 
   @Patch(':id')
-  @Roles('admin')
+  @CheckPolicies((ability) => ability.can(Action.Update, Entity))
   async update(@Param('id', new ParseUUIDPipe()) id: string, @Body() dto: UpdateEntityDto) {
     return this.entitiesService.update(id, dto);
   }
 
   @Delete(':id')
-  @Roles('admin')
+  @CheckPolicies((ability) => ability.can(Action.Delete, Entity))
   async remove(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.entitiesService.remove(id);
   }
@@ -85,13 +86,13 @@ export class EntitiesController {
   }
 
   @Patch(':id/deactivate')
-  @Roles('admin')
+  @CheckPolicies((ability) => ability.can(Action.Update, Entity))
   async deactivate(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.entitiesService.update(id, { is_active: false });
   }
 
   @Patch(':id/activate')
-  @Roles('admin')
+  @CheckPolicies((ability) => ability.can(Action.Update, Entity))
   async activate(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.entitiesService.update(id, { is_active: true });
   }
