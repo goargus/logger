@@ -58,6 +58,7 @@ describe('CaslAbilityFactory', () => {
             role: {
               id: 'role-1',
               name: 'System Admin',
+              isSystemAdmin: true,
               canViewReports: true,
             } as Role,
             entity: { id: 'entity-1' } as Entity,
@@ -91,6 +92,7 @@ describe('CaslAbilityFactory', () => {
               id: 'role-1',
               name: 'Union President',
               canViewReports: true,
+              canManageEntities: true,
             } as Role,
             entity: { id: 'union-1' } as Entity,
             user: { id: 'user-1' } as User,
@@ -125,6 +127,8 @@ describe('CaslAbilityFactory', () => {
               id: 'role-1',
               name: 'Association Secretary',
               canViewReports: true,
+              canManageHierarchyActivities: true,
+              canManageOwnActivities: true,
             } as Role,
             entity: { id: 'assoc-1' } as Entity,
             user: { id: 'user-1' } as User,
@@ -143,7 +147,7 @@ describe('CaslAbilityFactory', () => {
       expect(ability.can(Action.Create, Activity)).toBe(true);
       expect(ability.can(Action.Read, Activity)).toBe(true);
       expect(ability.can(Action.Update, Activity)).toBe(true);
-      expect(ability.can(Action.Delete, Activity)).toBe(true);
+      expect(ability.can(Action.Delete, Activity)).toBe(false);
     });
   });
 
@@ -157,6 +161,7 @@ describe('CaslAbilityFactory', () => {
             role: {
               id: 'role-1',
               name: 'Missionary',
+              canManageOwnActivities: true,
               canViewReports: false,
             } as Role,
             entity: { id: 'field-1' } as Entity,
@@ -193,6 +198,7 @@ describe('CaslAbilityFactory', () => {
               id: 'role-1',
               name: 'Union President',
               canViewReports: true,
+              canManageEntities: true,
             } as Role,
             entity: { id: 'union-1' } as Entity,
             user: { id: 'user-1' } as User,
@@ -248,6 +254,8 @@ describe('CaslAbilityFactory', () => {
               id: 'role-1',
               name: 'Field Secretary',
               canViewReports: true,
+              canManageHierarchyActivities: true,
+              canManageOwnActivities: true,
             } as Role,
             entity: { id: 'field-1' } as Entity,
             user: { id: 'user-1' } as User,
@@ -260,6 +268,7 @@ describe('CaslAbilityFactory', () => {
               id: 'role-2',
               name: 'Missionary',
               canViewReports: false,
+              canManageOwnActivities: true,
             } as Role,
             entity: { id: 'field-2' } as Entity,
             user: { id: 'user-1' } as User,
@@ -289,6 +298,7 @@ describe('CaslAbilityFactory', () => {
               id: 'role-1',
               name: 'System Admin',
               canViewReports: true,
+              isSystemAdmin: true,
             } as Role,
             entity: { id: 'entity-1' } as Entity,
             user: { id: 'user-1' } as User,
@@ -314,6 +324,446 @@ describe('CaslAbilityFactory', () => {
       const result = await factory.cannot(user, Action.Delete, Entity);
 
       expect(result).toBe(true);
+    });
+  });
+
+  describe('Instance-Level Permissions (Field Conditions)', () => {
+    describe('Missionary - Own Activities', () => {
+      it('should allow Missionary to read their own activity', async () => {
+        const user: UserWithRoles = {
+          id: 'user-1',
+          roleAssignments: [
+            {
+              id: 'ra-1',
+              role: {
+                id: 'role-1',
+                name: 'Missionary',
+                canViewReports: false,
+                canManageOwnActivities: true,
+              } as Role,
+              entity: { id: 'field-1' } as Entity,
+              user: { id: 'user-1' } as User,
+              start_date: '2024-01-01',
+              end_date: '2025-12-31',
+            } as UserRoleAssignment,
+          ],
+        } as UserWithRoles;
+
+        mockEntityRepo.find.mockResolvedValue([]);
+
+        const ability = await factory.createForUser(user);
+
+        const ownActivity = { userId: 'user-1' } as Activity;
+        const otherActivity = { userId: 'user-2' } as Activity;
+
+        expect(ability.can(Action.Read, ownActivity)).toBe(true);
+        expect(ability.cannot(Action.Read, otherActivity)).toBe(true);
+      });
+
+      it('should allow Missionary to create activity with their userId', async () => {
+        const user: UserWithRoles = {
+          id: 'user-1',
+          roleAssignments: [
+            {
+              id: 'ra-1',
+              role: {
+                id: 'role-1',
+                name: 'Missionary',
+                canViewReports: false,
+                canManageOwnActivities: true,
+              } as Role,
+              entity: { id: 'field-1' } as Entity,
+              user: { id: 'user-1' } as User,
+              start_date: '2024-01-01',
+              end_date: '2025-12-31',
+            } as UserRoleAssignment,
+          ],
+        } as UserWithRoles;
+
+        mockEntityRepo.find.mockResolvedValue([]);
+
+        const ability = await factory.createForUser(user);
+
+        const ownActivity = { userId: 'user-1' } as Activity;
+        const otherActivity = { userId: 'user-2' } as Activity;
+
+        expect(ability.can(Action.Create, ownActivity)).toBe(true);
+        expect(ability.cannot(Action.Create, otherActivity)).toBe(true);
+      });
+
+      it('should allow Missionary to update and delete only their own activities', async () => {
+        const user: UserWithRoles = {
+          id: 'user-1',
+          roleAssignments: [
+            {
+              id: 'ra-1',
+              role: {
+                id: 'role-1',
+                name: 'Missionary',
+                canViewReports: false,
+                canManageOwnActivities: true,
+              } as Role,
+              entity: { id: 'field-1' } as Entity,
+              user: { id: 'user-1' } as User,
+              start_date: '2024-01-01',
+              end_date: '2025-12-31',
+            } as UserRoleAssignment,
+          ],
+        } as UserWithRoles;
+
+        mockEntityRepo.find.mockResolvedValue([]);
+
+        const ability = await factory.createForUser(user);
+
+        const ownActivity = { userId: 'user-1' } as Activity;
+        const otherActivity = { userId: 'user-2' } as Activity;
+
+        expect(ability.can(Action.Update, ownActivity)).toBe(true);
+        expect(ability.cannot(Action.Update, otherActivity)).toBe(true);
+        expect(ability.can(Action.Delete, ownActivity)).toBe(true);
+        expect(ability.cannot(Action.Delete, otherActivity)).toBe(true);
+      });
+
+      it('should allow Missionary to read their own user profile only', async () => {
+        const user: UserWithRoles = {
+          id: 'user-1',
+          roleAssignments: [
+            {
+              id: 'ra-1',
+              role: {
+                id: 'role-1',
+                name: 'Missionary',
+                canViewReports: false,
+                canManageOwnActivities: true,
+              } as Role,
+              entity: { id: 'field-1' } as Entity,
+              user: { id: 'user-1' } as User,
+              start_date: '2024-01-01',
+              end_date: '2025-12-31',
+            } as UserRoleAssignment,
+          ],
+        } as UserWithRoles;
+
+        mockEntityRepo.find.mockResolvedValue([]);
+
+        const ability = await factory.createForUser(user);
+
+        const ownUser = { id: 'user-1' } as User;
+        const otherUser = { id: 'user-2' } as User;
+
+        expect(ability.can(Action.Read, ownUser)).toBe(true);
+        expect(ability.cannot(Action.Read, otherUser)).toBe(true);
+      });
+
+      it('should allow Missionary to read entity and reporting period of their field', async () => {
+        const user: UserWithRoles = {
+          id: 'user-1',
+          roleAssignments: [
+            {
+              id: 'ra-1',
+              role: {
+                id: 'role-1',
+                name: 'Missionary',
+                canViewReports: false,
+                canManageOwnActivities: true,
+              } as Role,
+              entity: { id: 'field-1' } as Entity,
+              user: { id: 'user-1' } as User,
+              start_date: '2024-01-01',
+              end_date: '2025-12-31',
+            } as UserRoleAssignment,
+          ],
+        } as UserWithRoles;
+
+        mockEntityRepo.find.mockResolvedValue([]);
+
+        const ability = await factory.createForUser(user);
+
+        const ownEntity = { id: 'field-1' } as Entity;
+        const otherEntity = { id: 'field-2' } as Entity;
+
+        const ownPeriod = { entityId: 'field-1' } as ReportingPeriod;
+        const otherPeriod = { entityId: 'field-2' } as ReportingPeriod;
+
+        expect(ability.can(Action.Read, ownEntity)).toBe(true);
+        expect(ability.cannot(Action.Read, otherEntity)).toBe(true);
+        expect(ability.can(Action.Read, ownPeriod)).toBe(true);
+        expect(ability.cannot(Action.Read, otherPeriod)).toBe(true);
+      });
+    });
+
+    describe('Secretary Roles - Hierarchy-Based Access', () => {
+      it('should allow Association Secretary to manage activities in their hierarchy', async () => {
+        const user: UserWithRoles = {
+          id: 'user-1',
+          roleAssignments: [
+            {
+              id: 'ra-1',
+              role: {
+                id: 'role-1',
+                name: 'Association Secretary',
+                canViewReports: true,
+                canManageHierarchyActivities: true,
+                canManageOwnActivities: true,
+              } as Role,
+              entity: { id: 'assoc-1' } as Entity,
+              user: { id: 'user-1' } as User,
+              start_date: '2024-01-01',
+              end_date: '2025-12-31',
+            } as UserRoleAssignment,
+          ],
+        } as UserWithRoles;
+
+        mockEntityRepo.find
+          .mockResolvedValueOnce([{ id: 'field-1' }, { id: 'field-2' }])
+          .mockResolvedValue([]);
+
+        const ability = await factory.createForUser(user);
+
+        const activityInScope = { entityId: 'field-1' } as Activity;
+        const activityOutOfScope = { entityId: 'field-3' } as Activity;
+
+        expect(ability.can(Action.Create, activityInScope)).toBe(true);
+        expect(ability.cannot(Action.Create, activityOutOfScope)).toBe(true);
+        expect(ability.can(Action.Read, activityInScope)).toBe(true);
+        expect(ability.cannot(Action.Read, activityOutOfScope)).toBe(true);
+        expect(ability.can(Action.Update, activityInScope)).toBe(true);
+        expect(ability.cannot(Action.Update, activityOutOfScope)).toBe(true);
+      });
+
+      it('should allow Field Secretary to read users and entities in their field', async () => {
+        const user: UserWithRoles = {
+          id: 'user-1',
+          roleAssignments: [
+            {
+              id: 'ra-1',
+              role: {
+                id: 'role-1',
+                name: 'Field Secretary',
+                canViewReports: true,
+                canManageHierarchyActivities: true,
+                canManageOwnActivities: true,
+              } as Role,
+              entity: { id: 'field-1' } as Entity,
+              user: { id: 'user-1' } as User,
+              start_date: '2024-01-01',
+              end_date: '2025-12-31',
+            } as UserRoleAssignment,
+          ],
+        } as UserWithRoles;
+
+        mockEntityRepo.find.mockResolvedValue([]);
+
+        const ability = await factory.createForUser(user);
+
+        const entityInScope = { id: 'field-1' } as Entity;
+        const entityOutOfScope = { id: 'field-2' } as Entity;
+
+        const userInScope = { entityId: 'field-1' } as User;
+        const userOutOfScope = { entityId: 'field-2' } as User;
+
+        expect(ability.can(Action.Read, entityInScope)).toBe(true);
+        expect(ability.cannot(Action.Read, entityOutOfScope)).toBe(true);
+        expect(ability.can(Action.Read, userInScope)).toBe(true);
+        expect(ability.cannot(Action.Read, userOutOfScope)).toBe(true);
+      });
+    });
+
+    describe('Executive Roles - Entity Management', () => {
+      it('should allow Union President to read entities in hierarchy but update only their own', async () => {
+        const user: UserWithRoles = {
+          id: 'user-1',
+          roleAssignments: [
+            {
+              id: 'ra-1',
+              role: {
+                id: 'role-1',
+                name: 'Union President',
+                canViewReports: true,
+                canManageEntities: true,
+              } as Role,
+              entity: { id: 'union-1' } as Entity,
+              user: { id: 'user-1' } as User,
+              start_date: '2024-01-01',
+              end_date: '2025-12-31',
+            } as UserRoleAssignment,
+          ],
+        } as UserWithRoles;
+
+        mockEntityRepo.find
+          .mockResolvedValueOnce([{ id: 'assoc-1' }, { id: 'assoc-2' }])
+          .mockResolvedValueOnce([])
+          .mockResolvedValue([]);
+
+        const ability = await factory.createForUser(user);
+
+        const ownEntity = { id: 'union-1' } as Entity;
+        const childEntity = { id: 'assoc-1' } as Entity;
+        const unrelatedEntity = { id: 'union-2' } as Entity;
+
+        expect(ability.can(Action.Read, ownEntity)).toBe(true);
+        expect(ability.can(Action.Read, childEntity)).toBe(true);
+        expect(ability.cannot(Action.Read, unrelatedEntity)).toBe(true);
+
+        expect(ability.can(Action.Update, ownEntity)).toBe(true);
+        expect(ability.cannot(Action.Update, childEntity)).toBe(true);
+      });
+
+      it('should allow Association President to read and update users in their scope', async () => {
+        const user: UserWithRoles = {
+          id: 'user-1',
+          roleAssignments: [
+            {
+              id: 'ra-1',
+              role: {
+                id: 'role-1',
+                name: 'Association President',
+                canViewReports: true,
+                canManageEntities: true,
+              } as Role,
+              entity: { id: 'assoc-1' } as Entity,
+              user: { id: 'user-1' } as User,
+              start_date: '2024-01-01',
+              end_date: '2025-12-31',
+            } as UserRoleAssignment,
+          ],
+        } as UserWithRoles;
+
+        mockEntityRepo.find
+          .mockResolvedValueOnce([{ id: 'field-1' }, { id: 'field-2' }])
+          .mockResolvedValue([]);
+
+        const ability = await factory.createForUser(user);
+
+        const userInHierarchy = { entityId: 'field-1' } as User;
+        const userInOwnEntity = { entityId: 'assoc-1' } as User;
+        const userOutOfScope = { entityId: 'assoc-2' } as User;
+
+        expect(ability.can(Action.Read, userInHierarchy)).toBe(true);
+        expect(ability.can(Action.Read, userInOwnEntity)).toBe(true);
+        expect(ability.cannot(Action.Read, userOutOfScope)).toBe(true);
+
+        expect(ability.can(Action.Update, userInOwnEntity)).toBe(true);
+        expect(ability.cannot(Action.Update, userInHierarchy)).toBe(true);
+      });
+    });
+
+    describe('Leadership Roles - Report Viewing', () => {
+      it('should allow Union Secretary to read activities from users in hierarchy', async () => {
+        const user: UserWithRoles = {
+          id: 'user-1',
+          roleAssignments: [
+            {
+              id: 'ra-1',
+              role: {
+                id: 'role-1',
+                name: 'Union Secretary',
+                canViewReports: true,
+                canManageHierarchyActivities: true,
+                canManageOwnActivities: true,
+              } as Role,
+              entity: { id: 'union-1' } as Entity,
+              user: { id: 'user-1' } as User,
+              start_date: '2024-01-01',
+              end_date: '2025-12-31',
+            } as UserRoleAssignment,
+          ],
+        } as UserWithRoles;
+
+        mockEntityRepo.find
+          .mockResolvedValueOnce([{ id: 'assoc-1' }])
+          .mockResolvedValueOnce([{ id: 'field-1' }])
+          .mockResolvedValue([]);
+
+        const ability = await factory.createForUser(user);
+
+        const activityInHierarchy = { userId: 'field-1' } as Activity;
+        const activityOutOfHierarchy = { userId: 'field-2' } as Activity;
+
+        expect(ability.can(Action.Read, activityInHierarchy)).toBe(true);
+        expect(ability.cannot(Action.Read, activityOutOfHierarchy)).toBe(true);
+      });
+
+      it('should allow Field Director to read reporting periods in their hierarchy', async () => {
+        const user: UserWithRoles = {
+          id: 'user-1',
+          roleAssignments: [
+            {
+              id: 'ra-1',
+              role: {
+                id: 'role-1',
+                name: 'Field Director',
+                canViewReports: true,
+                canManageEntities: true,
+              } as Role,
+              entity: { id: 'field-1' } as Entity,
+              user: { id: 'user-1' } as User,
+              start_date: '2024-01-01',
+              end_date: '2025-12-31',
+            } as UserRoleAssignment,
+          ],
+        } as UserWithRoles;
+
+        mockEntityRepo.find.mockResolvedValue([]);
+
+        const ability = await factory.createForUser(user);
+
+        const periodInScope = { entityId: 'field-1' } as ReportingPeriod;
+        const periodOutOfScope = { entityId: 'field-2' } as ReportingPeriod;
+
+        expect(ability.can(Action.Read, periodInScope)).toBe(true);
+        expect(ability.cannot(Action.Read, periodOutOfScope)).toBe(true);
+      });
+    });
+
+    describe('Combined Permissions from Multiple Roles', () => {
+      it('should combine field conditions from multiple roles', async () => {
+        const user: UserWithRoles = {
+          id: 'user-1',
+          roleAssignments: [
+            {
+              id: 'ra-1',
+              role: {
+                id: 'role-1',
+                name: 'Missionary',
+                canViewReports: false,
+                canManageOwnActivities: true,
+              } as Role,
+              entity: { id: 'field-1' } as Entity,
+              user: { id: 'user-1' } as User,
+              start_date: '2024-01-01',
+              end_date: '2025-12-31',
+            } as UserRoleAssignment,
+            {
+              id: 'ra-2',
+              role: {
+                id: 'role-2',
+                name: 'Field Secretary',
+                canViewReports: true,
+                canManageHierarchyActivities: true,
+                canManageOwnActivities: true,
+              } as Role,
+              entity: { id: 'field-2' } as Entity,
+              user: { id: 'user-1' } as User,
+              start_date: '2024-01-01',
+              end_date: '2025-12-31',
+            } as UserRoleAssignment,
+          ],
+        } as UserWithRoles;
+
+        mockEntityRepo.find.mockResolvedValue([]);
+
+        const ability = await factory.createForUser(user);
+
+        const ownActivity = { userId: 'user-1' } as Activity;
+        expect(ability.can(Action.Update, ownActivity)).toBe(true);
+
+        const field2Activity = { entityId: 'field-2' } as Activity;
+        expect(ability.can(Action.Update, field2Activity)).toBe(true);
+
+        const unrelatedActivity = { userId: 'user-2', entityId: 'field-3' } as Activity;
+        expect(ability.cannot(Action.Update, unrelatedActivity)).toBe(true);
+      });
     });
   });
 });
