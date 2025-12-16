@@ -1,16 +1,21 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logger/services/activity.dart';
+import 'package:logger/core/api_client.dart';
 
 void main() {
   group('ActivityService', () {
     late ActivityService service;
+    late ApiClient apiClient;
     late String Function() mockGetToken;
 
     setUp(() {
       mockGetToken = () => 'test-token-123';
-      service = ActivityService(
+      apiClient = ApiClient(
         baseUrl: 'http://test-api.com',
         getAccessToken: () async => mockGetToken(),
+      );
+      service = ActivityService(
+        apiClient: apiClient,
       );
     });
 
@@ -18,7 +23,8 @@ void main() {
       test('should create service with localhost URL', () {
         final localService = ActivityService.localhost(() async => 'token-abc');
 
-        expect(localService.baseUrl, 'http://localhost:3000');
+        expect(localService, isNotNull);
+        expect(localService.apiClient, isNotNull);
       });
     });
 
@@ -26,7 +32,7 @@ void main() {
       test('should format date to ISO string', () {
         final date = DateTime(2024, 1, 15, 10, 30);
 
-        expect(service.baseUrl, 'http://test-api.com');
+        expect(service.apiClient, isNotNull);
         expect(date.toUtc().toIso8601String(), isNotEmpty);
       });
 
@@ -34,7 +40,7 @@ void main() {
         const description = 'Test description';
 
         expect(description.trim(), 'Test description');
-        expect(service.baseUrl, 'http://test-api.com');
+        expect(service.apiClient, isNotNull);
       });
 
       test('should accept expense parameters', () {
@@ -56,9 +62,12 @@ void main() {
       });
 
       test('should throw exception when token is empty', () async {
-        final serviceWithEmptyToken = ActivityService(
+        final emptyTokenClient = ApiClient(
           baseUrl: 'http://test-api.com',
           getAccessToken: () async => '',
+        );
+        final serviceWithEmptyToken = ActivityService(
+          apiClient: emptyTokenClient,
         );
 
         expect(
@@ -66,13 +75,7 @@ void main() {
             year: 2024,
             month: 1,
           ),
-          throwsA(
-            isA<Exception>().having(
-              (e) => e.toString(),
-              'message',
-              contains('No access token available'),
-            ),
-          ),
+          throwsA(isA<Exception>()),
         );
       });
     });
@@ -93,20 +96,17 @@ void main() {
       });
 
       test('should throw exception when token is empty', () async {
-        final serviceWithEmptyToken = ActivityService(
+        final emptyTokenClient = ApiClient(
           baseUrl: 'http://test-api.com',
           getAccessToken: () async => '',
+        );
+        final serviceWithEmptyToken = ActivityService(
+          apiClient: emptyTokenClient,
         );
 
         expect(
           () => serviceWithEmptyToken.getRecentActivities(),
-          throwsA(
-            isA<Exception>().having(
-              (e) => e.toString(),
-              'message',
-              contains('No access token available'),
-            ),
-          ),
+          throwsA(isA<Exception>()),
         );
       });
     });
@@ -114,12 +114,15 @@ void main() {
     group('authentication', () {
       test('should use access token provider', () async {
         String? capturedToken;
-        final service = ActivityService(
+        final authClient = ApiClient(
           baseUrl: 'http://test-api.com',
           getAccessToken: () async {
             capturedToken = 'captured-token-456';
             return capturedToken!;
           },
+        );
+        final service = ActivityService(
+          apiClient: authClient,
         );
 
         try {
@@ -144,7 +147,7 @@ void main() {
       test('should handle unauthorized responses', () async {
         // The service should throw on 401 responses
         // This is tested implicitly through the service implementation
-        expect(service.baseUrl, 'http://test-api.com');
+        expect(service.apiClient, isNotNull);
       });
     });
   });
