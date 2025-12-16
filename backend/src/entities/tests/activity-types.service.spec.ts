@@ -38,6 +38,10 @@ describe('ActivityTypesService', () => {
     created_at: new Date(),
     updated_at: new Date(),
     canViewReports: false,
+    canManageOwnActivities: true,
+    canManageHierarchyActivities: false,
+    canManageEntities: false,
+    isSystemAdmin: false,
   };
 
   const rolePastor: Role = {
@@ -48,6 +52,10 @@ describe('ActivityTypesService', () => {
     created_at: new Date(),
     updated_at: new Date(),
     canViewReports: false,
+    canManageOwnActivities: false,
+    canManageHierarchyActivities: true,
+    canManageEntities: false,
+    isSystemAdmin: false,
   };
 
   const atype: ActivityType = {
