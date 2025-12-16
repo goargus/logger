@@ -140,6 +140,8 @@ class ApiClient {
         headers['Authorization'] = 'Bearer $token';
       }
     } catch (e) {
+      // If we can't get a token, continue without it
+      // The server will return 401 if auth is required
     }
 
     if (additionalHeaders != null) {
