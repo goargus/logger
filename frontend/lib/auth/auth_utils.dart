@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../auth/session.dart';
+import 'session.dart';
 import '../providers/auth.dart';
 
 class AuthUtils {

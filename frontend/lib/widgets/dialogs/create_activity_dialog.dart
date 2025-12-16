@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import '../dialogs/calendar_dialog.dart';
 import '../../models/activity_type.dart';
 import '../../services/activity_type.dart';
+import '../../core/validators.dart';
+import '../../core/api_client.dart';
 
 class CreateActivityDialog extends StatefulWidget {
   final String baseUrl;
@@ -48,9 +50,15 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
   @override
   void initState() {
     super.initState();
-    _typeService = ActivityTypeService(
+    final apiClient = ApiClient(
       baseUrl: widget.baseUrl,
-      getAccessToken: widget.getAccessToken,
+      getAccessToken: () async {
+        final token = await widget.getAccessToken();
+        return token ?? '';
+      },
+    );
+    _typeService = ActivityTypeService(
+      apiClient: apiClient,
       path: widget.typesPath,
     );
     _dateCtrl.text = DateFormat.yMMMMd('es').format(_selectedDate);
@@ -105,20 +113,11 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
       final amount = (hasExp ? _amountCtrl.text.trim() : null);
 
       final payload = <String, dynamic>{
-        'activity_type_id': typeId,
-        'type_id': typeId,
         'activityTypeId': typeId,
-        'typeId': typeId,
-        'activity_date': iso,
-        'date': iso,
         'activityDate': iso,
         if (desc.isNotEmpty) 'description': desc,
         'hasExpense': hasExp,
-        'has_expense': hasExp,
-        if (hasExp) ...{
-          'expenseAmount': amount,
-          'expense_amount': amount,
-        },
+        if (hasExp) 'expenseAmount': amount,
       };
 
       final resp = await http.post(
@@ -306,8 +305,10 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                           onChanged: _submitting
                               ? null
                               : (v) => setState(() => _selectedType = v),
-                          validator: (v) =>
-                              v == null ? 'Selecciona un tipo' : null,
+                          validator: (v) => Validators.requiredField(
+                            v,
+                            fieldName: 'El tipo de actividad',
+                          ),
                           decoration: const InputDecoration(
                             border: OutlineInputBorder(),
                             hintText: 'Selecciona un tipo',
@@ -336,9 +337,10 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                           icon: const Icon(Icons.calendar_today),
                         ),
                       ),
-                      validator: (v) => (v == null || v.trim().isEmpty)
-                          ? 'Selecciona una fecha'
-                          : null,
+                      validator: (v) => Validators.required(
+                        v,
+                        fieldName: 'La fecha',
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Align(
@@ -374,12 +376,15 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                           hintText: 'Monto del gasto',
                           border: OutlineInputBorder(),
                         ),
-                        validator: (v) {
-                          if (_hasExpense && (v == null || v.trim().isEmpty)) {
-                            return 'Ingresa el monto del gasto';
-                          }
-                          return null;
-                        },
+                        validator: (v) => Validators.combine([
+                          () => _hasExpense
+                              ? Validators.required(
+                                  v,
+                                  fieldName: 'El monto del gasto',
+                                )
+                              : null,
+                          () => Validators.positiveNumber(v),
+                        ]),
                       ),
                       const SizedBox(height: 16),
                     ],
