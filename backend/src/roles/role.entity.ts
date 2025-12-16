@@ -22,6 +22,18 @@ export class Role {
   @Column({ type: 'boolean', default: false, name: 'can_view_reports' })
   canViewReports!: boolean;
 
+  @Column({ type: 'boolean', default: false, name: 'can_manage_own_activities' })
+  canManageOwnActivities!: boolean;
+
+  @Column({ type: 'boolean', default: false, name: 'can_manage_hierarchy_activities' })
+  canManageHierarchyActivities!: boolean;
+
+  @Column({ type: 'boolean', default: false, name: 'can_manage_entities' })
+  canManageEntities!: boolean;
+
+  @Column({ type: 'boolean', default: false, name: 'is_system_admin' })
+  isSystemAdmin!: boolean;
+
   @CreateDateColumn()
   created_at!: Date;
 
