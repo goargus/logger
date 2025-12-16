@@ -1,31 +1,24 @@
 import 'package:flutter/material.dart';
+import 'errors/error_handler.dart';
 
+/// Legacy Snackbars utility - maintained for backwards compatibility
+/// 
+/// Consider using ErrorHandler instead for new code:
+/// - ErrorHandler.showSuccessMessage()
+/// - ErrorHandler.showErrorMessage()
+/// - ErrorHandler.showInfoMessage()
 class Snackbars {
   Snackbars._();
 
   static void showSuccess(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-      ),
-    );
+    ErrorHandler.showSuccessMessage(context, message);
   }
 
   static void showError(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
-    );
+    ErrorHandler.showErrorMessage(context, message);
   }
 
   static void showInfo(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-      ),
-    );
+    ErrorHandler.showInfoMessage(context, message);
   }
 }
