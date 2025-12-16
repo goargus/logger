@@ -7,6 +7,7 @@ import '../dialogs/calendar_dialog.dart';
 import '../../models/activity_type.dart';
 import '../../services/activity_type.dart';
 import '../../core/validators.dart';
+import '../../core/api_client.dart';
 
 class CreateActivityDialog extends StatefulWidget {
   final String baseUrl;
@@ -49,9 +50,15 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
   @override
   void initState() {
     super.initState();
-    _typeService = ActivityTypeService(
+    final apiClient = ApiClient(
       baseUrl: widget.baseUrl,
-      getAccessToken: widget.getAccessToken,
+      getAccessToken: () async {
+        final token = await widget.getAccessToken();
+        return token ?? '';
+      },
+    );
+    _typeService = ActivityTypeService(
+      apiClient: apiClient,
       path: widget.typesPath,
     );
     _dateCtrl.text = DateFormat.yMMMMd('es').format(_selectedDate);
