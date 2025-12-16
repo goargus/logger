@@ -50,7 +50,8 @@ export class RoleAssignmentService {
       .andWhere('assignment.role_id = :roleId', { roleId })
       .andWhere('assignment.entity_id = :entityId', { entityId })
       .andWhere('(assignment.start_date <= :endDate AND assignment.end_date >= :startDate)', {
-        { startDate, endDate },
+        startDate,
+        endDate,
       );
 
     if (excludeId) {
