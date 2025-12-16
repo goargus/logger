@@ -4,18 +4,21 @@ import {
   ConflictException,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
+  Req,
   UseGuards,
   Query,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { PoliciesGuard } from '../casl/policies.guard';
 import { CheckPolicies } from '../casl/check-policies.decorator';
-import { Action } from '../casl/types';
+import { Action, AppAbility } from '../casl/types';
 import { EntitiesService } from './entities.service';
 import { CreateEntityDto } from './dto/create-entity.dto';
 import { UpdateEntityDto } from './dto/update-entity.dto';
@@ -60,14 +63,30 @@ export class EntitiesController {
   }
 
   @Patch(':id')
-  @CheckPolicies((ability) => ability.can(Action.Update, Entity))
-  async update(@Param('id', new ParseUUIDPipe()) id: string, @Body() dto: UpdateEntityDto) {
+  async update(
+    @Req() req: Request,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdateEntityDto,
+  ) {
+    const entity = await this.entitiesService.findOne(id);
+    const ability = (req as any).ability as AppAbility;
+
+    if (!ability.can(Action.Update, entity)) {
+      throw new ForbiddenException('You do not have permission to update this entity');
+    }
+
     return this.entitiesService.update(id, dto);
   }
 
   @Delete(':id')
-  @CheckPolicies((ability) => ability.can(Action.Delete, Entity))
-  async remove(@Param('id', new ParseUUIDPipe()) id: string) {
+  async remove(@Req() req: Request, @Param('id', new ParseUUIDPipe()) id: string) {
+    const entity = await this.entitiesService.findOne(id);
+    const ability = (req as any).ability as AppAbility;
+
+    if (!ability.can(Action.Delete, entity)) {
+      throw new ForbiddenException('You do not have permission to delete this entity');
+    }
+
     return this.entitiesService.remove(id);
   }
 
@@ -86,14 +105,26 @@ export class EntitiesController {
   }
 
   @Patch(':id/deactivate')
-  @CheckPolicies((ability) => ability.can(Action.Update, Entity))
-  async deactivate(@Param('id', new ParseUUIDPipe()) id: string) {
+  async deactivate(@Req() req: Request, @Param('id', new ParseUUIDPipe()) id: string) {
+    const entity = await this.entitiesService.findOne(id);
+    const ability = (req as any).ability as AppAbility;
+
+    if (!ability.can(Action.Update, entity)) {
+      throw new ForbiddenException('You do not have permission to deactivate this entity');
+    }
+
     return this.entitiesService.update(id, { is_active: false });
   }
 
   @Patch(':id/activate')
-  @CheckPolicies((ability) => ability.can(Action.Update, Entity))
-  async activate(@Param('id', new ParseUUIDPipe()) id: string) {
+  async activate(@Req() req: Request, @Param('id', new ParseUUIDPipe()) id: string) {
+    const entity = await this.entitiesService.findOne(id);
+    const ability = (req as any).ability as AppAbility;
+
+    if (!ability.can(Action.Update, entity)) {
+      throw new ForbiddenException('You do not have permission to activate this entity');
+    }
+
     return this.entitiesService.update(id, { is_active: true });
   }
 }
