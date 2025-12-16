@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import '../config/api_config.dart';
 
 class HttpException implements Exception {
   final String message;
@@ -156,7 +157,7 @@ class UserService {
 
   factory UserService.localhost(GetTokenFn getAccessToken) {
     return UserService(
-      baseUrl: 'http://localhost:3000',
+      baseUrl: ApiConfig.baseUrl,
       getAccessToken: getAccessToken,
     );
   }

@@ -19,6 +19,7 @@ import '../widgets/dialogs/create_activity_dialog.dart';
 
 import '../providers/auth.dart';
 import '../services/activity.dart';
+import '../config/api_config.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
@@ -28,8 +29,6 @@ class DashboardPage extends ConsumerStatefulWidget {
 }
 
 class _DashboardPageState extends ConsumerState<DashboardPage> {
-  static const String _apiBaseUrl = 'http://localhost:3000';
-
   late ActivityService _activityService;
   double _monthlyExpenseTotal = 0.0;
   bool _isLoadingExpenses = false;
@@ -153,7 +152,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         context: context,
         barrierDismissible: false,
         builder: (_) => CreateActivityDialog(
-          baseUrl: _apiBaseUrl,
+          baseUrl: ApiConfig.baseUrl,
           getAccessToken: () async {
             return await AuthUtils.getAccessTokenEnsured(ref) ?? '';
           },
