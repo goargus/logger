@@ -134,17 +134,21 @@ describe('EntitiesController', () => {
     it('updates an entity', async () => {
       const patch: UpdateEntityDto = { name: 'Unión HN' } as never;
       const updated = { ...mockEntity, name: 'Unión HN' };
+      service.findOne.mockResolvedValue(mockEntity);
       service.update.mockResolvedValue(updated);
+      const mockReq = { ability: { can: jest.fn().mockReturnValue(true) } } as any;
       await expect(
-        controller.update('11111111-1111-1111-1111-111111111111', patch),
+        controller.update(mockReq, '11111111-1111-1111-1111-111111111111', patch),
       ).resolves.toEqual(updated);
     });
   });
 
   describe('remove', () => {
     it('removes an entity', async () => {
+      service.findOne.mockResolvedValue(mockEntity);
       service.remove.mockResolvedValue({ affected: 1 } as never);
-      await expect(controller.remove('11111111-1111-1111-1111-111111111111')).resolves.toEqual({
+      const mockReq = { ability: { can: jest.fn().mockReturnValue(true) } } as any;
+      await expect(controller.remove(mockReq, '11111111-1111-1111-1111-111111111111')).resolves.toEqual({
         affected: 1,
       });
     });
