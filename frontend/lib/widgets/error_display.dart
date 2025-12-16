@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/errors/app_exception.dart';
 
-/// A card widget that displays an error message with optional retry button
 class ErrorCard extends StatelessWidget {
   const ErrorCard({
     super.key,
@@ -11,19 +10,14 @@ class ErrorCard extends StatelessWidget {
     this.backgroundColor,
   });
 
-  /// Error message to display
   final String message;
 
-  /// Callback when retry button is pressed
   final VoidCallback? onRetry;
 
-  /// Optional icon to display (defaults to error icon)
   final IconData? icon;
 
-  /// Optional background color (defaults to error color)
   final Color? backgroundColor;
 
-  /// Factory constructor for displaying an AppException
   factory ErrorCard.fromException(
     AppException exception, {
     VoidCallback? onRetry,
@@ -55,8 +49,8 @@ class ErrorCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final effectiveBackgroundColor =
-        backgroundColor ?? theme.colorScheme.errorContainer.withValues(alpha: 0.1);
+    final effectiveBackgroundColor = backgroundColor ??
+        theme.colorScheme.errorContainer.withValues(alpha: 0.1);
 
     return Card(
       color: effectiveBackgroundColor,
@@ -98,7 +92,6 @@ class ErrorCard extends StatelessWidget {
   }
 }
 
-/// A compact inline error widget for displaying errors in lists or forms
 class InlineError extends StatelessWidget {
   const InlineError({
     super.key,
@@ -166,7 +159,6 @@ class InlineError extends StatelessWidget {
   }
 }
 
-/// A full-screen error widget for critical errors
 class FullScreenError extends StatelessWidget {
   const FullScreenError({
     super.key,
