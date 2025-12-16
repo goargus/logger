@@ -52,7 +52,7 @@ export class RoleAssignmentService {
       .andWhere('(assignment.start_date <= :endDate AND assignment.end_date >= :startDate)', {
         startDate,
         endDate,
-      );
+      });
 
     if (excludeId) {
       qb.andWhere('assignment.id != :excludeId', { excludeId });
