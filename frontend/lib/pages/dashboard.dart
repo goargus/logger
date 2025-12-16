@@ -29,8 +29,6 @@ class DashboardPage extends ConsumerStatefulWidget {
 }
 
 class _DashboardPageState extends ConsumerState<DashboardPage> {
-  static const String _apiBaseUrl = 'http://localhost:3000';
-
   late ActivityService _activityService;
   double _monthlyExpenseTotal = 0.0;
   bool _isLoadingExpenses = false;
