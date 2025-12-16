@@ -8,6 +8,7 @@ import { Entity as OrgEntity, EntityType } from '../src/entities/entity.entity';
 import { IdpIdentitiesService } from '../src/idp-identities/idp-identities.service';
 import { UserStatus } from '../src/users/user-status.enum';
 import { UserRoleAssignment } from '../src/roles/user-role-assignment.entity';
+import { getCurrentDateString } from '../src/common/date.utils';
 
 interface AdminConfig {
   email: string;
@@ -65,6 +66,11 @@ async function ensureAdminRole(roleRepo: Repository<Role>, roleId?: string): Pro
     role = roleRepo.create({
       name: 'admin',
       description: 'System Administrator',
+      isSystemAdmin: true,
+      canViewReports: true,
+      canManageOwnActivities: true,
+      canManageHierarchyActivities: true,
+      canManageEntities: true,
     });
     role = await roleRepo.save(role);
     console.log('Admin role created');
@@ -171,7 +177,7 @@ async function bootstrapAdmin() {
     const savedUser = await userRepo.save(adminUser);
     console.log(`Admin user created with ID: ${savedUser.id}`);
 
-    const today = new Date().toISOString().split('T')[0];
+    const today = getCurrentDateString();
     const farFuture = '9999-12-31';
     console.log('Creating role assignment...');
     const roleAssignment = roleAssignmentRepo.create({
