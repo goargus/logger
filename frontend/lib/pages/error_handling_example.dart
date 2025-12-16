@@ -168,6 +168,7 @@ class _ErrorHandlingExamplePageState extends State<ErrorHandlingExamplePage> {
     );
   }
 }
+
 class FullScreenErrorExample extends StatelessWidget {
   const FullScreenErrorExample({super.key});
 
