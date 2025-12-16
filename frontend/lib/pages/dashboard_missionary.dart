@@ -138,7 +138,7 @@ class _DashboardMissionaryPageState
     }
   }
 
-  final DashboardConfig _cfg = const DashboardConfig(
+  final DashboardStats _cfg = const DashboardStats(
     visits: 15,
     bibleStudies: 10,
     viaticoUsed: 1500,
