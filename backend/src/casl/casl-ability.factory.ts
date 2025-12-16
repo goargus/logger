@@ -10,6 +10,7 @@ import { Activity } from '../activity/activity.entity';
 import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
 import { Role } from '../roles/role.entity';
 import { ActivityType } from '../activities-type/activity-type.entity';
+import { getCurrentDateString, isDateInRange } from '../common/date.utils';
 
 export interface UserWithRoles extends User {
   roleAssignments?: UserRoleAssignment[];
@@ -32,17 +33,22 @@ export class CaslAbilityFactory {
     }
 
     const roleAssignments = user.roleAssignments || (await this.loadActiveRoleAssignments(user.id));
-    const isSystemAdmin = roleAssignments.some((ra) => ra.role.name === 'System Admin');
+
+    const isSystemAdmin = roleAssignments.some((ra) => ra.role.isSystemAdmin);
     if (isSystemAdmin) {
       can(Action.Manage, 'all');
       return build();
     }
 
+    const uniqueEntityIds = [...new Set(roleAssignments.map((ra) => ra.entity.id))];
+    const entityHierarchyMap = await this.buildEntityHierarchyMap(uniqueEntityIds);
+
     for (const assignment of roleAssignments) {
       const role = assignment.role;
       const entityId = assignment.entity.id;
 
-      const accessibleEntityIds = await this.getDownstreamEntityIds(entityId);
+      const accessibleEntityIds = entityHierarchyMap.get(entityId) || [entityId];
+
       if (role.canViewReports) {
         can(Action.Read, Activity, { userId: { $in: accessibleEntityIds } } as never);
         can(Action.Read, ReportingPeriod, { entityId: { $in: accessibleEntityIds } } as never);
@@ -50,8 +56,7 @@ export class CaslAbilityFactory {
         can(Action.Read, User, { entityId: { $in: accessibleEntityIds } } as never);
       }
 
-      const missionaryRoles = ['Missionary', 'Field Secretary', 'Association Secretary'];
-      if (missionaryRoles.includes(role.name)) {
+      if (role.canManageOwnActivities) {
         can(Action.Create, Activity, { userId: user.id } as never);
         can(Action.Read, Activity, { userId: user.id } as never);
         can(Action.Update, Activity, { userId: user.id } as never);
@@ -62,26 +67,20 @@ export class CaslAbilityFactory {
         can(Action.Read, ReportingPeriod, { entityId: entityId } as never);
       }
 
-      switch (role.name) {
-        case 'Union President':
-        case 'Association President':
-        case 'Field Director':
-          can(Action.Read, Entity, { id: { $in: accessibleEntityIds } } as never);
-          can(Action.Update, Entity, { id: entityId } as never);
-          can(Action.Read, User, { entityId: { $in: accessibleEntityIds } } as never);
-          can(Action.Update, User, { entityId: entityId } as never);
-          can(Action.Read, Role);
-          break;
+      if (role.canManageHierarchyActivities) {
+        can(Action.Create, Activity, { entityId: { $in: accessibleEntityIds } } as never);
+        can(Action.Read, Activity, { entityId: { $in: accessibleEntityIds } } as never);
+        can(Action.Update, Activity, { entityId: { $in: accessibleEntityIds } } as never);
+        can(Action.Read, Entity, { id: { $in: accessibleEntityIds } } as never);
+        can(Action.Read, User, { entityId: { $in: accessibleEntityIds } } as never);
+      }
 
-        case 'Union Secretary':
-        case 'Association Secretary':
-        case 'Field Secretary':
-          can(Action.Create, Activity, { entityId: { $in: accessibleEntityIds } } as never);
-          can(Action.Read, Activity, { entityId: { $in: accessibleEntityIds } } as never);
-          can(Action.Update, Activity, { entityId: { $in: accessibleEntityIds } } as never);
-          can(Action.Read, Entity, { id: { $in: accessibleEntityIds } } as never);
-          can(Action.Read, User, { entityId: { $in: accessibleEntityIds } } as never);
-          break;
+      if (role.canManageEntities) {
+        can(Action.Read, Entity, { id: { $in: accessibleEntityIds } } as never);
+        can(Action.Update, Entity, { id: entityId } as never);
+        can(Action.Read, User, { entityId: { $in: accessibleEntityIds } } as never);
+        can(Action.Update, User, { entityId: entityId } as never);
+        can(Action.Read, Role);
       }
     }
 
@@ -89,7 +88,7 @@ export class CaslAbilityFactory {
   }
 
   private async loadActiveRoleAssignments(userId: string): Promise<UserRoleAssignment[]> {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getCurrentDateString();
 
     return this.userRoleAssignmentRepo
       .find({
@@ -99,23 +98,54 @@ export class CaslAbilityFactory {
         relations: ['role', 'entity', 'user'],
       })
       .then((assignments) =>
-        assignments.filter((a) => a.start_date <= today && today <= a.end_date),
+        assignments.filter((a) => isDateInRange(today, a.start_date, a.end_date)),
       );
   }
 
-  private async getDownstreamEntityIds(entityId: string): Promise<string[]> {
-    const entityIds: string[] = [entityId];
-    const children = await this.entityRepo.find({
-      where: { parent_id: entityId },
-      select: ['id'],
-    });
-
-    for (const child of children) {
-      const childIds = await this.getDownstreamEntityIds(child.id);
-      entityIds.push(...childIds);
+  private async buildEntityHierarchyMap(entityIds: string[]): Promise<Map<string, string[]>> {
+    if (entityIds.length === 0) {
+      return new Map();
     }
 
-    return entityIds;
+    const allEntities = await this.entityRepo.find({
+      select: ['id', 'parent_id'],
+    });
+
+    const childrenMap = new Map<string, string[]>();
+    for (const entity of allEntities) {
+      if (entity.parent_id) {
+        if (!childrenMap.has(entity.parent_id)) {
+          childrenMap.set(entity.parent_id, []);
+        }
+        childrenMap.get(entity.parent_id)?.push(entity.id);
+      }
+    }
+
+    const hierarchyMap = new Map<string, string[]>();
+    for (const entityId of entityIds) {
+      hierarchyMap.set(entityId, this.getDownstreamEntityIdsFromMap(entityId, childrenMap));
+    }
+
+    return hierarchyMap;
+  }
+
+  private getDownstreamEntityIdsFromMap(
+    entityId: string,
+    childrenMap: Map<string, string[]>,
+  ): string[] {
+    const result: string[] = [entityId];
+    const children = childrenMap.get(entityId) || [];
+
+    for (const childId of children) {
+      result.push(...this.getDownstreamEntityIdsFromMap(childId, childrenMap));
+    }
+
+    return result;
+  }
+
+  private async getDownstreamEntityIds(entityId: string): Promise<string[]> {
+    const hierarchyMap = await this.buildEntityHierarchyMap([entityId]);
+    return hierarchyMap.get(entityId) || [entityId];
   }
 
   async can(user: UserWithRoles, action: Action, subject: Subjects): Promise<boolean> {
