@@ -17,6 +17,7 @@ import { AssignRoleDto, RoleEnum } from './dto/assign-role.dto';
 import { RemoveRoleDto } from './dto/remove-role.dto';
 import { BulkAssignRoleDto } from './dto/bulk-assign-role.dto';
 import { GetUserEntitiesByRoleDto } from './dto/get-user-entities-by-role.dto';
+import { formatDateToString, getCurrentDateString } from '../common/date.utils';
 
 @Injectable()
 export class RoleAssignmentService {
@@ -33,7 +34,7 @@ export class RoleAssignmentService {
     const end = new Date(start);
     end.setFullYear(end.getFullYear() + termLengthYears);
     end.setDate(end.getDate() - 1);
-    return end.toISOString().split('T')[0];
+    return formatDateToString(end);
   }
 
   private async checkOverlap(
@@ -86,7 +87,7 @@ export class RoleAssignmentService {
       throw new BadRequestException('Cannot assign roles to inactive entities');
     }
 
-    const startDate = dto.startDate || new Date().toISOString().split('T')[0];
+    const startDate = dto.startDate || getCurrentDateString();
     const endDate = this.calculateEndDate(startDate, entity.term_length_years);
 
     // Check for overlapping assignments
@@ -188,7 +189,7 @@ export class RoleAssignmentService {
       };
     }
 
-    const startDate = dto.startDate || new Date().toISOString().split('T')[0];
+    const startDate = dto.startDate || getCurrentDateString();
 
     // Check for overlaps in all entities
     for (const entityId of newEntityIds) {
@@ -257,7 +258,7 @@ export class RoleAssignmentService {
     const assignments = await this.uraRepo.find({ where });
 
     if (active !== undefined) {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getCurrentDateString();
       return assignments.filter((a) => {
         const isActive = a.end_date >= today;
         return active ? isActive : !isActive;
