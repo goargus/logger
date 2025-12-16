@@ -107,7 +107,7 @@ services:
       - AUTH0_CLIENT_ID=2H45P97qEyC9HfiKFj8FOvb8DnSOgFwY
       - AUTH0_REDIRECT_URI=http://localhost:8080
       - AUTH0_AUDIENCE=logger
-      - API_BASE_URL=http://backend:3000
+      - API_BASE_URL=http://localhost:3000
     volumes:
       - ./frontend/lib:/app/lib
       - ./frontend/web:/app/web
