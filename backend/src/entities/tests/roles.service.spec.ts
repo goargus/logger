@@ -29,6 +29,10 @@ describe('RolesService', () => {
     updated_at: now,
     users: [] as never,
     canViewReports: false,
+    canManageOwnActivities: false,
+    canManageHierarchyActivities: false,
+    canManageEntities: false,
+    isSystemAdmin: true,
   };
 
   beforeEach(async () => {
