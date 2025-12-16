@@ -1,6 +1,7 @@
 import { DataSource } from 'typeorm';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import { LEADERSHIP_ROLES } from '../src/roles/role.constants';
 
 dotenv.config({ path: path.join(__dirname, '../.env') });
 
@@ -25,17 +26,7 @@ async function addCanViewReportsField() {
     `);
     console.log('Added can_view_reports column');
 
-    const leadershipRoles = [
-      'System Admin',
-      'Union President',
-      'Association President',
-      'Field Director',
-      'Union Secretary',
-      'Association Secretary',
-      'Field Secretary',
-    ];
-
-    for (const roleName of leadershipRoles) {
+    for (const roleName of LEADERSHIP_ROLES) {
       const result = await dataSource.query(
         `UPDATE roles SET can_view_reports = TRUE WHERE name = $1`,
         [roleName],
