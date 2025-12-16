@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { IdentityResolutionService } from './identity-resolution.service';
 import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
 import { User } from '../users/user.entity';
+import { getCurrentDateString, isDateInRange } from '../common/date.utils';
 
 export interface JwtValidatedUser extends User {
   sub: string;
@@ -109,21 +110,20 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Invalid token audience');
     }
 
-    // Resolve user from database via identity resolution
     const user = await this.identityResolution.resolveUserBySubAndIssuer(sub, iss);
 
-    // Load active role assignments for the user
-    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-    const roleAssignments = await this.userRoleAssignmentRepo.find({
-      where: {
-        user: { id: user.id },
-      },
-      relations: ['role', 'entity', 'user'],
-    }).then((assignments) =>
-      assignments.filter((a) => a.start_date <= today && today <= a.end_date),
-    );
+    const today = getCurrentDateString();
+    const roleAssignments = await this.userRoleAssignmentRepo
+      .find({
+        where: {
+          user: { id: user.id },
+        },
+        relations: ['role', 'entity', 'user'],
+      })
+      .then((assignments) =>
+        assignments.filter((a) => isDateInRange(today, a.start_date, a.end_date)),
+      );
 
-    // Return user with role assignments and JWT claims
     return {
       ...user,
       sub,
