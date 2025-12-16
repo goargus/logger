@@ -1,23 +1,6 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
-
-class HttpException implements Exception {
-  final String message;
-  final int? statusCode;
-  final String? body;
-  const HttpException(this.message, {this.statusCode, this.body});
-  @override
-  String toString() => 'HttpException($message, status: $statusCode)';
-}
-
-class UnauthorizedException implements Exception {
-  final String message;
-  const UnauthorizedException(this.message);
-  @override
-  String toString() => 'UnauthorizedException($message)';
-}
+import '../core/api_client.dart';
 
 typedef GetTokenFn = Future<String?> Function();
 
@@ -145,72 +128,31 @@ class RoleAssignment {
 }
 
 class UserService {
-  final String baseUrl;
-  final GetTokenFn getAccessToken;
-  final http.Client _client;
+  final ApiClient apiClient;
 
   UserService({
-    required this.baseUrl,
-    required this.getAccessToken,
-    http.Client? client,
-  }) : _client = client ?? http.Client();
+    required this.apiClient,
+  });
 
   factory UserService.localhost(GetTokenFn getAccessToken) {
-    return UserService(
+    final apiClient = ApiClient(
       baseUrl: ApiConfig.baseUrl,
-      getAccessToken: getAccessToken,
+      getAccessToken: () async {
+        final token = await getAccessToken();
+        return token ?? '';
+      },
     );
+    return UserService(apiClient: apiClient);
   }
 
   Future<UserProfile> getMyProfile() async {
-    Future<UserProfile> doFetch(String token) async {
-      final uri = Uri.parse('$baseUrl/users/me');
-
-      final resp = await _client.get(
-        uri,
-        headers: {
-          'Authorization': 'Bearer $token',
-          'Accept': 'application/json',
-        },
-      );
-
-      debugPrint('[UserService] GET $uri -> ${resp.statusCode}');
-
-      if (resp.statusCode == 200) {
-        final decoded = jsonDecode(resp.body) as Map<String, dynamic>;
-        return UserProfile.fromJson(decoded);
-      }
-
-      if (resp.statusCode == 401) {
-        throw const UnauthorizedException(
-            'Unauthorized (401): invalid or expired token');
-      }
-
-      throw HttpException(
-        'Failed to load user profile',
-        statusCode: resp.statusCode,
-        body: resp.body,
-      );
-    }
-
-    var token = await getAccessToken();
-    if (token == null || token.isEmpty) {
-      throw const UnauthorizedException('Missing access token');
-    }
-
     try {
-      return await doFetch(token);
-    } on UnauthorizedException {
-      final refreshed = await getAccessToken();
-      if (refreshed != null && refreshed.isNotEmpty && refreshed != token) {
-        debugPrint('[UserService] Retrying after 401 with refreshed token');
-        return await doFetch(refreshed);
-      }
+      final decoded = await apiClient.get('users/me');
+      debugPrint('[UserService] Successfully fetched user profile');
+      return UserProfile.fromJson(decoded as Map<String, dynamic>);
+    } catch (e) {
+      debugPrint('[UserService] Error fetching user profile: $e');
       rethrow;
     }
-  }
-
-  void close() {
-    _client.close();
   }
 }
