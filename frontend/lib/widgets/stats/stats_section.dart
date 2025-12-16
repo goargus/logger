@@ -5,7 +5,7 @@ import '../stats/stat_card.dart';
 import '../stats/stat_grid.dart';
 
 class StatsSection extends StatelessWidget {
-  final DashboardConfig config;
+  final DashboardStats config;
   final bool isLoadingExpenses;
   final double monthlyExpenseTotal;
   final VoidCallback onReportsTap;
