@@ -30,7 +30,6 @@ class DashboardPage extends ConsumerStatefulWidget {
 }
 
 class _DashboardPageState extends ConsumerState<DashboardPage> {
-
   final DashboardStats _cfg = const DashboardStats(
     visits: 15,
     bibleStudies: 10,

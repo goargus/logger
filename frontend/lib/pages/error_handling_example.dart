@@ -8,7 +8,8 @@ import '../config/api_config.dart';
 import '../core/api_client.dart';
 
 /// Example provider demonstrating AsyncValue pattern
-final exampleActivitiesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+final exampleActivitiesProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) async {
   final apiClient = ApiClient(
     baseUrl: ApiConfig.baseUrl,
     getAccessToken: () async => 'dummy-token',
@@ -25,7 +26,8 @@ class ErrorHandlingExamplePage extends ConsumerStatefulWidget {
       _ErrorHandlingExamplePageState();
 }
 
-class _ErrorHandlingExamplePageState extends ConsumerState<ErrorHandlingExamplePage> {
+class _ErrorHandlingExamplePageState
+    extends ConsumerState<ErrorHandlingExamplePage> {
   late final ActivityService _activityService;
 
   @override
@@ -98,7 +100,8 @@ class _ErrorHandlingExamplePageState extends ConsumerState<ErrorHandlingExampleP
     );
   }
 
-  Widget _buildContent(List<Map<String, dynamic>> activities, AppException? error) {
+  Widget _buildContent(
+      List<Map<String, dynamic>> activities, AppException? error) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
