@@ -52,7 +52,8 @@ async function addRoleCapabilityFields() {
 
     console.log('Setting System Admin flag...');
     await dataSource.query(`UPDATE roles SET is_system_admin = TRUE WHERE name = $1`, [
-      [SYSTEM_ADMIN_ROLE],);
+      SYSTEM_ADMIN_ROLE,
+    ]);
 
     console.log('Setting can_manage_own_activities for Missionary roles...');
     for (const roleName of MISSIONARY_ROLES) {
