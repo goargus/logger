@@ -148,7 +148,9 @@ describe('EntitiesController', () => {
       service.findOne.mockResolvedValue(mockEntity);
       service.remove.mockResolvedValue({ affected: 1 } as never);
       const mockReq = { ability: { can: jest.fn().mockReturnValue(true) } } as any;
-      await expect(controller.remove(mockReq, '11111111-1111-1111-1111-111111111111')).resolves.toEqual({
+      await expect(
+        controller.remove(mockReq, '11111111-1111-1111-1111-111111111111'),
+      ).resolves.toEqual({
         affected: 1,
       });
     });
