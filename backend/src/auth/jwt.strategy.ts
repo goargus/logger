@@ -124,12 +124,23 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         assignments.filter((a) => isDateInRange(today, a.start_date, a.end_date)),
       );
 
+    const roles: string[] = [];
+    if (user.role?.name) {
+      roles.push(user.role.name);
+    }
+    roleAssignments.forEach((assignment) => {
+      if (assignment.role?.name && !roles.includes(assignment.role.name)) {
+        roles.push(assignment.role.name);
+      }
+    });
+
     return {
       ...user,
       sub,
       iss,
       aud: payload?.aud,
       roleAssignments,
+      roles,
     };
   }
 }
