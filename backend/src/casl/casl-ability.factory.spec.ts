@@ -708,8 +708,12 @@ describe('CaslAbilityFactory', () => {
 
         const ability = await factory.createForUser(user);
 
-        const periodInScope = { entityId: 'field-1' } as Partial<ReportingPeriod> as ReportingPeriod;
-        const periodOutOfScope = { entityId: 'field-2' } as Partial<ReportingPeriod> as ReportingPeriod;
+        const periodInScope = {
+          entityId: 'field-1',
+        } as Partial<ReportingPeriod> as ReportingPeriod;
+        const periodOutOfScope = {
+          entityId: 'field-2',
+        } as Partial<ReportingPeriod> as ReportingPeriod;
 
         expect(ability.can(Action.Read, periodInScope)).toBe(true);
         expect(ability.cannot(Action.Read, periodOutOfScope)).toBe(true);
@@ -761,7 +765,10 @@ describe('CaslAbilityFactory', () => {
         const field2Activity = { entityId: 'field-2' } as Partial<Activity> as Activity;
         expect(ability.can(Action.Update, field2Activity)).toBe(true);
 
-        const unrelatedActivity = { userId: 'user-2', entityId: 'field-3' } as Partial<Activity> as Activity;
+        const unrelatedActivity = {
+          userId: 'user-2',
+          entityId: 'field-3',
+        } as Partial<Activity> as Activity;
         expect(ability.cannot(Action.Update, unrelatedActivity)).toBe(true);
       });
     });
