@@ -19,11 +19,7 @@ export const LEADERSHIP_ROLES = [
 /**
  * Roles that can create and manage their own activities
  */
-export const MISSIONARY_ROLES = [
-  'Missionary',
-  'Field Secretary',
-  'Association Secretary',
-] as const;
+export const MISSIONARY_ROLES = ['Missionary', 'Field Secretary', 'Association Secretary'] as const;
 
 /**
  * Executive roles with entity management permissions
