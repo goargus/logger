@@ -10,9 +10,7 @@ import { Entity } from '../entities/entity.entity';
  * Provides authorization services using CASL abilities
  */
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([UserRoleAssignment, Entity]),
-  ],
+  imports: [TypeOrmModule.forFeature([UserRoleAssignment, Entity])],
   providers: [CaslAbilityFactory, PoliciesGuard],
   exports: [CaslAbilityFactory, PoliciesGuard],
 })
