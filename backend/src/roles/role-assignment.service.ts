@@ -17,6 +17,7 @@ import { AssignRoleDto, RoleEnum } from './dto/assign-role.dto';
 import { RemoveRoleDto } from './dto/remove-role.dto';
 import { BulkAssignRoleDto } from './dto/bulk-assign-role.dto';
 import { GetUserEntitiesByRoleDto } from './dto/get-user-entities-by-role.dto';
+import { formatDateToString, getCurrentDateString } from '../common/date.utils';
 
 @Injectable()
 export class RoleAssignmentService {
@@ -29,11 +30,10 @@ export class RoleAssignmentService {
   ) {}
 
   private calculateEndDate(startDate: string, termLengthYears: number): string {
-    const start = new Date(startDate);
-    const end = new Date(start);
-    end.setFullYear(end.getFullYear() + termLengthYears);
-    end.setDate(end.getDate() - 1);
-    return end.toISOString().split('T')[0];
+    const [year, month, day] = startDate.split('-').map(Number);
+    const endYear = year + termLengthYears;
+    const endDate = new Date(endYear, month - 1, day - 1);
+    return formatDateToString(endDate);
   }
 
   private async checkOverlap(
@@ -49,10 +49,10 @@ export class RoleAssignmentService {
       .where('assignment.user_id = :userId', { userId })
       .andWhere('assignment.role_id = :roleId', { roleId })
       .andWhere('assignment.entity_id = :entityId', { entityId })
-      .andWhere(
-        '(assignment.start_date <= :endDate AND assignment.end_date >= :startDate)',
-        { startDate, endDate },
-      );
+      .andWhere('(assignment.start_date <= :endDate AND assignment.end_date >= :startDate)', {
+        startDate,
+        endDate,
+      });
 
     if (excludeId) {
       qb.andWhere('assignment.id != :excludeId', { excludeId });
@@ -86,10 +86,9 @@ export class RoleAssignmentService {
       throw new BadRequestException('Cannot assign roles to inactive entities');
     }
 
-    const startDate = dto.startDate || new Date().toISOString().split('T')[0];
+    const startDate = dto.startDate || getCurrentDateString();
     const endDate = this.calculateEndDate(startDate, entity.term_length_years);
 
-    // Check for overlapping assignments
     await this.checkOverlap(user.id, role.id, entity.id, startDate, endDate);
 
     return this.dataSource.transaction(async (manager) => {
@@ -188,9 +187,8 @@ export class RoleAssignmentService {
       };
     }
 
-    const startDate = dto.startDate || new Date().toISOString().split('T')[0];
+    const startDate = dto.startDate || getCurrentDateString();
 
-    // Check for overlaps in all entities
     for (const entityId of newEntityIds) {
       const entity = entities.find((e) => e.id === entityId);
       if (entity) {
@@ -257,7 +255,7 @@ export class RoleAssignmentService {
     const assignments = await this.uraRepo.find({ where });
 
     if (active !== undefined) {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getCurrentDateString();
       return assignments.filter((a) => {
         const isActive = a.end_date >= today;
         return active ? isActive : !isActive;
@@ -281,14 +279,13 @@ export class RoleAssignmentService {
       throw new BadRequestException('End date cannot be before start date');
     }
 
-    // Check for overlaps when extending the assignment
     await this.checkOverlap(
       assignment.user.id,
       assignment.role.id,
       assignment.entity.id,
       assignment.start_date,
       endDate,
-      id, // Exclude current assignment
+      id,
     );
 
     assignment.end_date = endDate;

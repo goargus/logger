@@ -6,6 +6,9 @@ import { EntityType, Entity } from '../entity.entity';
 import { ConflictException } from '@nestjs/common';
 import { CreateEntityDto } from '../dto/create-entity.dto';
 import { UpdateEntityDto } from '../dto/update-entity.dto';
+import { CaslAbilityFactory } from '../../casl/casl-ability.factory';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { UserRoleAssignment } from '../../roles/user-role-assignment.entity';
 
 describe('EntitiesController', () => {
   let controller: EntitiesController;
@@ -50,6 +53,24 @@ describe('EntitiesController', () => {
             getAllowedParentTypes: jest.fn(),
             getAllowedChildTypes: jest.fn(),
             canHaveChildren: jest.fn(),
+          },
+        },
+        {
+          provide: CaslAbilityFactory,
+          useValue: {
+            createForUser: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(UserRoleAssignment),
+          useValue: {
+            find: jest.fn(),
+          },
+        },
+        {
+          provide: getRepositoryToken(Entity),
+          useValue: {
+            find: jest.fn(),
           },
         },
       ],
@@ -113,17 +134,21 @@ describe('EntitiesController', () => {
     it('updates an entity', async () => {
       const patch: UpdateEntityDto = { name: 'Unión HN' } as never;
       const updated = { ...mockEntity, name: 'Unión HN' };
+      service.findOne.mockResolvedValue(mockEntity);
       service.update.mockResolvedValue(updated);
+      const mockReq = { ability: { can: jest.fn().mockReturnValue(true) } } as any;
       await expect(
-        controller.update('11111111-1111-1111-1111-111111111111', patch),
+        controller.update(mockReq, '11111111-1111-1111-1111-111111111111', patch),
       ).resolves.toEqual(updated);
     });
   });
 
   describe('remove', () => {
     it('removes an entity', async () => {
+      service.findOne.mockResolvedValue(mockEntity);
       service.remove.mockResolvedValue({ affected: 1 } as never);
-      await expect(controller.remove('11111111-1111-1111-1111-111111111111')).resolves.toEqual({
+      const mockReq = { ability: { can: jest.fn().mockReturnValue(true) } } as any;
+      await expect(controller.remove(mockReq, '11111111-1111-1111-1111-111111111111')).resolves.toEqual({
         affected: 1,
       });
     });

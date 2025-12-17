@@ -14,6 +14,7 @@ import { ActivityType } from '../activities-type/activity-type.entity';
 import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
 import { ReportingPeriodStatus } from '../reporting-periods/reporting-period-status.enum';
 import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
+import { formatDateToString } from '../common/date.utils';
 
 @Injectable()
 export class ActivitiesService {
@@ -259,10 +260,10 @@ export class ActivitiesService {
       .andWhere('activity.status = :status', { status: ActivityStatus.ACTIVE })
       .andWhere('activity.hasExpense = :hasExpense', { hasExpense: true })
       .andWhere('activity.activityDate >= :startDate', {
-        startDate: startDate.toISOString().split('T')[0],
+        startDate: formatDateToString(startDate),
       })
       .andWhere('activity.activityDate <= :endDate', {
-        endDate: endDate.toISOString().split('T')[0],
+        endDate: formatDateToString(endDate),
       })
       .getRawOne();
 

@@ -4,24 +4,28 @@ import {
   ConflictException,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
+  Req,
   UseGuards,
   Query,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { AuthGuard } from '@nestjs/passport';
-import { Roles } from '../auth/roles.decorator';
-import { RolesGuard } from '../auth/roles.guard';
+import { PoliciesGuard } from '../casl/policies.guard';
+import { CheckPolicies } from '../casl/check-policies.decorator';
+import { Action, AppAbility } from '../casl/types';
 import { EntitiesService } from './entities.service';
 import { CreateEntityDto } from './dto/create-entity.dto';
 import { UpdateEntityDto } from './dto/update-entity.dto';
-import { EntityType } from './entity.entity';
+import { EntityType, Entity } from './entity.entity';
 
 @Controller('entities')
-@UseGuards(AuthGuard('jwt'), RolesGuard)
+@UseGuards(AuthGuard('jwt'), PoliciesGuard)
 export class EntitiesController {
   constructor(private readonly entitiesService: EntitiesService) {}
 
@@ -35,7 +39,7 @@ export class EntitiesController {
   }
 
   @Post(':type')
-  @Roles('admin')
+  @CheckPolicies((ability) => ability.can(Action.Create, Entity))
   async createAny(@Param('type') typeStr: string, @Body() dto: CreateEntityDto) {
     const type = this.parseType(typeStr);
     try {
@@ -59,14 +63,30 @@ export class EntitiesController {
   }
 
   @Patch(':id')
-  @Roles('admin')
-  async update(@Param('id', new ParseUUIDPipe()) id: string, @Body() dto: UpdateEntityDto) {
+  async update(
+    @Req() req: Request,
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Body() dto: UpdateEntityDto,
+  ) {
+    const entity = await this.entitiesService.findOne(id);
+    const ability = (req as any).ability as AppAbility;
+
+    if (!ability.can(Action.Update, entity)) {
+      throw new ForbiddenException('You do not have permission to update this entity');
+    }
+
     return this.entitiesService.update(id, dto);
   }
 
   @Delete(':id')
-  @Roles('admin')
-  async remove(@Param('id', new ParseUUIDPipe()) id: string) {
+  async remove(@Req() req: Request, @Param('id', new ParseUUIDPipe()) id: string) {
+    const entity = await this.entitiesService.findOne(id);
+    const ability = (req as any).ability as AppAbility;
+
+    if (!ability.can(Action.Delete, entity)) {
+      throw new ForbiddenException('You do not have permission to delete this entity');
+    }
+
     return this.entitiesService.remove(id);
   }
 
@@ -85,14 +105,26 @@ export class EntitiesController {
   }
 
   @Patch(':id/deactivate')
-  @Roles('admin')
-  async deactivate(@Param('id', new ParseUUIDPipe()) id: string) {
+  async deactivate(@Req() req: Request, @Param('id', new ParseUUIDPipe()) id: string) {
+    const entity = await this.entitiesService.findOne(id);
+    const ability = (req as any).ability as AppAbility;
+
+    if (!ability.can(Action.Update, entity)) {
+      throw new ForbiddenException('You do not have permission to deactivate this entity');
+    }
+
     return this.entitiesService.update(id, { is_active: false });
   }
 
   @Patch(':id/activate')
-  @Roles('admin')
-  async activate(@Param('id', new ParseUUIDPipe()) id: string) {
+  async activate(@Req() req: Request, @Param('id', new ParseUUIDPipe()) id: string) {
+    const entity = await this.entitiesService.findOne(id);
+    const ability = (req as any).ability as AppAbility;
+
+    if (!ability.can(Action.Update, entity)) {
+      throw new ForbiddenException('You do not have permission to activate this entity');
+    }
+
     return this.entitiesService.update(id, { is_active: true });
   }
 }

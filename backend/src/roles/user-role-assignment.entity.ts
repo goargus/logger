@@ -11,6 +11,7 @@ import {
 import { User } from '../users/user.entity';
 import { Role } from './role.entity';
 import { Entity as OrgEntity } from '../entities/entity.entity';
+import { getCurrentDateString } from '../common/date.utils';
 
 @OrmEntity({ name: 'user_role_assignments' })
 @Index(['user', 'end_date'])
@@ -51,7 +52,7 @@ export class UserRoleAssignment {
   updated_at!: Date;
 
   isActive(): boolean {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getCurrentDateString();
     return this.end_date >= today;
   }
 }
