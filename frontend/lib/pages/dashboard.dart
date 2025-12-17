@@ -272,7 +272,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                             const MonthHeaderPill(),
                             const SizedBox(height: LayoutConstants.spacing20),
                             StatsSection(
-                              config: _cfg,
+                              stats: _cfg,
                               isLoadingExpenses: _isLoadingExpenses,
                               monthlyExpenseTotal: _monthlyExpenseTotal,
                               onReportsTap: () =>
