@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 
-import '../../models/dashboard_config.dart';
+import '../../models/dashboard_stats.dart';
 import '../stats/stat_card.dart';
 import '../stats/stat_grid.dart';
 
 class StatsSection extends StatelessWidget {
-  final DashboardConfig config;
+  final DashboardStats stats;
   final bool isLoadingExpenses;
   final double monthlyExpenseTotal;
   final VoidCallback onReportsTap;
 
   const StatsSection({
     super.key,
-    required this.config,
+    required this.stats,
     required this.isLoadingExpenses,
     required this.monthlyExpenseTotal,
     required this.onReportsTap,
@@ -24,7 +24,7 @@ class StatsSection extends StatelessWidget {
       children: [
         StatCard(
           title: 'Visitas Misioneras',
-          value: '${config.visits}',
+          value: '${stats.visits}',
           icon: Icons.groups_2,
           backgroundImage: const AssetImage(
             'assets/high-angle-children-holding-hands.jpg',
@@ -32,7 +32,7 @@ class StatsSection extends StatelessWidget {
         ),
         StatCard(
           title: 'Estudios Bíblicos',
-          value: '${config.bibleStudies}',
+          value: '${stats.bibleStudies}',
           icon: Icons.menu_book_outlined,
           backgroundImage: const AssetImage(
             'assets/medium-shot-people-book-club.jpg',

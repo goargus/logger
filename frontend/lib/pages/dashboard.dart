@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../models/activity.dart';
-import '../models/dashboard_config.dart';
+import '../models/dashboard_stats.dart';
 import '../routes.dart';
 
 import '../core/layout_constants.dart';
@@ -135,7 +135,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     }
   }
 
-  final DashboardConfig _cfg = const DashboardConfig(
+  final DashboardStats _cfg = const DashboardStats(
     visits: 15,
     bibleStudies: 10,
     viaticoUsed: 1500,
@@ -272,7 +272,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                             const MonthHeaderPill(),
                             const SizedBox(height: LayoutConstants.spacing20),
                             StatsSection(
-                              config: _cfg,
+                              stats: _cfg,
                               isLoadingExpenses: _isLoadingExpenses,
                               monthlyExpenseTotal: _monthlyExpenseTotal,
                               onReportsTap: () =>

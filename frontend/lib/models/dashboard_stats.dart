@@ -1,4 +1,4 @@
-class DashboardConfig {
+class DashboardStats {
   final int visits;
   final int bibleStudies;
   final double viaticoUsed;
@@ -6,7 +6,7 @@ class DashboardConfig {
   final int month; // 1..12
   final int year;
 
-  const DashboardConfig({
+  const DashboardStats({
     required this.visits,
     required this.bibleStudies,
     required this.viaticoUsed,
