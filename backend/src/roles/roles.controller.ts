@@ -118,11 +118,7 @@ export class RolesController {
     @Query('active') active?: string,
   ) {
     const activeFilter = active === 'true' ? true : active === 'false' ? false : undefined;
-    const assignments = await this.roleAssignment.listAssignments(
-      entityId,
-      userId,
-      activeFilter,
-    );
+    const assignments = await this.roleAssignment.listAssignments(entityId, userId, activeFilter);
     return assignments.map((a) => AssignmentResponseDto.fromEntity(a));
   }
 

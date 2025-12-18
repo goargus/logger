@@ -156,7 +156,13 @@ export class ActivitiesController {
 
     const locked = await this.calculateLockedStatus(a, user.id, reportingPeriod);
 
-    return ActivityResponseDto.fromEntity(a, owner.username, (type as any).name, reportingPeriod, locked);
+    return ActivityResponseDto.fromEntity(
+      a,
+      owner.username,
+      (type as any).name,
+      reportingPeriod,
+      locked,
+    );
   }
 
   @Patch(':id')

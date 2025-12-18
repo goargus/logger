@@ -156,9 +156,9 @@ describe('ReportingPeriodsService - Exceptions', () => {
 
       periodRepo.findOne.mockResolvedValue(mockPeriod);
 
-      await expect(
-        service.createOrUpdateException('period-id', dto, 'admin-id'),
-      ).rejects.toThrow(new BadRequestException('Start date must be before end date'));
+      await expect(service.createOrUpdateException('period-id', dto, 'admin-id')).rejects.toThrow(
+        new BadRequestException('Start date must be before end date'),
+      );
     });
 
     it('should throw BadRequestException when dates are outside period boundaries', async () => {
@@ -171,9 +171,7 @@ describe('ReportingPeriodsService - Exceptions', () => {
 
       periodRepo.findOne.mockResolvedValue(mockPeriod);
 
-      await expect(
-        service.createOrUpdateException('period-id', dto, 'admin-id'),
-      ).rejects.toThrow(
+      await expect(service.createOrUpdateException('period-id', dto, 'admin-id')).rejects.toThrow(
         new BadRequestException(
           'Exception dates must be within period boundaries (2024-01-01 - 2024-01-14)',
         ),
@@ -190,9 +188,7 @@ describe('ReportingPeriodsService - Exceptions', () => {
 
       periodRepo.findOne.mockResolvedValue(mockPeriod);
 
-      await expect(
-        service.createOrUpdateException('period-id', dto, 'admin-id'),
-      ).rejects.toThrow(
+      await expect(service.createOrUpdateException('period-id', dto, 'admin-id')).rejects.toThrow(
         new BadRequestException(
           'Exception dates must be within period boundaries (2024-01-01 - 2024-01-14)',
         ),
@@ -257,10 +253,7 @@ describe('ReportingPeriodsService - Exceptions', () => {
 
   describe('findExceptionsByPeriod', () => {
     it('should return all exceptions for a period', async () => {
-      const exceptions = [
-        mockException,
-        { ...mockException, id: 'exception-2', userId: 'user-2' },
-      ];
+      const exceptions = [mockException, { ...mockException, id: 'exception-2', userId: 'user-2' }];
 
       exceptionRepo.find.mockResolvedValue(exceptions as ReportingPeriodException[]);
 
@@ -288,11 +281,7 @@ describe('ReportingPeriodsService - Exceptions', () => {
     it('should return true when user has exception covering the date', async () => {
       exceptionRepo.findOne.mockResolvedValue(mockException);
 
-      const result = await service.hasUserExceptionForDate(
-        'user-id',
-        'period-id',
-        '2024-01-03',
-      );
+      const result = await service.hasUserExceptionForDate('user-id', 'period-id', '2024-01-03');
 
       expect(exceptionRepo.findOne).toHaveBeenCalledWith({
         where: { userId: 'user-id', reportingPeriodId: 'period-id' },
@@ -303,11 +292,7 @@ describe('ReportingPeriodsService - Exceptions', () => {
     it('should return true when date is at start boundary', async () => {
       exceptionRepo.findOne.mockResolvedValue(mockException);
 
-      const result = await service.hasUserExceptionForDate(
-        'user-id',
-        'period-id',
-        '2024-01-01',
-      );
+      const result = await service.hasUserExceptionForDate('user-id', 'period-id', '2024-01-01');
 
       expect(result).toBe(true);
     });
@@ -315,11 +300,7 @@ describe('ReportingPeriodsService - Exceptions', () => {
     it('should return true when date is at end boundary', async () => {
       exceptionRepo.findOne.mockResolvedValue(mockException);
 
-      const result = await service.hasUserExceptionForDate(
-        'user-id',
-        'period-id',
-        '2024-01-05',
-      );
+      const result = await service.hasUserExceptionForDate('user-id', 'period-id', '2024-01-05');
 
       expect(result).toBe(true);
     });
@@ -327,11 +308,7 @@ describe('ReportingPeriodsService - Exceptions', () => {
     it('should return false when date is before exception start', async () => {
       exceptionRepo.findOne.mockResolvedValue(mockException);
 
-      const result = await service.hasUserExceptionForDate(
-        'user-id',
-        'period-id',
-        '2023-12-31',
-      );
+      const result = await service.hasUserExceptionForDate('user-id', 'period-id', '2023-12-31');
 
       expect(result).toBe(false);
     });
@@ -339,11 +316,7 @@ describe('ReportingPeriodsService - Exceptions', () => {
     it('should return false when date is after exception end', async () => {
       exceptionRepo.findOne.mockResolvedValue(mockException);
 
-      const result = await service.hasUserExceptionForDate(
-        'user-id',
-        'period-id',
-        '2024-01-06',
-      );
+      const result = await service.hasUserExceptionForDate('user-id', 'period-id', '2024-01-06');
 
       expect(result).toBe(false);
     });
@@ -351,11 +324,7 @@ describe('ReportingPeriodsService - Exceptions', () => {
     it('should return false when user has no exception', async () => {
       exceptionRepo.findOne.mockResolvedValue(null);
 
-      const result = await service.hasUserExceptionForDate(
-        'user-id',
-        'period-id',
-        '2024-01-03',
-      );
+      const result = await service.hasUserExceptionForDate('user-id', 'period-id', '2024-01-03');
 
       expect(result).toBe(false);
     });
