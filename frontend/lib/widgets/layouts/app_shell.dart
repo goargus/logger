@@ -39,6 +39,7 @@ class AppShell extends ConsumerWidget {
                       userName: userName,
                       userEmail: userEmail,
                       userPicture: userPicture,
+                      activeRoute: activeRoute,
                       onCreateActivity: () =>
                           Navigator.pushNamed(context, '/activities/new'),
                     ),

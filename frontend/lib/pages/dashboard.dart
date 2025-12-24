@@ -120,6 +120,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   userName: userName,
                   userEmail: userEmail,
                   userPicture: authState.user?['picture'],
+                  activeRoute: Routes.dashboard,
                   onCreateActivity: _openCreateDialog,
                 ),
               Expanded(

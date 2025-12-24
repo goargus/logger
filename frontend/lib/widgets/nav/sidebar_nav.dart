@@ -9,6 +9,7 @@ class SidebarNav extends StatelessWidget {
   final String userEmail;
   final String? userPicture;
   final VoidCallback onCreateActivity;
+  final String activeRoute;
 
   const SidebarNav({
     super.key,
@@ -16,6 +17,7 @@ class SidebarNav extends StatelessWidget {
     required this.userEmail,
     this.userPicture,
     required this.onCreateActivity,
+    required this.activeRoute,
   });
 
   @override
@@ -146,6 +148,7 @@ class SidebarNav extends StatelessWidget {
   }
 
   Widget _buildDashboardNavItem(BuildContext context) {
+    final isActive = activeRoute == Routes.dashboard;
     return Padding(
       padding: const EdgeInsetsDirectional.fromSTEB(
         LayoutConstants.spacing16,
@@ -153,44 +156,49 @@ class SidebarNav extends StatelessWidget {
         LayoutConstants.spacing16,
         0.0,
       ),
-      child: Container(
-        width: double.infinity,
-        height: LayoutConstants.navItemHeight,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.2),
-          borderRadius: BorderRadius.circular(LayoutConstants.borderRadius12),
-        ),
-        child: Padding(
-          padding: const EdgeInsetsDirectional.fromSTEB(
-            LayoutConstants.spacing8,
-            0.0,
-            LayoutConstants.spacing6,
-            0.0,
+      child: InkWell(
+        onTap: () => Navigator.pushNamed(context, Routes.dashboard),
+        child: Container(
+          width: double.infinity,
+          height: LayoutConstants.navItemHeight,
+          decoration: BoxDecoration(
+            color: isActive
+                ? Colors.white.withValues(alpha: 0.2)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(LayoutConstants.borderRadius12),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.max,
-            children: [
-              const Icon(
-                Icons.dashboard,
-                color: Colors.white,
-                size: LayoutConstants.iconSize,
-              ),
-              Padding(
-                padding: const EdgeInsetsDirectional.fromSTEB(
-                  LayoutConstants.spacing12,
-                  0.0,
-                  0.0,
-                  0.0,
+          child: Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(
+              LayoutConstants.spacing8,
+              0.0,
+              LayoutConstants.spacing6,
+              0.0,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                const Icon(
+                  Icons.dashboard,
+                  color: Colors.white,
+                  size: LayoutConstants.iconSize,
                 ),
-                child: Text(
-                  'Dashboard',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.white,
-                        letterSpacing: 0.0,
-                      ),
+                Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(
+                    LayoutConstants.spacing12,
+                    0.0,
+                    0.0,
+                    0.0,
+                  ),
+                  child: Text(
+                    'Dashboard',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: Colors.white,
+                          letterSpacing: 0.0,
+                        ),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -253,6 +261,7 @@ class SidebarNav extends StatelessWidget {
   }
 
   Widget _buildReportsNavItem(BuildContext context) {
+    final isActive = activeRoute == Routes.reports;
     return Padding(
       padding: const EdgeInsetsDirectional.fromSTEB(
         LayoutConstants.spacing16,
@@ -266,7 +275,9 @@ class SidebarNav extends StatelessWidget {
           width: double.infinity,
           height: LayoutConstants.navItemHeight,
           decoration: BoxDecoration(
-            color: Colors.transparent,
+            color: isActive
+                ? Colors.white.withValues(alpha: 0.2)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(LayoutConstants.borderRadius12),
           ),
           child: Padding(
