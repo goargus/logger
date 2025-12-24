@@ -162,7 +162,9 @@ class SidebarNav extends StatelessWidget {
           width: double.infinity,
           height: LayoutConstants.navItemHeight,
           decoration: BoxDecoration(
-            color: isActive ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
+            color: isActive
+                ? Colors.white.withValues(alpha: 0.2)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(LayoutConstants.borderRadius12),
           ),
           child: Padding(
@@ -273,7 +275,9 @@ class SidebarNav extends StatelessWidget {
           width: double.infinity,
           height: LayoutConstants.navItemHeight,
           decoration: BoxDecoration(
-            color: isActive ? Colors.white.withValues(alpha: 0.2) : Colors.transparent,
+            color: isActive
+                ? Colors.white.withValues(alpha: 0.2)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(LayoutConstants.borderRadius12),
           ),
           child: Padding(

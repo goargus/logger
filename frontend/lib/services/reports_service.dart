@@ -36,6 +36,7 @@ class ReportsService {
       return ReportSummary.empty();
     }
   }
+
   Future<List<ReportBreakdown>> getPersonalBreakdown({
     required String periodStart,
     required String periodEnd,

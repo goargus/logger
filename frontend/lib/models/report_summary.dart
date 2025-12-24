@@ -18,12 +18,12 @@ class ReportSummary {
   factory ReportSummary.fromApi(Map<String, dynamic> data) {
     final totals = data['totals'] as Map<String, dynamic>? ?? {};
     final period = data['period'] as Map<String, dynamic>? ?? {};
-    
+
     final activities = (totals['activities'] as num?)?.toInt() ?? 0;
     final expenses = (totals['expenses'] as num?)?.toDouble() ?? 0.0;
     final usersSubmitted = (totals['usersSubmitted'] as num?)?.toInt() ?? 0;
     final isReported = usersSubmitted > 0;
-    
+
     return ReportSummary(
       totalActivities: activities,
       totalExpenses: expenses,
