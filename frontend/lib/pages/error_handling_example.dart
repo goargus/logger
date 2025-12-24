@@ -1,51 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/errors/app_exception.dart';
 import '../core/errors/error_handler.dart';
 import '../widgets/error_display.dart';
+import '../providers/activities.dart';
 import '../services/activity.dart';
 
-class ErrorHandlingExamplePage extends StatefulWidget {
+/// Example provider demonstrating AsyncValue pattern.
+/// Uses the shared activityServiceProvider for proper auth integration.
+final exampleActivitiesProvider =
+    FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final service = ref.read(activityServiceProvider);
+  return service.getRecentActivities();
+});
+
+class ErrorHandlingExamplePage extends ConsumerStatefulWidget {
   const ErrorHandlingExamplePage({super.key});
 
   @override
-  State<ErrorHandlingExamplePage> createState() =>
+  ConsumerState<ErrorHandlingExamplePage> createState() =>
       _ErrorHandlingExamplePageState();
 }
 
-class _ErrorHandlingExamplePageState extends State<ErrorHandlingExamplePage> {
-  bool _isLoading = false;
-  AppException? _error;
-  List<Map<String, dynamic>>? _activities;
-
-  late final ActivityService _activityService;
-
-  @override
-  void initState() {
-    super.initState();
-    _activityService = ActivityService.localhost(() async => 'dummy-token');
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
-
-    try {
-      final activities = await _activityService.getRecentActivities();
-      setState(() {
-        _activities = activities;
-        _isLoading = false;
-      });
-    } catch (e) {
-      final exception = ErrorHandler.normalizeError(e);
-      setState(() {
-        _error = exception;
-        _isLoading = false;
-      });
-    }
-  }
+class _ErrorHandlingExamplePageState
+    extends ConsumerState<ErrorHandlingExamplePage> {
+  ActivityService get _activityService => ref.read(activityServiceProvider);
 
   void _handleTransientError() async {
     try {
@@ -95,17 +74,20 @@ class _ErrorHandlingExamplePageState extends State<ErrorHandlingExamplePage> {
   }
 
   Widget _buildBody() {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
-    }
-    if (_error != null) {
-      return ErrorCard.fromException(
-        _error!,
-        onRetry: _loadData,
-      );
-    }
+    final activitiesAsync = ref.watch(exampleActivitiesProvider);
+
+    return activitiesAsync.when(
+      data: (activities) => _buildContent(activities, null),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => ErrorCard.fromException(
+        ErrorHandler.normalizeError(error),
+        onRetry: () => ref.invalidate(exampleActivitiesProvider),
+      ),
+    );
+  }
+
+  Widget _buildContent(
+      List<Map<String, dynamic>> activities, AppException? error) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -145,16 +127,16 @@ class _ErrorHandlingExamplePageState extends State<ErrorHandlingExamplePage> {
           const SizedBox(height: 8),
           InlineError.fromException(
             const NetworkException(),
-            onRetry: _loadData,
+            onRetry: () => ref.invalidate(exampleActivitiesProvider),
           ),
           const SizedBox(height: 24),
-          if (_activities != null) ...[
+          if (activities.isNotEmpty) ...[
             const Text(
-              'Loaded Activities:',
+              'Loaded Activities (using AsyncValue):',
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            ...(_activities ?? []).map((activity) {
+            ...activities.map((activity) {
               return Card(
                 child: ListTile(
                   title: Text(activity['activityTypeId'] ?? 'Unknown'),

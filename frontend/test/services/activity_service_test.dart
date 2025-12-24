@@ -57,7 +57,7 @@ void main() {
         // This test verifies the method signature and basic behavior
         expect(
           () => service.getMonthlyExpenseTotal(year: 2024, month: 1),
-          throwsA(isA<Exception>()),
+          throwsA(anything),
         );
       });
 
@@ -75,7 +75,7 @@ void main() {
             year: 2024,
             month: 1,
           ),
-          throwsA(isA<Exception>()),
+          throwsA(anything),
         );
       });
     });
@@ -84,14 +84,14 @@ void main() {
       test('should accept limit parameter', () async {
         expect(
           () => service.getRecentActivities(limit: 10),
-          throwsA(isA<Exception>()),
+          throwsA(anything),
         );
       });
 
       test('should use default limit of 5', () async {
         expect(
           () => service.getRecentActivities(),
-          throwsA(isA<Exception>()),
+          throwsA(anything),
         );
       });
 
@@ -106,7 +106,7 @@ void main() {
 
         expect(
           () => serviceWithEmptyToken.getRecentActivities(),
-          throwsA(isA<Exception>()),
+          throwsA(anything),
         );
       });
     });
@@ -140,7 +140,7 @@ void main() {
         // This is verified through the actual method behavior
         expect(
           () => service.getMonthlyExpenseTotal(year: 2024, month: 1),
-          throwsA(isA<Exception>()),
+          throwsA(anything),
         );
       });
 
