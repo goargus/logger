@@ -17,6 +17,10 @@ final activityServiceProvider = Provider<ActivityService>((ref) {
 });
 
 class RecentActivitiesNotifier extends AsyncNotifier<List<Activity>> {
+  /// Default limit for dashboard recent activities display.
+  /// Balances performance with user experience by showing recent items.
+  static const int _dashboardActivityLimit = 5;
+
   @override
   Future<List<Activity>> build() async {
     return _fetchActivities();
@@ -24,7 +28,9 @@ class RecentActivitiesNotifier extends AsyncNotifier<List<Activity>> {
 
   Future<List<Activity>> _fetchActivities() async {
     final service = ref.read(activityServiceProvider);
-    final activitiesData = await service.getRecentActivities(limit: 5);
+    final activitiesData = await service.getRecentActivities(
+      limit: _dashboardActivityLimit,
+    );
     return activitiesData.map((data) => Activity.fromApi(data)).toList();
   }
 

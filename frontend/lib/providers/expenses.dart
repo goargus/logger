@@ -42,11 +42,21 @@ class MonthlyExpensesNotifier extends AsyncNotifier<MonthlyExpense> {
   }
 
   Future<void> refresh() async {
+    // Preserve current year/month from state, fallback to current date
+    final currentData = state.valueOrNull;
+    final year = currentData?.year ?? DateTime.now().year;
+    final month = currentData?.month ?? DateTime.now().month;
+
     state = const AsyncLoading();
-    final now = DateTime.now();
-    state = await AsyncValue.guard(() => _fetchExpenses(now.year, now.month));
+    state = await AsyncValue.guard(() => _fetchExpenses(year, month));
   }
 
+  /// Fetches expense data for a specific month and year.
+  ///
+  /// Updates the state with expenses for the specified [year] and [month].
+  /// The state transitions through loading -> data/error states.
+  ///
+  /// Use [refresh] to reload data for the currently selected period.
   Future<void> fetchForMonth(int year, int month) async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() => _fetchExpenses(year, month));

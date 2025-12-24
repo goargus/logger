@@ -142,21 +142,21 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                         // Expenses section with AsyncValue
                         expensesAsync.when(
                           data: (expenses) => StatsSection(
-                            config: _cfg,
+                            stats: _cfg,
                             isLoadingExpenses: false,
                             monthlyExpenseTotal: expenses.total,
                             onReportsTap: () =>
                                 Navigator.pushNamed(context, Routes.reports),
                           ),
                           loading: () => StatsSection(
-                            config: _cfg,
+                            stats: _cfg,
                             isLoadingExpenses: true,
                             monthlyExpenseTotal: 0.0,
                             onReportsTap: () =>
                                 Navigator.pushNamed(context, Routes.reports),
                           ),
                           error: (error, stack) => StatsSection(
-                            config: _cfg,
+                            stats: _cfg,
                             isLoadingExpenses: false,
                             monthlyExpenseTotal: 0.0,
                             onReportsTap: () =>

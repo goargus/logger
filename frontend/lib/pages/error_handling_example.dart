@@ -3,18 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/errors/app_exception.dart';
 import '../core/errors/error_handler.dart';
 import '../widgets/error_display.dart';
+import '../providers/activities.dart';
 import '../services/activity.dart';
-import '../config/api_config.dart';
-import '../core/api_client.dart';
 
-/// Example provider demonstrating AsyncValue pattern
+/// Example provider demonstrating AsyncValue pattern.
+/// Uses the shared activityServiceProvider for proper auth integration.
 final exampleActivitiesProvider =
     FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final apiClient = ApiClient(
-    baseUrl: ApiConfig.baseUrl,
-    getAccessToken: () async => 'dummy-token',
-  );
-  final service = ActivityService(apiClient: apiClient);
+  final service = ref.read(activityServiceProvider);
   return service.getRecentActivities();
 });
 
@@ -28,17 +24,7 @@ class ErrorHandlingExamplePage extends ConsumerStatefulWidget {
 
 class _ErrorHandlingExamplePageState
     extends ConsumerState<ErrorHandlingExamplePage> {
-  late final ActivityService _activityService;
-
-  @override
-  void initState() {
-    super.initState();
-    final apiClient = ApiClient(
-      baseUrl: ApiConfig.baseUrl,
-      getAccessToken: () async => 'dummy-token',
-    );
-    _activityService = ActivityService(apiClient: apiClient);
-  }
+  ActivityService get _activityService => ref.read(activityServiceProvider);
 
   void _handleTransientError() async {
     try {
