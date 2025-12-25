@@ -1,10 +1,12 @@
 import { Controller, Get, UseGuards, Req } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { IdentityResolutionService } from '../auth/identity-resolution.service';
 import { Request } from 'express';
 import { JwtValidatedUser } from '../auth/jwt.strategy';
 
+@ApiTags('Users')
 @Controller('users')
 export class UsersController {
   constructor(
@@ -12,8 +14,12 @@ export class UsersController {
     private readonly identityService: IdentityResolutionService,
   ) {}
 
-  @UseGuards(JwtAuthGuard)
   @Get('me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({ status: 200, description: 'Current user profile with role assignments' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getMyProfile(@Req() req: Request) {
     const { sub, iss } = (req.user as JwtValidatedUser) ?? {};
     const user = await this.identityService.resolveUserBySubAndIssuer(sub, iss);

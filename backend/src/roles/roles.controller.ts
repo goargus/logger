@@ -12,6 +12,7 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesService } from './roles.service';
 import { CreateRoleDto } from './dto/create-role.dto';
@@ -26,6 +27,8 @@ import { GetUserEntitiesByRoleDto } from './dto/get-user-entities-by-role.dto';
 import { UpdateAssignmentDto } from './dto/update-assignment.dto';
 import { AssignmentResponseDto } from './dto/assignment-response.dto';
 
+@ApiTags('Roles')
+@ApiBearerAuth('JWT-auth')
 @Controller('roles')
 @UseGuards(AuthGuard('jwt'), RolesGuard)
 export class RolesController {
@@ -36,6 +39,8 @@ export class RolesController {
 
   @Get('users-by-role')
   @Roles('admin')
+  @ApiOperation({ summary: 'List users by role (Admin only)' })
+  @ApiQuery({ name: 'role', required: true, description: 'Role name to filter by' })
   usersByRole(@Query('role') role: string) {
     const normalized = String(role).trim();
     return this.roleAssignment.listUsersByRole(normalized);
@@ -49,6 +54,7 @@ export class RolesController {
 
   @Post('assign')
   @Roles('admin')
+  @ApiOperation({ summary: 'Assign a role to a user (Admin only)' })
   @UsePipes(new ValidationPipe({ transform: true }))
   assign(@Body() dto: AssignRoleDto) {
     return this.roleAssignment.assign(dto);

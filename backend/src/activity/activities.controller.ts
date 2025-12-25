@@ -14,6 +14,7 @@ import {
   ParseIntPipe,
   BadRequestException,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { ActivitiesService } from './activities.service';
 import { CreateActivityDto } from './dto/create-activity.dto';
 import { UpdateActivityDto } from './dto/update-activity.dto';
@@ -29,6 +30,8 @@ import { ActivityType } from '../activities-type/activity-type.entity';
 import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
 import { Activity } from './activity.entity';
 
+@ApiTags('Activities')
+@ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard)
 @Controller('activities')
 export class ActivitiesController {
@@ -70,6 +73,10 @@ export class ActivitiesController {
   }
 
   @Post()
+  @ApiOperation({ summary: 'Create a new activity' })
+  @ApiResponse({ status: 201, description: 'Activity created successfully', type: ActivityResponseDto })
+  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   async create(@Req() req: Request, @Body() dto: CreateActivityDto): Promise<ActivityResponseDto> {
     const { sub, iss } = (req.user as any) ?? {};
     const user = await this.identity.resolveUserBySubAndIssuer(sub, iss);
@@ -94,15 +101,34 @@ export class ActivitiesController {
   }
 
   @Get()
+  @ApiOperation({ summary: 'List my activities with pagination and filters' })
+  @ApiResponse({ status: 200, description: 'Paginated list of activities' })
+  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default: 1)' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items per page (default: 20)' })
+  @ApiQuery({ name: 'startDate', required: false, description: 'Filter from date (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'endDate', required: false, description: 'Filter until date (YYYY-MM-DD)' })
+  @ApiQuery({ name: 'activityTypeId', required: false, description: 'Filter by activity type UUID' })
+  @ApiQuery({ name: 'hasExpense', required: false, enum: ['true', 'false'], description: 'Filter by expense status' })
   async findMine(
     @Req() req: Request,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page = 1,
     @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit = 20,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('activityTypeId') activityTypeId?: string,
+    @Query('hasExpense') hasExpense?: string,
   ) {
     const { sub, iss } = (req.user as any) ?? {};
     const user = await this.identity.resolveUserBySubAndIssuer(sub, iss);
 
-    const [items, total] = await this.activities.findMine(user.id, page, limit);
+    const filters = {
+      startDate: startDate || undefined,
+      endDate: endDate || undefined,
+      activityTypeId: activityTypeId || undefined,
+      hasExpense: hasExpense === 'true' ? true : hasExpense === 'false' ? false : undefined,
+    };
+
+    const [items, total] = await this.activities.findMine(user.id, page, limit, filters);
 
     const [owner, typesMap, reportingPeriodsMap] = await Promise.all([
       this.usersRepo.findOneByOrFail({ id: user.id }),
@@ -143,6 +169,9 @@ export class ActivitiesController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get a single activity by ID' })
+  @ApiResponse({ status: 200, description: 'Activity details', type: ActivityResponseDto })
+  @ApiResponse({ status: 404, description: 'Activity not found' })
   async getOne(@Req() req: Request, @Param('id', new ParseUUIDPipe()) id: string) {
     const { sub, iss } = (req.user as any) ?? {};
     const user = await this.identity.resolveUserBySubAndIssuer(sub, iss);
@@ -166,6 +195,10 @@ export class ActivitiesController {
   }
 
   @Patch(':id')
+  @ApiOperation({ summary: 'Update an activity' })
+  @ApiResponse({ status: 200, description: 'Activity updated successfully', type: ActivityResponseDto })
+  @ApiResponse({ status: 404, description: 'Activity not found' })
+  @ApiResponse({ status: 403, description: 'Activity is locked and cannot be modified' })
   async update(
     @Req() req: Request,
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -193,6 +226,11 @@ export class ActivitiesController {
   }
 
   @Delete(':id')
+  @ApiOperation({ summary: 'Archive (soft delete) an activity' })
+  @ApiResponse({ status: 200, description: 'Activity archived successfully' })
+  @ApiResponse({ status: 400, description: 'Confirmation required (confirm=true)' })
+  @ApiResponse({ status: 404, description: 'Activity not found' })
+  @ApiQuery({ name: 'confirm', required: true, description: 'Must be "true" to confirm deletion' })
   async archive(
     @Req() req: Request,
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -209,6 +247,10 @@ export class ActivitiesController {
   }
 
   @Get('stats/monthly-expenses')
+  @ApiOperation({ summary: 'Get monthly expense total for the current user' })
+  @ApiResponse({ status: 200, description: 'Monthly expense total' })
+  @ApiQuery({ name: 'year', required: false, type: Number, description: 'Year (default: current year)' })
+  @ApiQuery({ name: 'month', required: false, type: Number, description: 'Month 1-12 (default: current month)' })
   async getMonthlyExpenses(
     @Req() req: Request,
     @Query('year', new DefaultValuePipe(new Date().getFullYear()), ParseIntPipe) year: number,
