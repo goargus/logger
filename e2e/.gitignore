@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment files
+.env
+
+# Test reports
+reports/
+!reports/.gitkeep
+
+# Playwright
+playwright-report/
+test-results/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+
+# Logs
+*.log
+npm-debug.log*
+
+# Auth0 config from terraform
+auth0-config.json

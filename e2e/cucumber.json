@@ -1,0 +1,4 @@
+{
+  "cucumber.features": ["features/**/*.feature"],
+  "cucumber.glue": ["step-definitions/**/*.ts", "support/**/*.ts"]
+}
