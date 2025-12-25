@@ -10,6 +10,7 @@ import {
   ComparisonResponse,
   RankingsResponse,
   ExpensesResponse,
+  BreakdownsComparisonResponse,
 } from './dto/report-responses.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { IdentityResolutionService } from '../auth/identity-resolution.service';
@@ -46,8 +47,13 @@ export class ReportsController {
   async getBreakdowns(
     @Req() req: Request,
     @Query() query: ReportQueryDto,
-  ): Promise<BreakdownsResponse> {
+  ): Promise<BreakdownsResponse | BreakdownsComparisonResponse> {
     const userId = await this.getUserIdFromRequest(req);
+
+    if (query.includeComparison && query.periodType) {
+      return this.reportsService.getBreakdownsWithComparison(userId, query);
+    }
+
     return this.reportsService.getBreakdowns(userId, query);
   }
 
