@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../models/dashboard_stats.dart';
-import '../routes.dart';
+import '../router.dart';
 
 import '../core/layout_constants.dart';
 import '../core/snackbars.dart';
 import '../core/errors/error_handler.dart';
 import '../auth/auth_utils.dart';
 
-import '../widgets/nav/sidebar_nav.dart';
 import '../widgets/headers/welcome_header.dart';
 import '../widgets/pills/month_header_pill.dart';
 import '../widgets/lists/activities_section.dart';
@@ -22,14 +22,15 @@ import '../providers/activities.dart';
 import '../providers/expenses.dart';
 import '../config/api_config.dart';
 
-class DashboardPage extends ConsumerStatefulWidget {
-  const DashboardPage({super.key});
+/// Content-only widget for dashboard - shell is handled by AppShell via router
+class DashboardContent extends ConsumerStatefulWidget {
+  const DashboardContent({super.key});
 
   @override
-  ConsumerState<DashboardPage> createState() => _DashboardPageState();
+  ConsumerState<DashboardContent> createState() => _DashboardContentState();
 }
 
-class _DashboardPageState extends ConsumerState<DashboardPage> {
+class _DashboardContentState extends ConsumerState<DashboardContent> {
   final DashboardStats _cfg = const DashboardStats(
     visits: 15,
     bibleStudies: 10,
@@ -99,172 +100,117 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         authState.user?['name'] ??
         authState.user?['nickname'] ??
         'Usuario';
-    final userEmail = authState.user?['first_name'] ?? '';
 
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        FocusManager.instance.primaryFocus?.unfocus();
-      },
-      child: Scaffold(
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        body: SafeArea(
-          top: true,
-          child: Row(
-            mainAxisSize: MainAxisSize.max,
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return SingleChildScrollView(
+      child: Column(
+        mainAxisSize: MainAxisSize.max,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          WelcomeHeader(userName: userName),
+          const SizedBox(height: LayoutConstants.spacing20),
+          const MonthHeaderPill(),
+          const SizedBox(height: LayoutConstants.spacing20),
+          // Expenses section with AsyncValue
+          expensesAsync.when(
+            data: (expenses) => StatsSection(
+              stats: _cfg,
+              isLoadingExpenses: false,
+              monthlyExpenseTotal: expenses.total,
+              onReportsTap: () => context.go(AppRoutes.reports),
+            ),
+            loading: () => StatsSection(
+              stats: _cfg,
+              isLoadingExpenses: true,
+              monthlyExpenseTotal: 0.0,
+              onReportsTap: () => context.go(AppRoutes.reports),
+            ),
+            error: (error, stack) => StatsSection(
+              stats: _cfg,
+              isLoadingExpenses: false,
+              monthlyExpenseTotal: 0.0,
+              onReportsTap: () => context.go(AppRoutes.reports),
+            ),
+          ),
+          const SizedBox(height: LayoutConstants.spacing40),
+          Row(
             children: [
-              if (MediaQuery.of(context).size.width >
-                  LayoutConstants.desktopBreakpoint)
-                SidebarNav(
-                  userName: userName,
-                  userEmail: userEmail,
-                  userPicture: authState.user?['picture'],
-                  activeRoute: Routes.dashboard,
-                  onCreateActivity: _openCreateDialog,
-                ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsetsDirectional.fromSTEB(
-                    LayoutConstants.spacing20,
-                    LayoutConstants.spacing20,
-                    LayoutConstants.spacing20,
-                    0.0,
-                  ),
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.max,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        WelcomeHeader(userName: userName),
-                        const SizedBox(height: LayoutConstants.spacing20),
-                        const MonthHeaderPill(),
-                        const SizedBox(height: LayoutConstants.spacing20),
-                        // Expenses section with AsyncValue
-                        expensesAsync.when(
-                          data: (expenses) => StatsSection(
-                            stats: _cfg,
-                            isLoadingExpenses: false,
-                            monthlyExpenseTotal: expenses.total,
-                            onReportsTap: () =>
-                                Navigator.pushNamed(context, Routes.reports),
-                          ),
-                          loading: () => StatsSection(
-                            stats: _cfg,
-                            isLoadingExpenses: true,
-                            monthlyExpenseTotal: 0.0,
-                            onReportsTap: () =>
-                                Navigator.pushNamed(context, Routes.reports),
-                          ),
-                          error: (error, stack) => StatsSection(
-                            stats: _cfg,
-                            isLoadingExpenses: false,
-                            monthlyExpenseTotal: 0.0,
-                            onReportsTap: () =>
-                                Navigator.pushNamed(context, Routes.reports),
-                          ),
-                        ),
-                        const SizedBox(height: LayoutConstants.spacing40),
-                        Row(
-                          children: [
-                            PrimaryActionButton(
-                              label: 'Agregar Actividad',
-                              icon: Icons.add,
-                              onPressed: _openCreateDialog,
-                            ),
-                            const SizedBox(width: LayoutConstants.spacing12),
-                            // Show refresh button on error
-                            if (activitiesAsync.hasError)
-                              TextButton.icon(
-                                onPressed: () {
-                                  ref
-                                      .read(recentActivitiesProvider.notifier)
-                                      .refresh();
-                                },
-                                icon: const Icon(Icons.refresh),
-                                label: const Text('Recargar'),
-                              ),
-                          ],
-                        ),
-                        const SizedBox(height: LayoutConstants.spacing24),
-                        // Activities section with AsyncValue
-                        activitiesAsync.when(
-                          data: (activities) => ActivitiesSection(
-                            isLoading: false,
-                            isAuthenticated: authState.isAuthenticated,
-                            activities: activities,
-                            onRefresh: () {
-                              ref
-                                  .read(recentActivitiesProvider.notifier)
-                                  .refresh();
-                            },
-                          ),
-                          loading: () => ActivitiesSection(
-                            isLoading: true,
-                            isAuthenticated: authState.isAuthenticated,
-                            activities: const [],
-                            onRefresh: () {
-                              ref
-                                  .read(recentActivitiesProvider.notifier)
-                                  .refresh();
-                            },
-                          ),
-                          error: (error, stack) => Column(
-                            children: [
-                              ActivitiesSection(
-                                isLoading: false,
-                                isAuthenticated: authState.isAuthenticated,
-                                activities: const [],
-                                onRefresh: () {
-                                  ref
-                                      .read(recentActivitiesProvider.notifier)
-                                      .refresh();
-                                },
-                              ),
-                              const SizedBox(height: LayoutConstants.spacing12),
-                              Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Theme.of(context)
-                                      .colorScheme
-                                      .errorContainer,
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.error_outline,
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .onErrorContainer,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        ErrorHandler.normalizeError(error)
-                                            .userMessage,
-                                        style: TextStyle(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onErrorContainer,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: LayoutConstants.spacing24),
-                      ],
-                    ),
-                  ),
-                ),
+              PrimaryActionButton(
+                label: 'Agregar Actividad',
+                icon: Icons.add,
+                onPressed: _openCreateDialog,
               ),
+              const SizedBox(width: LayoutConstants.spacing12),
+              // Show refresh button on error
+              if (activitiesAsync.hasError)
+                TextButton.icon(
+                  onPressed: () {
+                    ref.read(recentActivitiesProvider.notifier).refresh();
+                  },
+                  icon: const Icon(Icons.refresh),
+                  label: const Text('Recargar'),
+                ),
             ],
           ),
-        ),
+          const SizedBox(height: LayoutConstants.spacing24),
+          // Activities section with AsyncValue
+          activitiesAsync.when(
+            data: (activities) => ActivitiesSection(
+              isLoading: false,
+              isAuthenticated: authState.isAuthenticated,
+              activities: activities,
+              onRefresh: () {
+                ref.read(recentActivitiesProvider.notifier).refresh();
+              },
+            ),
+            loading: () => ActivitiesSection(
+              isLoading: true,
+              isAuthenticated: authState.isAuthenticated,
+              activities: const [],
+              onRefresh: () {
+                ref.read(recentActivitiesProvider.notifier).refresh();
+              },
+            ),
+            error: (error, stack) => Column(
+              children: [
+                ActivitiesSection(
+                  isLoading: false,
+                  isAuthenticated: authState.isAuthenticated,
+                  activities: const [],
+                  onRefresh: () {
+                    ref.read(recentActivitiesProvider.notifier).refresh();
+                  },
+                ),
+                const SizedBox(height: LayoutConstants.spacing12),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.errorContainer,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        color: Theme.of(context).colorScheme.onErrorContainer,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          ErrorHandler.normalizeError(error).userMessage,
+                          style: TextStyle(
+                            color:
+                                Theme.of(context).colorScheme.onErrorContainer,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: LayoutConstants.spacing24),
+        ],
       ),
     );
   }

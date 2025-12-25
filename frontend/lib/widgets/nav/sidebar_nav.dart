@@ -1,23 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/layout_constants.dart';
-import '../../routes.dart';
+import '../../router.dart';
 import '../../theme/app_theme.dart';
 
 class SidebarNav extends StatelessWidget {
   final String userName;
   final String userEmail;
   final String? userPicture;
-  final VoidCallback onCreateActivity;
-  final String activeRoute;
+  final String currentPath;
 
   const SidebarNav({
     super.key,
     required this.userName,
     required this.userEmail,
     this.userPicture,
-    required this.onCreateActivity,
-    required this.activeRoute,
+    required this.currentPath,
   });
 
   @override
@@ -71,9 +70,28 @@ class SidebarNav extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildNavigationLabel(context),
-                    _buildDashboardNavItem(context),
-                    _buildCreateActivityNavItem(context),
-                    _buildReportsNavItem(context),
+                    _buildNavItem(
+                      context,
+                      icon: Icons.dashboard,
+                      label: 'Dashboard',
+                      path: AppRoutes.dashboard,
+                      isActive: currentPath == AppRoutes.dashboard,
+                    ),
+                    _buildNavItem(
+                      context,
+                      icon: Icons.list_alt,
+                      label: 'Actividades',
+                      path: AppRoutes.activities,
+                      isActive: currentPath == AppRoutes.activities ||
+                          currentPath.startsWith('/activities/'),
+                    ),
+                    _buildNavItem(
+                      context,
+                      icon: Icons.bar_chart,
+                      label: 'Reportes',
+                      path: AppRoutes.reports,
+                      isActive: currentPath == AppRoutes.reports,
+                    ),
                     const SizedBox(height: LayoutConstants.spacing12),
                   ],
                 ),
@@ -147,8 +165,13 @@ class SidebarNav extends StatelessWidget {
     );
   }
 
-  Widget _buildDashboardNavItem(BuildContext context) {
-    final isActive = activeRoute == Routes.dashboard;
+  Widget _buildNavItem(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required String path,
+    required bool isActive,
+  }) {
     return Padding(
       padding: const EdgeInsetsDirectional.fromSTEB(
         LayoutConstants.spacing16,
@@ -157,7 +180,7 @@ class SidebarNav extends StatelessWidget {
         0.0,
       ),
       child: InkWell(
-        onTap: () => Navigator.pushNamed(context, Routes.dashboard),
+        onTap: () => context.go(path),
         child: Container(
           width: double.infinity,
           height: LayoutConstants.navItemHeight,
@@ -177,8 +200,8 @@ class SidebarNav extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.max,
               children: [
-                const Icon(
-                  Icons.dashboard,
+                Icon(
+                  icon,
                   color: Colors.white,
                   size: LayoutConstants.iconSize,
                 ),
@@ -190,120 +213,7 @@ class SidebarNav extends StatelessWidget {
                     0.0,
                   ),
                   child: Text(
-                    'Dashboard',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white,
-                          letterSpacing: 0.0,
-                        ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCreateActivityNavItem(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(
-        LayoutConstants.spacing16,
-        0.0,
-        LayoutConstants.spacing16,
-        0.0,
-      ),
-      child: InkWell(
-        onTap: onCreateActivity,
-        child: Container(
-          width: double.infinity,
-          height: LayoutConstants.navItemHeight,
-          decoration: BoxDecoration(
-            color: Colors.transparent,
-            borderRadius: BorderRadius.circular(LayoutConstants.borderRadius12),
-          ),
-          child: Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(
-              LayoutConstants.spacing8,
-              0.0,
-              LayoutConstants.spacing6,
-              0.0,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                const Icon(
-                  Icons.add_circle_outline,
-                  color: Colors.white,
-                  size: LayoutConstants.iconSize,
-                ),
-                Padding(
-                  padding: const EdgeInsetsDirectional.fromSTEB(
-                    LayoutConstants.spacing12,
-                    0.0,
-                    0.0,
-                    0.0,
-                  ),
-                  child: Text(
-                    'Nueva Actividad',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: Colors.white,
-                          letterSpacing: 0.0,
-                        ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildReportsNavItem(BuildContext context) {
-    final isActive = activeRoute == Routes.reports;
-    return Padding(
-      padding: const EdgeInsetsDirectional.fromSTEB(
-        LayoutConstants.spacing16,
-        0.0,
-        LayoutConstants.spacing16,
-        0.0,
-      ),
-      child: InkWell(
-        onTap: () => Navigator.pushNamed(context, Routes.reports),
-        child: Container(
-          width: double.infinity,
-          height: LayoutConstants.navItemHeight,
-          decoration: BoxDecoration(
-            color: isActive
-                ? Colors.white.withValues(alpha: 0.2)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(LayoutConstants.borderRadius12),
-          ),
-          child: Padding(
-            padding: const EdgeInsetsDirectional.fromSTEB(
-              LayoutConstants.spacing8,
-              0.0,
-              LayoutConstants.spacing6,
-              0.0,
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.max,
-              children: [
-                const Icon(
-                  Icons.bar_chart,
-                  color: Colors.white,
-                  size: LayoutConstants.iconSize,
-                ),
-                Padding(
-                  padding: const EdgeInsetsDirectional.fromSTEB(
-                    LayoutConstants.spacing12,
-                    0.0,
-                    0.0,
-                    0.0,
-                  ),
-                  child: Text(
-                    'Reportes',
+                    label,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Colors.white,
                           letterSpacing: 0.0,
