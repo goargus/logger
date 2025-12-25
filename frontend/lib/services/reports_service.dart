@@ -2,6 +2,7 @@ import '../config/api_config.dart';
 import '../core/api_client.dart';
 import '../models/report_summary.dart';
 import '../models/report_breakdown.dart';
+import '../models/report_period_type.dart';
 
 class ReportsService {
   ReportsService({
@@ -57,5 +58,30 @@ class ReportsService {
     } catch (e) {
       return [];
     }
+  }
+
+  Future<BreakdownsComparisonResponse> getBreakdownWithComparison({
+    required ReportPeriodType periodType,
+    required int year,
+    int? month,
+    int? quarter,
+    int? half,
+  }) async {
+    final queryParams = <String, String>{
+      'periodType': periodType.apiValue,
+      'year': year.toString(),
+      'includeComparison': 'true',
+    };
+
+    if (month != null) queryParams['month'] = month.toString();
+    if (quarter != null) queryParams['quarter'] = quarter.toString();
+    if (half != null) queryParams['half'] = half.toString();
+
+    final data = await apiClient.get(
+      'reports/breakdowns',
+      queryParameters: queryParams,
+    );
+
+    return BreakdownsComparisonResponse.fromApi(data as Map<String, dynamic>);
   }
 }
