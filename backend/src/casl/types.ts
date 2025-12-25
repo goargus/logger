@@ -2,7 +2,6 @@ import { InferSubjects, MongoAbility } from '@casl/ability';
 import { Activity } from '../activity/activity.entity';
 import { Entity } from '../entities/entity.entity';
 import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
-import { Term } from '../terms/term.entity';
 import { User } from '../users/user.entity';
 import { Role } from '../roles/role.entity';
 import { ActivityType } from '../activities-type/activity-type.entity';
@@ -20,7 +19,6 @@ export type Subjects =
       | typeof Activity
       | typeof Entity
       | typeof ReportingPeriod
-      | typeof Term
       | typeof User
       | typeof Role
       | typeof ActivityType

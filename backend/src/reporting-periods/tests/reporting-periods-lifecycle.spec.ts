@@ -61,11 +61,10 @@ describe('ReportingPeriodsService - Lifecycle Management', () => {
     jest.clearAllMocks();
   });
 
-  describe('Entity-Term Relationship', () => {
-    it('should enforce entity_id and term_id as required fields', async () => {
+  describe('Entity Relationship', () => {
+    it('should enforce entity_id as required field', async () => {
       const dto = {
         entityId: 'entity-1',
-        termId: 'term-1',
         name: 'Test Period',
         startDate: '2025-01-01',
         endDate: '2025-01-15',
@@ -83,7 +82,6 @@ describe('ReportingPeriodsService - Lifecycle Management', () => {
       expect(mockRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           entityId: 'entity-1',
-          termId: 'term-1',
         }),
       );
     });
@@ -91,7 +89,6 @@ describe('ReportingPeriodsService - Lifecycle Management', () => {
     it('should only allow one active period per entity', async () => {
       const dto = {
         entityId: 'entity-1',
-        termId: 'term-1',
         name: 'Test Period',
         startDate: '2025-02-01',
         endDate: '2025-02-15',
@@ -121,18 +118,16 @@ describe('ReportingPeriodsService - Lifecycle Management', () => {
       mockRepository.save.mockResolvedValue({
         id: '1',
         entityId: 'entity-1',
-        termId: 'term-1',
         status: ReportingPeriodStatus.ACTIVE,
       });
 
-      const result = await service.createFirstPeriodForEntity('entity-1', 'term-1', 'system');
+      const result = await service.createFirstPeriodForEntity('entity-1', 'system');
 
       expect(result).toBeDefined();
       expect(result?.status).toBe(ReportingPeriodStatus.ACTIVE);
       expect(mockRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({
           entityId: 'entity-1',
-          termId: 'term-1',
           status: ReportingPeriodStatus.ACTIVE,
         }),
       );
@@ -141,7 +136,7 @@ describe('ReportingPeriodsService - Lifecycle Management', () => {
     it('should not create first period if entity already has one', async () => {
       mockRepository.findOne.mockResolvedValue({ id: 'existing-1' });
 
-      const result = await service.createFirstPeriodForEntity('entity-1', 'term-1', 'system');
+      const result = await service.createFirstPeriodForEntity('entity-1', 'system');
 
       expect(result).toBeNull();
       expect(mockRepository.save).not.toHaveBeenCalled();
@@ -151,7 +146,6 @@ describe('ReportingPeriodsService - Lifecycle Management', () => {
       const previousPeriod = {
         id: '1',
         entityId: 'entity-1',
-        termId: 'term-1',
         endDate: '2025-01-15',
         status: ReportingPeriodStatus.LOCKED,
       };
@@ -161,13 +155,12 @@ describe('ReportingPeriodsService - Lifecycle Management', () => {
       mockRepository.save.mockResolvedValue({
         id: '2',
         entityId: 'entity-1',
-        termId: 'term-1',
         startDate: '2025-01-16',
         endDate: '2025-01-30',
         status: ReportingPeriodStatus.ACTIVE,
       });
 
-      const result = await service.createNextPeriod('entity-1', 'term-1', 'system');
+      const result = await service.createNextPeriod('entity-1', 'system');
 
       expect(result).toBeDefined();
       expect(result.status).toBe(ReportingPeriodStatus.ACTIVE);
@@ -179,10 +172,8 @@ describe('ReportingPeriodsService - Lifecycle Management', () => {
       const expiredPeriod = {
         id: '1',
         entityId: 'entity-1',
-        termId: 'term-1',
         status: ReportingPeriodStatus.ACTIVE,
         endDate: '2025-01-01',
-        term: { id: 'term-1', is_active: true },
       };
 
       mockRepository.find.mockResolvedValue([expiredPeriod]);
@@ -203,10 +194,8 @@ describe('ReportingPeriodsService - Lifecycle Management', () => {
       const expiredPeriod = {
         id: '1',
         entityId: 'entity-1',
-        termId: 'term-1',
         status: ReportingPeriodStatus.ACTIVE,
         endDate: '2025-01-14',
-        term: { id: 'term-1', is_active: true },
       };
 
       mockRepository.find.mockResolvedValue([expiredPeriod]);
@@ -221,44 +210,6 @@ describe('ReportingPeriodsService - Lifecycle Management', () => {
 
       expect(mockRepository.create).toHaveBeenCalled();
       expect(mockRepository.save).toHaveBeenCalledTimes(2);
-    });
-
-    it('should not create new period if term is inactive', async () => {
-      const expiredPeriod = {
-        id: '1',
-        entityId: 'entity-1',
-        termId: 'term-1',
-        status: ReportingPeriodStatus.ACTIVE,
-        endDate: '2025-01-01',
-        term: { id: 'term-1', is_active: false },
-      };
-
-      mockRepository.find.mockResolvedValue([expiredPeriod]);
-      mockRepository.save.mockResolvedValue({
-        ...expiredPeriod,
-        status: ReportingPeriodStatus.LOCKED,
-      });
-
-      const count = await service.transitionExpiredPeriods('system');
-
-      expect(count).toBe(0);
-    });
-  });
-
-  describe('Term Lifecycle Integration', () => {
-    it('should lock all active periods when term is deactivated', async () => {
-      mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
-      mockQueryBuilder.execute.mockResolvedValue({ affected: 3 });
-
-      const count = await service.lockPeriodsForTerm('term-1', 'system');
-
-      expect(count).toBe(3);
-      expect(mockQueryBuilder.update).toHaveBeenCalled();
-      expect(mockQueryBuilder.set).toHaveBeenCalledWith(
-        expect.objectContaining({
-          status: ReportingPeriodStatus.LOCKED,
-        }),
-      );
     });
   });
 
@@ -280,36 +231,30 @@ describe('ReportingPeriodsService - Lifecycle Management', () => {
           entityId: 'entity-1',
           status: ReportingPeriodStatus.ACTIVE,
         },
-        relations: ['entity', 'term'],
+        relations: ['entity'],
       });
     });
 
-    it('should filter periods by entity and term', async () => {
+    it('should filter periods by entity', async () => {
       mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
       mockQueryBuilder.getMany.mockResolvedValue([{ id: '1' }, { id: '2' }]);
 
-      const result = await service.findByEntityAndTerm('entity-1', 'term-1');
+      const result = await service.findByEntity('entity-1');
 
       expect(result).toHaveLength(2);
       expect(mockQueryBuilder.where).toHaveBeenCalledWith('period.entity_id = :entityId', {
         entityId: 'entity-1',
       });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('period.term_id = :termId', {
-        termId: 'term-1',
-      });
     });
 
-    it('should find all periods with query filters', async () => {
+    it('should find all periods with entity filter', async () => {
       mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
       mockQueryBuilder.getMany.mockResolvedValue([{ id: '1' }]);
 
-      await service.findAll('entity-1', 'term-1');
+      await service.findAll('entity-1');
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('period.entity_id = :entityId', {
         entityId: 'entity-1',
-      });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('period.term_id = :termId', {
-        termId: 'term-1',
       });
     });
   });
@@ -375,7 +320,7 @@ describe('ReportingPeriodsService - Lifecycle Management', () => {
       mockRepository.create.mockImplementation((data) => data);
       mockRepository.save.mockImplementation((data) => Promise.resolve(data));
 
-      await service.createFirstPeriodForEntity('entity-1', 'term-1', 'system');
+      await service.createFirstPeriodForEntity('entity-1', 'system');
 
       const createCall = mockRepository.create.mock.calls[0][0];
       const start = new Date(createCall.startDate);

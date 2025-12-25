@@ -18,6 +18,8 @@ import { TrendsCalculator } from './calculators/trends.calculator';
 import { ComparisonCalculator } from './calculators/comparison.calculator';
 import { RankingsCalculator } from './calculators/rankings.calculator';
 import { ExpensesCalculator } from './calculators/expenses.calculator';
+import { PeriodBoundaryCalculator } from './time/period-boundary.calculator';
+import { BreakdownComparisonCalculator } from './calculators/breakdown-comparison.calculator';
 
 describe('ReportsService', () => {
   let service: ReportsService;
@@ -40,7 +42,7 @@ describe('ReportsService', () => {
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ReportsService,
@@ -71,6 +73,8 @@ describe('ReportsService', () => {
         ComparisonCalculator,
         RankingsCalculator,
         ExpensesCalculator,
+        PeriodBoundaryCalculator,
+        BreakdownComparisonCalculator,
         {
           provide: getRepositoryToken(Activity),
           useValue: {
@@ -444,9 +448,9 @@ describe('ReportsService', () => {
         period: mockPeriod as any,
       });
       jest.spyOn(userRepo, 'find').mockResolvedValue(mockUsersInScope as any);
-      jest.spyOn(userRepo.manager, 'query').mockResolvedValue([
-        { user_id: 'user-2', name: 'Misionero' },
-      ]);
+      jest
+        .spyOn(userRepo.manager, 'query')
+        .mockResolvedValue([{ user_id: 'user-2', name: 'Misionero' }]);
       mockQueryBuilder.getMany.mockResolvedValue(mockActivities);
 
       const result = await service.getCompliance('user-1', {});

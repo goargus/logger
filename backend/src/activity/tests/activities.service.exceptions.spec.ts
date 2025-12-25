@@ -48,8 +48,6 @@ describe('ActivitiesService - Exception Handling', () => {
     id: 'locked-period-id',
     entityId: 'entity-id',
     entity: {} as any,
-    termId: 'term-id',
-    term: {} as any,
     name: 'January 2024',
     description: 'Locked period',
     startDate: '2024-01-01',

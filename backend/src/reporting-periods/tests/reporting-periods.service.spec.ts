@@ -18,8 +18,6 @@ describe('ReportingPeriodsService', () => {
     id: 'period-id',
     entityId: 'entity-id',
     entity: {} as any,
-    termId: 'term-id',
-    term: {} as any,
     name: 'January 2024',
     description: 'January reporting period',
     startDate: '2024-01-01',
@@ -76,7 +74,6 @@ describe('ReportingPeriodsService', () => {
     it('should create a new reporting period successfully', async () => {
       const createDto: CreateReportingPeriodDto = {
         entityId: 'entity-id',
-        termId: 'term-id',
         name: 'February 2024',
         description: 'February reporting period',
         startDate: '2024-02-01',
@@ -100,7 +97,6 @@ describe('ReportingPeriodsService', () => {
       expect(result).toEqual(mockReportingPeriod);
       expect(repo.create).toHaveBeenCalledWith({
         entityId: 'entity-id',
-        termId: 'term-id',
         name: 'February 2024',
         description: 'February reporting period',
         startDate: '2024-02-01',
@@ -114,7 +110,6 @@ describe('ReportingPeriodsService', () => {
     it('should throw BadRequestException when start date is after end date', async () => {
       const createDto: CreateReportingPeriodDto = {
         entityId: 'entity-id',
-        termId: 'term-id',
         name: 'Invalid Period',
         startDate: '2024-02-29',
         endDate: '2024-02-01',
@@ -128,7 +123,6 @@ describe('ReportingPeriodsService', () => {
     it('should throw ConflictException when period overlaps with existing', async () => {
       const createDto: CreateReportingPeriodDto = {
         entityId: 'entity-id',
-        termId: 'term-id',
         name: 'Overlapping Period',
         startDate: '2024-01-15',
         endDate: '2024-02-15',

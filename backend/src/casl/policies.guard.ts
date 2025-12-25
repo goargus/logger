@@ -15,18 +15,25 @@ export class PoliciesGuard implements CanActivate {
     const policyHandlers =
       this.reflector.get<PolicyHandler[]>(CHECK_POLICIES_KEY, context.getHandler()) || [];
 
-    if (policyHandlers.length === 0) {
-      return true;
-    }
-
     const request = context.switchToHttp().getRequest();
     const user = request.user;
 
     if (!user) {
+      // If no policy handlers, allow unauthenticated access (other guards handle auth)
+      if (policyHandlers.length === 0) {
+        return true;
+      }
       throw new ForbiddenException('User not authenticated');
     }
 
+    // Always create and attach ability for authenticated users
     const ability = await this.caslAbilityFactory.createForUser(user);
+    request.ability = ability;
+
+    // If no policy handlers defined, allow access (ability is still attached)
+    if (policyHandlers.length === 0) {
+      return true;
+    }
 
     const allowed = policyHandlers.every((handler) => {
       return this.execPolicyHandler(handler, ability);
@@ -35,8 +42,6 @@ export class PoliciesGuard implements CanActivate {
     if (!allowed) {
       throw new ForbiddenException('Insufficient permissions');
     }
-
-    request.ability = ability;
 
     return true;
   }
