@@ -1,5 +1,14 @@
-import { IsArray, ArrayNotEmpty, IsString, IsUUID, IsNotEmpty } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import {
+  IsArray,
+  ArrayNotEmpty,
+  IsString,
+  IsUUID,
+  IsNotEmpty,
+  IsOptional,
+  IsEnum,
+} from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { GrowthDirection } from '../activity-type.entity';
 
 export class CreateActivityTypeDto {
   @ApiProperty({
@@ -27,4 +36,13 @@ export class CreateActivityTypeDto {
   @ArrayNotEmpty()
   @IsUUID('4', { each: true })
   role_ids!: string[];
+
+  @ApiPropertyOptional({
+    description: 'Indicates whether growth in this activity type is positive, negative, or neutral',
+    enum: GrowthDirection,
+    default: GrowthDirection.POSITIVE,
+  })
+  @IsOptional()
+  @IsEnum(GrowthDirection)
+  growth_direction?: GrowthDirection;
 }

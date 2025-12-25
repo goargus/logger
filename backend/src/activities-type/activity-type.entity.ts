@@ -11,6 +11,12 @@ import {
 } from 'typeorm';
 import { Role } from '../roles/role.entity';
 
+export enum GrowthDirection {
+  POSITIVE = 'positive',
+  NEGATIVE = 'negative',
+  NEUTRAL = 'neutral',
+}
+
 @Entity({ name: 'activity_type' })
 @Check(`name <> ''`)
 @Check(`description <> ''`)
@@ -24,6 +30,13 @@ export class ActivityType {
 
   @Column({ type: 'text', nullable: false })
   description!: string;
+
+  @Column({
+    type: 'enum',
+    enum: GrowthDirection,
+    default: GrowthDirection.POSITIVE,
+  })
+  growth_direction!: GrowthDirection;
 
   @ManyToMany(() => Role, { eager: true })
   @JoinTable({
