@@ -2,76 +2,62 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../nav/sidebar_nav.dart';
 import '../../providers/auth.dart';
-
-const double kOverlayTopInset = 64.0;
+import '../../core/layout_constants.dart';
 
 class AppShell extends ConsumerWidget {
-  final Widget body;
-  final String activeRoute;
+  final Widget child;
+  final String currentPath;
 
   const AppShell({
     super.key,
-    required this.body,
-    required this.activeRoute,
+    required this.child,
+    required this.currentPath,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isWide = MediaQuery.of(context).size.width >= 1000;
     final authState = ref.watch(authNotifierProvider);
-    final userName =
-        authState.user?['name'] ?? authState.user?['nickname'] ?? 'Usuario';
+    final userName = authState.user?['first_name'] ??
+        authState.user?['name'] ??
+        authState.user?['nickname'] ??
+        'Usuario';
     final userEmail = authState.user?['email'] ?? '';
     final userPicture = authState.user?['picture'];
 
-    return Scaffold(
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(top: kOverlayTopInset),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (isWide) const SizedBox(width: 8),
-                  if (isWide)
-                    SidebarNav(
-                      userName: userName,
-                      userEmail: userEmail,
-                      userPicture: userPicture,
-                      activeRoute: activeRoute,
-                      onCreateActivity: () =>
-                          Navigator.pushNamed(context, '/activities/new'),
-                    ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: body,
-                    ),
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+        FocusManager.instance.primaryFocus?.unfocus();
+      },
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+        body: SafeArea(
+          top: true,
+          child: Row(
+            mainAxisSize: MainAxisSize.max,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (MediaQuery.of(context).size.width >
+                  LayoutConstants.desktopBreakpoint)
+                SidebarNav(
+                  userName: userName,
+                  userEmail: userEmail,
+                  userPicture: userPicture,
+                  currentPath: currentPath,
+                ),
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(
+                    LayoutConstants.spacing20,
+                    LayoutConstants.spacing20,
+                    LayoutConstants.spacing20,
+                    0.0,
                   ),
-                ],
+                  child: child,
+                ),
               ),
-            ),
-            Positioned(
-              top: 8,
-              right: 12,
-              child: Consumer(
-                builder: (context, ref, _) {
-                  final authState = ref.watch(authNotifierProvider);
-                  final authNotifier = ref.read(authNotifierProvider.notifier);
-                  final userEmail = authState.user?['email'];
-                  return ActionChip(
-                    label: Text(
-                      userEmail != null && userEmail.isNotEmpty
-                          ? 'Salir ($userEmail)'
-                          : 'Salir',
-                    ),
-                    onPressed: authNotifier.logout,
-                  );
-                },
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

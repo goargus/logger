@@ -66,4 +66,31 @@ class ActivityService {
     final items = data['items'] as List<dynamic>;
     return items.cast<Map<String, dynamic>>();
   }
+
+  Future<Map<String, dynamic>> getActivitiesPaginated({
+    int page = 1,
+    int limit = 20,
+    String? startDate,
+    String? endDate,
+    String? activityTypeId,
+    bool? hasExpense,
+  }) async {
+    final params = <String, String>{
+      'page': page.toString(),
+      'limit': limit.toString(),
+    };
+
+    if (startDate != null) params['startDate'] = startDate;
+    if (endDate != null) params['endDate'] = endDate;
+    if (activityTypeId != null) params['activityTypeId'] = activityTypeId;
+    if (hasExpense != null) params['hasExpense'] = hasExpense.toString();
+
+    final data = await apiClient.get('activities', queryParameters: params);
+    return data as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> getActivityById(String id) async {
+    final data = await apiClient.get('activities/$id');
+    return data as Map<String, dynamic>;
+  }
 }
