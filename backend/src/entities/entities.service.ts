@@ -14,7 +14,6 @@ import { CreateEntityDto } from './dto/create-entity.dto';
 import { UpdateEntityDto } from './dto/update-entity.dto';
 import { HierarchyValidationService } from './hierarchy-validation.service';
 import { ReportingPeriodsService } from '../reporting-periods/reporting-periods.service';
-import { TermsService } from '../terms/terms.service';
 
 @Injectable()
 export class EntitiesService {
@@ -25,9 +24,6 @@ export class EntitiesService {
     @Optional()
     @Inject(forwardRef(() => ReportingPeriodsService))
     private readonly reportingPeriodsService?: ReportingPeriodsService,
-    @Optional()
-    @Inject(forwardRef(() => TermsService))
-    private readonly termsService?: TermsService,
   ) {}
 
   private normalizeName(name?: string) {
@@ -69,21 +65,6 @@ export class EntitiesService {
     };
     const entity = this.repo.create(entityData);
     const saved = await this.repo.save(entity);
-
-    if (this.termsService && this.reportingPeriodsService) {
-      try {
-        const activeTerm = await this.termsService.getActiveTermForEntity(saved.id);
-        if (activeTerm) {
-          await this.reportingPeriodsService.createFirstPeriodForEntity(
-            saved.id,
-            activeTerm.id,
-            'system',
-          );
-        }
-      } catch (error) {
-        console.error('Failed to create first reporting period:', error);
-      }
-    }
 
     return saved;
   }

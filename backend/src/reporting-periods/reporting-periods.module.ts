@@ -7,13 +7,12 @@ import { ReportingPeriodsSchedulerService } from './reporting-periods-scheduler.
 import { ReportingPeriod } from './reporting-period.entity';
 import { ReportingPeriodException } from './reporting-period-exception.entity';
 import { AuthModule } from '../auth/auth.modules';
-import { Term } from '../terms/term.entity';
 import { Entity } from '../entities/entity.entity';
 import { User } from '../users/user.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([ReportingPeriod, ReportingPeriodException, Term, Entity, User]),
+    TypeOrmModule.forFeature([ReportingPeriod, ReportingPeriodException, Entity, User]),
     ScheduleModule.forRoot(),
     AuthModule,
   ],
