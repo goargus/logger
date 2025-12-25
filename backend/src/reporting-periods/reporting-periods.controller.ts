@@ -11,6 +11,7 @@ import {
   ParseUUIDPipe,
   Query,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { ReportingPeriodsService } from './reporting-periods.service';
 import { CreateReportingPeriodDto } from './dto/create-reporting-period.dto';
 import { UpdateReportingPeriodDto } from './dto/update-reporting-period.dto';
@@ -26,6 +27,8 @@ import { Repository } from 'typeorm';
 import { User } from '../users/user.entity';
 import { Request } from 'express';
 
+@ApiTags('Reporting Periods')
+@ApiBearerAuth('JWT-auth')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('reporting-periods')
 export class ReportingPeriodsController {
@@ -38,6 +41,8 @@ export class ReportingPeriodsController {
 
   @Post('admin')
   @Roles('admin')
+  @ApiOperation({ summary: 'Create a new reporting period (Admin only)' })
+  @ApiResponse({ status: 201, description: 'Reporting period created', type: ReportingPeriodResponseDto })
   async create(
     @Req() req: Request,
     @Body() dto: CreateReportingPeriodDto,
@@ -50,15 +55,17 @@ export class ReportingPeriodsController {
   }
 
   @Get()
-  async findAll(
-    @Query('entityId') entityId?: string,
-    @Query('termId') termId?: string,
-  ): Promise<ReportingPeriodResponseDto[]> {
-    const periods = await this.reportingPeriodsService.findAll(entityId, termId);
+  @ApiOperation({ summary: 'List all reporting periods' })
+  @ApiResponse({ status: 200, description: 'List of reporting periods', type: [ReportingPeriodResponseDto] })
+  @ApiQuery({ name: 'entityId', required: false, description: 'Filter by entity UUID' })
+  async findAll(@Query('entityId') entityId?: string): Promise<ReportingPeriodResponseDto[]> {
+    const periods = await this.reportingPeriodsService.findAll(entityId);
     return periods.map((period) => ReportingPeriodResponseDto.fromEntity(period));
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get a single reporting period by ID' })
+  @ApiResponse({ status: 200, description: 'Reporting period details', type: ReportingPeriodResponseDto })
   async findOne(@Param('id', new ParseUUIDPipe()) id: string): Promise<ReportingPeriodResponseDto> {
     const period = await this.reportingPeriodsService.findOne(id);
     return ReportingPeriodResponseDto.fromEntity(period);
@@ -66,6 +73,8 @@ export class ReportingPeriodsController {
 
   @Patch(':id')
   @Roles('admin')
+  @ApiOperation({ summary: 'Update a reporting period (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Reporting period updated', type: ReportingPeriodResponseDto })
   async update(
     @Req() req: Request,
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -80,6 +89,8 @@ export class ReportingPeriodsController {
 
   @Patch(':id/lock')
   @Roles('admin')
+  @ApiOperation({ summary: 'Lock a reporting period (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Reporting period locked', type: ReportingPeriodResponseDto })
   async lock(
     @Req() req: Request,
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -93,6 +104,8 @@ export class ReportingPeriodsController {
 
   @Patch(':id/unlock')
   @Roles('admin')
+  @ApiOperation({ summary: 'Unlock a reporting period (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Reporting period unlocked', type: ReportingPeriodResponseDto })
   async unlock(
     @Req() req: Request,
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -106,6 +119,8 @@ export class ReportingPeriodsController {
 
   @Patch(':id/close')
   @Roles('admin')
+  @ApiOperation({ summary: 'Close a reporting period (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Reporting period closed', type: ReportingPeriodResponseDto })
   async close(
     @Req() req: Request,
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -119,6 +134,8 @@ export class ReportingPeriodsController {
 
   @Post(':periodId/exceptions')
   @Roles('admin')
+  @ApiOperation({ summary: 'Create or update an exception for a user (Admin only)' })
+  @ApiResponse({ status: 201, description: 'Exception created/updated', type: ExceptionResponseDto })
   async createException(
     @Req() req: Request,
     @Param('periodId', new ParseUUIDPipe()) periodId: string,
@@ -139,6 +156,8 @@ export class ReportingPeriodsController {
 
   @Delete(':periodId/exceptions/:userId')
   @Roles('admin')
+  @ApiOperation({ summary: 'Revoke an exception for a user (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Exception revoked' })
   async revokeException(
     @Param('periodId', new ParseUUIDPipe()) periodId: string,
     @Param('userId', new ParseUUIDPipe()) userId: string,
@@ -149,6 +168,8 @@ export class ReportingPeriodsController {
 
   @Get(':periodId/exceptions')
   @Roles('admin')
+  @ApiOperation({ summary: 'List all exceptions for a reporting period (Admin only)' })
+  @ApiResponse({ status: 200, description: 'List of exceptions', type: [ExceptionResponseDto] })
   async listExceptions(
     @Param('periodId', new ParseUUIDPipe()) periodId: string,
   ): Promise<ExceptionResponseDto[]> {
@@ -160,6 +181,8 @@ export class ReportingPeriodsController {
 
   @Delete(':id')
   @Roles('admin')
+  @ApiOperation({ summary: 'Delete a reporting period (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Reporting period deleted' })
   async remove(@Param('id', new ParseUUIDPipe()) id: string): Promise<{ ok: boolean }> {
     await this.reportingPeriodsService.remove(id);
     return { ok: true };
