@@ -10,6 +10,7 @@ import {
   UseGuards,
   Req,
 } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { ActivityTypesService } from './activity-types.service';
 import { CreateActivityTypeDto } from './dto/create-activity-type.dto';
 import { UpdateActivityTypeDto } from './dto/update-activity-type.dto';
@@ -20,6 +21,7 @@ import { IdentityResolutionService } from '../auth/identity-resolution.service';
 import { Request } from 'express';
 import { JwtValidatedUser } from '../auth/jwt.strategy';
 
+@ApiTags('Activity Types')
 @Controller('activity-types')
 export class ActivityTypesController {
   constructor(
@@ -28,12 +30,18 @@ export class ActivityTypesController {
   ) {}
 
   @Get()
+  @ApiOperation({ summary: 'List all activity types' })
+  @ApiResponse({ status: 200, description: 'List of all activity types' })
   async list() {
     return this.service.findAll();
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('authorized')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'List activity types authorized for current user' })
+  @ApiResponse({ status: 200, description: 'List of authorized activity types' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getAuthorized(@Req() req: Request) {
     const { sub, iss } = (req.user as JwtValidatedUser) ?? {};
     const user = await this.identityService.resolveUserBySubAndIssuer(sub, iss);
@@ -41,27 +49,47 @@ export class ActivityTypesController {
   }
 
   @Get(':id')
+  @ApiOperation({ summary: 'Get a single activity type by ID' })
+  @ApiResponse({ status: 200, description: 'Activity type details' })
+  @ApiResponse({ status: 404, description: 'Activity type not found' })
   async getOne(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.service.findOne(id);
   }
 
+  @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
-  @Post()
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Create a new activity type (Admin only)' })
+  @ApiResponse({ status: 201, description: 'Activity type created successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - requires admin role' })
   async create(@Body() dto: CreateActivityTypeDto) {
     return this.service.create(dto);
   }
 
+  @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
-  @Put(':id')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Update an activity type (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Activity type updated successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - requires admin role' })
+  @ApiResponse({ status: 404, description: 'Activity type not found' })
   async update(@Param('id', new ParseUUIDPipe()) id: string, @Body() dto: UpdateActivityTypeDto) {
     return this.service.update(id, dto);
   }
 
+  @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
-  @Delete(':id')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Delete an activity type (Admin only)' })
+  @ApiResponse({ status: 200, description: 'Activity type deleted successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - requires admin role' })
+  @ApiResponse({ status: 404, description: 'Activity type not found' })
   async remove(@Param('id', new ParseUUIDPipe()) id: string) {
     await this.service.remove(id);
     return { message: 'Activity type deleted.' };
