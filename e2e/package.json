@@ -1,0 +1,32 @@
+{
+  "name": "secretary-e2e-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "End-to-end tests for Secretary Activity Management System",
+  "scripts": {
+    "test": "cucumber-js",
+    "test:api": "cucumber-js --tags @api",
+    "test:ui": "cucumber-js --tags @ui",
+    "test:smoke": "cucumber-js --tags @smoke",
+    "test:parallel": "cucumber-js --parallel 4",
+    "infra:up": "docker-compose -f docker-compose.e2e.yml up -d",
+    "infra:down": "docker-compose -f docker-compose.e2e.yml down -v",
+    "infra:logs": "docker-compose -f docker-compose.e2e.yml logs -f",
+    "infra:wait": "npx wait-on tcp:3001 tcp:8081 -t 180000",
+    "setup": "npm run infra:up && npm run infra:wait",
+    "cleanup": "npm run infra:down",
+    "ci": "npm run setup && npm test && npm run cleanup",
+    "report": "allure serve reports/allure-results"
+  },
+  "devDependencies": {
+    "@cucumber/cucumber": "^10.3.1",
+    "@playwright/test": "^1.40.0",
+    "@types/node": "^20.10.0",
+    "allure-cucumberjs": "^2.9.0",
+    "axios": "^1.6.2",
+    "dotenv": "^16.3.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.2",
+    "wait-on": "^7.2.0"
+  }
+}

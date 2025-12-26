@@ -17,6 +17,7 @@ import {
   ComparisonResponse,
   RankingsResponse,
   ExpensesResponse,
+  BreakdownsComparisonResponse,
 } from './dto/report-responses.dto';
 import { ReportsAccessService } from './access/reports-access.service';
 import { ReportsTimeScopeService } from './time/reports-time-scope.service';
@@ -28,6 +29,9 @@ import { TrendsCalculator } from './calculators/trends.calculator';
 import { ComparisonCalculator } from './calculators/comparison.calculator';
 import { RankingsCalculator } from './calculators/rankings.calculator';
 import { ExpensesCalculator } from './calculators/expenses.calculator';
+import { PeriodBoundaryCalculator } from './time/period-boundary.calculator';
+import { BreakdownComparisonCalculator } from './calculators/breakdown-comparison.calculator';
+import { ReportPeriodType } from './enums/report-period-type.enum';
 
 @Injectable()
 export class ReportsService {
@@ -46,6 +50,8 @@ export class ReportsService {
     private readonly comparisonCalculator: ComparisonCalculator,
     private readonly rankingsCalculator: RankingsCalculator,
     private readonly expensesCalculator: ExpensesCalculator,
+    private readonly periodBoundaryCalculator: PeriodBoundaryCalculator,
+    private readonly breakdownComparisonCalculator: BreakdownComparisonCalculator,
   ) {}
 
   async getSummary(actorUserId: string, query: ReportQueryDto): Promise<SummaryResponse> {
@@ -418,5 +424,111 @@ export class ReportsService {
     const activities = await qb.getMany();
 
     return this.expensesCalculator.calculate(activities, canViewReports, !!query.userId);
+  }
+
+  async getBreakdownsWithComparison(
+    actorUserId: string,
+    query: ReportQueryDto,
+  ): Promise<BreakdownsComparisonResponse> {
+    if (!query.periodType || !query.year) {
+      throw new BadRequestException('periodType and year are required for comparison');
+    }
+
+    const actor = await this.userRepo.findOne({
+      where: { id: actorUserId },
+      relations: ['role', 'entity'],
+    });
+
+    if (!actor) {
+      throw new NotFoundException('User not found');
+    }
+
+    const canViewReports = actor.role.canViewReports;
+    const targetEntityId = query.entityId || actor.entity_id;
+
+    if (query.entityId && canViewReports) {
+      const isInScope = await this.accessService.validateEntityInUserScope(
+        actorUserId,
+        query.entityId,
+      );
+      if (!isInScope) {
+        throw new ForbiddenException('Entity is not in your scope');
+      }
+    } else if (query.entityId && !canViewReports) {
+      throw new ForbiddenException('You do not have permission to view entity reports');
+    }
+
+    if (query.userId) {
+      if (!canViewReports && query.userId !== actorUserId) {
+        throw new ForbiddenException('You can only view your own data');
+      }
+      if (canViewReports) {
+        const isInScope = await this.accessService.validateUserInScope(actorUserId, query.userId);
+        if (!isInScope) {
+          throw new ForbiddenException('User is not in your scope');
+        }
+      }
+    }
+
+    const entityIds =
+      canViewReports && !query.userId
+        ? await this.accessService.getEntityHierarchy(targetEntityId)
+        : [targetEntityId];
+
+    const periodIndex = this.periodBoundaryCalculator.getPeriodIndexFromQuery(
+      query.periodType,
+      query.month,
+      query.quarter,
+      query.half,
+    );
+
+    const currentPeriod = this.periodBoundaryCalculator.calculateBoundaries(
+      query.periodType,
+      query.year,
+      periodIndex,
+    );
+
+    const previousRef = this.periodBoundaryCalculator.getPreviousPeriod(
+      query.periodType,
+      query.year,
+      periodIndex,
+    );
+
+    const previousPeriod = this.periodBoundaryCalculator.calculateBoundaries(
+      query.periodType,
+      previousRef.year,
+      previousRef.periodIndex,
+    );
+
+    const currentQb = this.queryFactory.buildActivityQuery(
+      actorUserId,
+      entityIds,
+      {
+        dateFrom: currentPeriod.dateFrom.toISOString(),
+        dateTo: currentPeriod.dateTo.toISOString(),
+      },
+      query.userId || (!canViewReports ? actorUserId : undefined),
+    );
+    const currentActivities = await currentQb.getMany();
+
+    const previousQb = this.queryFactory.buildActivityQuery(
+      actorUserId,
+      entityIds,
+      {
+        dateFrom: previousPeriod.dateFrom.toISOString(),
+        dateTo: previousPeriod.dateTo.toISOString(),
+      },
+      query.userId || (!canViewReports ? actorUserId : undefined),
+    );
+    const previousActivities = await previousQb.getMany();
+
+    return this.breakdownComparisonCalculator.calculate(
+      currentActivities,
+      previousActivities,
+      currentPeriod,
+      previousPeriod,
+      canViewReports,
+      !!query.userId,
+    );
   }
 }

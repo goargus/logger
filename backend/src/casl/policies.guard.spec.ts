@@ -52,10 +52,39 @@ describe('PoliciesGuard', () => {
   });
 
   describe('canActivate', () => {
-    it('should allow access when no policies are defined', async () => {
+    it('should allow access and attach ability when no policies are defined', async () => {
+      const mockAbility = { can: jest.fn() };
+      const mockRequest = { user: { id: 'user-1' } };
+
+      const contextWithRequest = {
+        getHandler: jest.fn(),
+        switchToHttp: jest.fn().mockReturnValue({
+          getRequest: jest.fn().mockReturnValue(mockRequest),
+        }),
+      } as unknown as ExecutionContext;
+
+      mockReflector.get.mockReturnValue([]);
+      mockCaslAbilityFactory.createForUser.mockResolvedValue(mockAbility);
+
+      const result = await guard.canActivate(contextWithRequest);
+
+      expect(result).toBe(true);
+      // Ability should still be created and attached even without policies
+      expect(mockCaslAbilityFactory.createForUser).toHaveBeenCalledWith({ id: 'user-1' });
+      expect(mockRequest).toHaveProperty('ability', mockAbility);
+    });
+
+    it('should allow access without creating ability when no user and no policies', async () => {
+      const contextWithoutUser = {
+        getHandler: jest.fn(),
+        switchToHttp: jest.fn().mockReturnValue({
+          getRequest: jest.fn().mockReturnValue({ user: null }),
+        }),
+      } as unknown as ExecutionContext;
+
       mockReflector.get.mockReturnValue([]);
 
-      const result = await guard.canActivate(mockExecutionContext);
+      const result = await guard.canActivate(contextWithoutUser);
 
       expect(result).toBe(true);
       expect(mockCaslAbilityFactory.createForUser).not.toHaveBeenCalled();

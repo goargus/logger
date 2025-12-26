@@ -1,0 +1,94 @@
+# E2E Testing Docker Compose Configuration
+# Isolated environment for end-to-end tests
+# Uses different ports to avoid conflicts with development environment
+
+services:
+  e2e-db:
+    image: postgres:15
+    container_name: secretary_e2e_db
+    restart: "no"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: secretary_e2e_test
+    ports:
+      - "5434:5432"
+    volumes:
+      - e2e_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  e2e-backend:
+    image: node:20
+    container_name: secretary_e2e_backend
+    restart: "no"
+    depends_on:
+      e2e-db:
+        condition: service_healthy
+    ports:
+      - "3001:3000"
+    volumes:
+      - ../backend/src:/app/src
+      - ../backend/scripts:/app/scripts
+      - ../backend/package.json:/app/package.json
+      - ../backend/tsconfig.json:/app/tsconfig.json
+      - ../backend/package-lock.json:/app/package-lock.json
+    working_dir: /app
+    environment:
+      PORT: 3000
+      DB_HOST: e2e-db
+      DB_PORT: 5432
+      DB_NAME: secretary_e2e_test
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      # Auth0 configuration (same tenant as production)
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN:-dev-ohuspam6fnmh4tgt.us.auth0.com}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-logger}
+      AUTH0_ISSUER: ${AUTH0_ISSUER:-https://dev-ohuspam6fnmh4tgt.us.auth0.com/}
+      # Admin user for bootstrap (uses existing Auth0 user)
+      ADMIN_EMAIL: ${E2E_ADMIN_EMAIL:-hndoss@gmail.com}
+      ADMIN_USERNAME: hndoss
+      ADMIN_IDP_ISSUER: ${AUTH0_ISSUER:-https://dev-ohuspam6fnmh4tgt.us.auth0.com/}
+      ADMIN_IDP_SUBJECT: ${E2E_ADMIN_IDP_SUBJECT:-auth0|688c59c6ec2186db091c74eb}
+    command: >
+      sh -c "
+        npm install &&
+        npx nest build &&
+        npm run admin:bootstrap &&
+        npm run db:init &&
+        npx nest start
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 90s
+
+  e2e-frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: secretary_e2e_frontend
+    restart: "no"
+    depends_on:
+      e2e-backend:
+        condition: service_healthy
+    ports:
+      - "8081:8080"
+    environment:
+      - AUTH0_DOMAIN=${AUTH0_DOMAIN:-dev-ohuspam6fnmh4tgt.us.auth0.com}
+      - AUTH0_CLIENT_ID=${AUTH0_E2E_CLIENT_ID:-2H45P97qEyC9HfiKFj8FOvb8DnSOgFwY}
+      - AUTH0_REDIRECT_URI=http://localhost:8081
+      - AUTH0_AUDIENCE=${AUTH0_AUDIENCE:-logger}
+      - API_BASE_URL=http://localhost:3001
+
+volumes:
+  e2e_postgres_data:
+
+networks:
+  default:
+    name: secretary_e2e_network

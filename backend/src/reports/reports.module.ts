@@ -18,6 +18,8 @@ import { TrendsCalculator } from './calculators/trends.calculator';
 import { ComparisonCalculator } from './calculators/comparison.calculator';
 import { RankingsCalculator } from './calculators/rankings.calculator';
 import { ExpensesCalculator } from './calculators/expenses.calculator';
+import { PeriodBoundaryCalculator } from './time/period-boundary.calculator';
+import { BreakdownComparisonCalculator } from './calculators/breakdown-comparison.calculator';
 
 @Module({
   imports: [
@@ -37,6 +39,8 @@ import { ExpensesCalculator } from './calculators/expenses.calculator';
     ComparisonCalculator,
     RankingsCalculator,
     ExpensesCalculator,
+    PeriodBoundaryCalculator,
+    BreakdownComparisonCalculator,
   ],
   exports: [ReportsService],
 })

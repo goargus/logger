@@ -63,7 +63,6 @@ export class ReportingPeriodsService {
 
     const entity = this.repo.create({
       entityId: dto.entityId,
-      termId: dto.termId,
       name: dto.name,
       description: dto.description ?? null,
       startDate: dto.startDate,
@@ -78,7 +77,6 @@ export class ReportingPeriodsService {
 
   async createFirstPeriodForEntity(
     entityId: string,
-    termId: string,
     actorUserId: string,
   ): Promise<ReportingPeriod | null> {
     try {
@@ -97,7 +95,6 @@ export class ReportingPeriodsService {
 
       const period = this.repo.create({
         entityId,
-        termId,
         name: `Reporting Period ${startDate}`,
         startDate,
         endDate,
@@ -115,11 +112,7 @@ export class ReportingPeriodsService {
     }
   }
 
-  async createNextPeriod(
-    entityId: string,
-    termId: string,
-    actorUserId: string,
-  ): Promise<ReportingPeriod> {
+  async createNextPeriod(entityId: string, actorUserId: string): Promise<ReportingPeriod> {
     const previousPeriod = await this.repo.findOne({
       where: {
         entityId,
@@ -137,7 +130,6 @@ export class ReportingPeriodsService {
 
     const period = this.repo.create({
       entityId,
-      termId,
       name: `Reporting Period ${startDate}`,
       startDate,
       endDate,
@@ -159,7 +151,6 @@ export class ReportingPeriodsService {
         status: ReportingPeriodStatus.ACTIVE,
         endDate: LessThanOrEqual(today),
       },
-      relations: ['term'],
     });
 
     let transitioned = 0;
@@ -170,14 +161,8 @@ export class ReportingPeriodsService {
         period.updatedBy = actorUserId;
         await this.repo.save(period);
 
-        if (period.term && period.term.is_active) {
-          await this.createNextPeriod(period.entityId, period.termId, actorUserId);
-          transitioned++;
-        } else {
-          this.logger.warn(
-            `Locked period ${period.id} but did not create next period (term is inactive)`,
-          );
-        }
+        await this.createNextPeriod(period.entityId, actorUserId);
+        transitioned++;
       } catch (error) {
         this.logger.error(`Failed to transition period ${period.id}:`, error);
       }
@@ -187,59 +172,32 @@ export class ReportingPeriodsService {
     return transitioned;
   }
 
-  async lockPeriodsForTerm(termId: string, actorUserId: string): Promise<number> {
-    const result = await this.repo
-      .createQueryBuilder()
-      .update(ReportingPeriod)
-      .set({
-        status: ReportingPeriodStatus.LOCKED,
-        updatedBy: actorUserId,
-      })
-      .where('term_id = :termId', { termId })
-      .andWhere('status = :status', { status: ReportingPeriodStatus.ACTIVE })
-      .execute();
-
-    const affected = result.affected || 0;
-    this.logger.log(`Locked ${affected} active periods for term ${termId}`);
-    return affected;
-  }
-
   async findActiveByEntity(entityId: string): Promise<ReportingPeriod | null> {
     return this.repo.findOne({
       where: {
         entityId,
         status: ReportingPeriodStatus.ACTIVE,
       },
-      relations: ['entity', 'term'],
+      relations: ['entity'],
     });
   }
 
-  async findByEntityAndTerm(entityId: string, termId?: string): Promise<ReportingPeriod[]> {
-    const query = this.repo
+  async findByEntity(entityId: string): Promise<ReportingPeriod[]> {
+    return this.repo
       .createQueryBuilder('period')
       .where('period.entity_id = :entityId', { entityId })
-      .orderBy('period.start_date', 'DESC');
-
-    if (termId) {
-      query.andWhere('period.term_id = :termId', { termId });
-    }
-
-    return query.getMany();
+      .orderBy('period.start_date', 'DESC')
+      .getMany();
   }
 
-  async findAll(entityId?: string, termId?: string): Promise<ReportingPeriod[]> {
+  async findAll(entityId?: string): Promise<ReportingPeriod[]> {
     const query = this.repo
       .createQueryBuilder('period')
       .leftJoinAndSelect('period.entity', 'entity')
-      .leftJoinAndSelect('period.term', 'term')
       .orderBy('period.start_date', 'DESC');
 
     if (entityId) {
       query.andWhere('period.entity_id = :entityId', { entityId });
-    }
-
-    if (termId) {
-      query.andWhere('period.term_id = :termId', { termId });
     }
 
     return query.getMany();

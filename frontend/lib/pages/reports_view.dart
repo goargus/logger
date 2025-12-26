@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../widgets/reports/time_selector.dart';
 import '../widgets/reports/summary_cards.dart';
-import '../widgets/reports/breakdown_table.dart';
+import '../widgets/reports/period_type_selector.dart';
+import '../widgets/reports/enhanced_time_selector.dart';
+import '../widgets/reports/comparison_breakdown_table.dart';
 import '../services/reports_service.dart';
 import '../auth/auth_utils.dart';
 import '../models/report_summary.dart';
 import '../models/report_breakdown.dart';
+import '../models/report_period_type.dart';
 
 /// Content-only widget for reports view - shell is handled by AppShell via router
 class ReportsViewContent extends ConsumerStatefulWidget {
@@ -20,9 +22,11 @@ class _ReportsViewContentState extends ConsumerState<ReportsViewContent> {
   late ReportsService _reportsService;
   bool _isLoading = false;
   ReportSummary? _summary;
-  List<ReportBreakdown> _breakdown = [];
-  DateTime _periodStart = DateTime.now();
-  DateTime _periodEnd = DateTime.now();
+  BreakdownsComparisonResponse? _comparisonBreakdown;
+
+  ReportPeriodType _periodType = ReportPeriodType.monthly;
+  int _year = DateTime.now().year;
+  int _periodIndex = DateTime.now().month;
 
   @override
   void initState() {
@@ -30,14 +34,7 @@ class _ReportsViewContentState extends ConsumerState<ReportsViewContent> {
     _reportsService = ReportsService.localhost(
       () async => await AuthUtils.getAccessTokenEnsured(ref) ?? '',
     );
-    _initializePeriod();
     _loadReports();
-  }
-
-  void _initializePeriod() {
-    final now = DateTime.now();
-    _periodStart = DateTime(now.year, now.month, 1);
-    _periodEnd = DateTime(now.year, now.month + 1, 0);
   }
 
   Future<void> _loadReports() async {
@@ -48,23 +45,27 @@ class _ReportsViewContentState extends ConsumerState<ReportsViewContent> {
     });
 
     try {
-      final periodStart = _periodStart.toIso8601String();
-      final periodEnd = _periodEnd.toIso8601String();
+      final periodBounds = _calculatePeriodBounds();
+      final periodStart = periodBounds['start']!.toIso8601String();
+      final periodEnd = periodBounds['end']!.toIso8601String();
 
       final summary = await _reportsService.getPersonalSummary(
         periodStart: periodStart,
         periodEnd: periodEnd,
       );
 
-      final breakdown = await _reportsService.getPersonalBreakdown(
-        periodStart: periodStart,
-        periodEnd: periodEnd,
+      final comparisonBreakdown = await _reportsService.getBreakdownWithComparison(
+        periodType: _periodType,
+        year: _year,
+        month: _periodType == ReportPeriodType.monthly ? _periodIndex : null,
+        quarter: _periodType == ReportPeriodType.quarterly ? _periodIndex : null,
+        half: _periodType == ReportPeriodType.biannual ? _periodIndex : null,
       );
 
       if (mounted) {
         setState(() {
           _summary = summary;
-          _breakdown = breakdown;
+          _comparisonBreakdown = comparisonBreakdown;
           _isLoading = false;
         });
       }
@@ -80,34 +81,78 @@ class _ReportsViewContentState extends ConsumerState<ReportsViewContent> {
     }
   }
 
+  Map<String, DateTime> _calculatePeriodBounds() {
+    DateTime start;
+    DateTime end;
+
+    switch (_periodType) {
+      case ReportPeriodType.monthly:
+        start = DateTime(_year, _periodIndex, 1);
+        end = DateTime(_year, _periodIndex + 1, 0, 23, 59, 59);
+        break;
+      case ReportPeriodType.quarterly:
+        final startMonth = (_periodIndex - 1) * 3 + 1;
+        start = DateTime(_year, startMonth, 1);
+        end = DateTime(_year, startMonth + 3, 0, 23, 59, 59);
+        break;
+      case ReportPeriodType.biannual:
+        final startMonth = (_periodIndex - 1) * 6 + 1;
+        start = DateTime(_year, startMonth, 1);
+        end = DateTime(_year, startMonth + 6, 0, 23, 59, 59);
+        break;
+      case ReportPeriodType.annual:
+        start = DateTime(_year, 1, 1);
+        end = DateTime(_year, 12, 31, 23, 59, 59);
+        break;
+    }
+
+    return {'start': start, 'end': end};
+  }
+
+  void _onPeriodTypeChanged(ReportPeriodType newType) {
+    setState(() {
+      _periodType = newType;
+      // Reset period index to appropriate default
+      final now = DateTime.now();
+      switch (newType) {
+        case ReportPeriodType.monthly:
+          _periodIndex = now.month;
+          break;
+        case ReportPeriodType.quarterly:
+          _periodIndex = ((now.month - 1) ~/ 3) + 1;
+          break;
+        case ReportPeriodType.biannual:
+          _periodIndex = now.month <= 6 ? 1 : 2;
+          break;
+        case ReportPeriodType.annual:
+          _periodIndex = 1;
+          break;
+      }
+      _year = now.year;
+    });
+    _loadReports();
+  }
+
   void _previousPeriod() {
     setState(() {
-      _periodStart = DateTime(
-        _periodStart.year,
-        _periodStart.month - 1,
-        1,
-      );
-      _periodEnd = DateTime(
-        _periodStart.year,
-        _periodStart.month + 1,
-        0,
-      );
+      if (_periodIndex > 1) {
+        _periodIndex--;
+      } else {
+        _year--;
+        _periodIndex = _periodType.maxPeriodIndex;
+      }
     });
     _loadReports();
   }
 
   void _nextPeriod() {
     setState(() {
-      _periodStart = DateTime(
-        _periodStart.year,
-        _periodStart.month + 1,
-        1,
-      );
-      _periodEnd = DateTime(
-        _periodStart.year,
-        _periodStart.month + 2,
-        0,
-      );
+      if (_periodIndex < _periodType.maxPeriodIndex) {
+        _periodIndex++;
+      } else {
+        _year++;
+        _periodIndex = 1;
+      }
     });
     _loadReports();
   }
@@ -128,7 +173,7 @@ class _ReportsViewContentState extends ConsumerState<ReportsViewContent> {
           ),
           const SizedBox(height: 24),
 
-          // Period Selector Card
+          // Period Type Selector
           Card(
             elevation: 0,
             shape: RoundedRectangleBorder(
@@ -140,9 +185,29 @@ class _ReportsViewContentState extends ConsumerState<ReportsViewContent> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TimeSelector(
-                    periodStart: _periodStart,
-                    periodEnd: _periodEnd,
+                  Row(
+                    children: [
+                      const Text(
+                        'Tipo de Período:',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: PeriodTypeSelector(
+                          selectedType: _periodType,
+                          onTypeChanged: _onPeriodTypeChanged,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  EnhancedTimeSelector(
+                    periodType: _periodType,
+                    year: _year,
+                    periodIndex: _periodIndex,
                     onPrevious: _previousPeriod,
                     onNext: _nextPeriod,
                   ),
@@ -178,6 +243,17 @@ class _ReportsViewContentState extends ConsumerState<ReportsViewContent> {
                         ),
                     ],
                   ),
+                  if (_comparisonBreakdown?.previousPeriod != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'Comparando con: ${_comparisonBreakdown!.previousPeriod!.periodLabel}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey.shade600,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -199,7 +275,11 @@ class _ReportsViewContentState extends ConsumerState<ReportsViewContent> {
               isReported: _summary!.isReported,
             ),
             const SizedBox(height: 32),
-            BreakdownTable(breakdown: _breakdown),
+            if (_comparisonBreakdown != null)
+              ComparisonBreakdownTable(
+                breakdown: _comparisonBreakdown!.byType,
+                showComparison: true,
+              ),
           ] else
             const Center(
               child: Padding(

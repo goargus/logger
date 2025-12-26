@@ -4,7 +4,7 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Repository, In, ObjectLiteral } from 'typeorm';
 
 import { ActivityTypesService } from '../../activities-type/activity-types.service';
-import { ActivityType } from '../../activities-type/activity-type.entity';
+import { ActivityType, GrowthDirection } from '../../activities-type/activity-type.entity';
 import { Role } from '../../roles/role.entity';
 import { ACTIVITY_TYPE_USAGE_POLICY } from '../../activities-type/usage/activity-type-usage.policy';
 
@@ -63,6 +63,7 @@ describe('ActivityTypesService', () => {
     name: 'Bible Study',
     description: 'Group Bible study',
     allowed_roles: [roleMissionary],
+    growth_direction: GrowthDirection.POSITIVE,
     created_at: new Date(),
     updated_at: new Date(),
   };

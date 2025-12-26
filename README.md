@@ -14,7 +14,6 @@ Secretary is a monorepo containing both backend (NestJS/TypeScript) and frontend
 - Enforce role-based access control for activity types and data visibility
 - Manage time-bounded reporting periods with automatic lifecycle management
 - Provide hierarchical organizational management (Platform → Union → Association → Field)
-- Support administrative terms for organizational entities
 - Enable reporting and analytics based on organizational hierarchy
 
 ## Architecture
@@ -46,7 +45,6 @@ Secretary is a monorepo containing both backend (NestJS/TypeScript) and frontend
 │   │   ├── idp-identities/     # Identity provider mappings
 │   │   ├── reporting-periods/  # Time-bounded reporting periods
 │   │   ├── roles/              # Role definitions and assignments
-│   │   ├── terms/              # Administrative terms
 │   │   └── users/              # User management
 │   ├── scripts/                # Database initialization and admin bootstrap
 │   └── test/                   # E2E tests
@@ -92,9 +90,6 @@ Secretary is a monorepo containing both backend (NestJS/TypeScript) and frontend
   - Status: active or locked
   - Only one active period per entity at a time
   - Automatically transitions via scheduled tasks
-- **Term**: Administrative terms for organizational entities
-  - Defines operational periods for entities
-  - Reporting periods are scoped to terms
 
 ### Key Relationships
 
@@ -103,8 +98,7 @@ Secretary is a monorepo containing both backend (NestJS/TypeScript) and frontend
 3. **Activity → ReportingPeriod**: Activities are submitted to reporting periods
 4. **Activity → User**: Each activity is created by and belongs to a user
 5. **ReportingPeriod → Entity**: Periods are scoped to specific entities
-6. **ReportingPeriod → Term**: Periods exist within administrative terms
-7. **ActivityType ↔ Role**: Activity types define allowed roles for submission
+6. **ActivityType ↔ Role**: Activity types define allowed roles for submission
 
 ## Implementation Status
 
@@ -130,7 +124,6 @@ Secretary is a monorepo containing both backend (NestJS/TypeScript) and frontend
 - Period-based locking prevents edits to activities in locked periods
 - Role-based activity type authorization
 - Activity type filtering by user roles
-- Administrative terms management
 - Activity lifecycle locking
 
 **Remaining:**
@@ -187,18 +180,12 @@ Secretary is a monorepo containing both backend (NestJS/TypeScript) and frontend
 - `GET /activities/stats/monthly-expenses` - Get monthly expense totals
 
 ### Reporting Periods
-- `GET /reporting-periods` - List reporting periods (filter by entity/term)
+- `GET /reporting-periods` - List reporting periods (filter by entity)
 - `GET /reporting-periods/:id` - Get reporting period details
 - `POST /reporting-periods` - Create reporting period (admin only)
 - `PATCH /reporting-periods/:id` - Update reporting period (admin only)
 - `PATCH /reporting-periods/:id/close` - Manually close/lock period (admin only)
 - `DELETE /reporting-periods/:id` - Delete period if no activities (admin only)
-
-### Terms
-- `GET /terms` - List administrative terms
-- `POST /terms` - Create term (admin only)
-- `PATCH /terms/:id` - Update term (admin only)
-- `DELETE /terms/:id` - Delete term (admin only)
 
 ## Business Rules
 
@@ -214,8 +201,6 @@ Secretary is a monorepo containing both backend (NestJS/TypeScript) and frontend
 2. Only one active period per entity at any time
 3. Periods automatically transition from active to locked at end date
 4. New periods are automatically created when previous period locks
-5. Periods are scoped to administrative terms
-6. When a term ends, all its reporting periods lock automatically
 
 ### Role-Based Access Control
 1. Activity types define which roles can submit them
@@ -315,7 +300,7 @@ The application runs automated background jobs:
 
 **Daily at Midnight:**
 - Transition expired reporting periods (active → locked)
-- Create new reporting periods for entities with active terms
+- Create new reporting periods for entities
 - Uses system user ID: `00000000-0000-0000-0000-000000000000`
 
 ## Known Issues and Technical Debt

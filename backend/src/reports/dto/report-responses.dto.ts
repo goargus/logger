@@ -176,3 +176,52 @@ export interface ExpensesResponse {
   byEntity: ExpenseByEntity[];
   byUser: ExpenseByUser[];
 }
+
+export interface TypeBreakdownChange {
+  count: Change;
+  expenses: Change;
+}
+
+export interface TypeBreakdownWithComparison {
+  typeId: string;
+  name: string;
+  count: number;
+  expenses: number;
+  previous?: {
+    count: number;
+    expenses: number;
+  };
+  change?: TypeBreakdownChange;
+  growthDirection: string;
+}
+
+export interface BreakdownsComparisonPeriodInfo {
+  periodLabel: string;
+  dateFrom: string;
+  dateTo: string;
+}
+
+export interface BreakdownsComparisonTotals {
+  current: {
+    count: number;
+    expenses: number;
+  };
+  previous?: {
+    count: number;
+    expenses: number;
+  };
+  change?: {
+    count: Change;
+    expenses: Change;
+  };
+}
+
+export interface BreakdownsComparisonResponse {
+  current: BreakdownsComparisonPeriodInfo & {
+    byType: TypeBreakdownWithComparison[];
+    byEntity: EntityBreakdown[];
+    byUser: UserBreakdown[];
+  };
+  previous?: BreakdownsComparisonPeriodInfo;
+  totals: BreakdownsComparisonTotals;
+}

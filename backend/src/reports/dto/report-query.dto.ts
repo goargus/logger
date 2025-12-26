@@ -4,11 +4,13 @@ import {
   IsDateString,
   IsInt,
   Min,
-  Validate,
-  ValidateIf,
+  Max,
+  IsEnum,
+  IsBoolean,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { ReportPeriodType } from '../enums/report-period-type.enum';
 
 export class ReportQueryDto {
   @ApiPropertyOptional({
@@ -47,6 +49,71 @@ export class ReportQueryDto {
   @IsOptional()
   @IsUUID()
   userId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Period type for comparison',
+    enum: ReportPeriodType,
+  })
+  @IsOptional()
+  @IsEnum(ReportPeriodType)
+  periodType?: ReportPeriodType;
+
+  @ApiPropertyOptional({
+    description: 'Year for period selection',
+    minimum: 2000,
+    maximum: 2100,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(2000)
+  @Max(2100)
+  year?: number;
+
+  @ApiPropertyOptional({
+    description: 'Month for monthly period (1-12)',
+    minimum: 1,
+    maximum: 12,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(12)
+  month?: number;
+
+  @ApiPropertyOptional({
+    description: 'Quarter for quarterly period (1-4)',
+    minimum: 1,
+    maximum: 4,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(4)
+  quarter?: number;
+
+  @ApiPropertyOptional({
+    description: 'Half for biannual period (1-2)',
+    minimum: 1,
+    maximum: 2,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(2)
+  half?: number;
+
+  @ApiPropertyOptional({
+    description: 'Include comparison with previous period',
+    default: false,
+  })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  includeComparison?: boolean;
 }
 
 export class RankingsQueryDto extends ReportQueryDto {
