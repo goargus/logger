@@ -152,16 +152,44 @@ export class ActivitiesService {
     return this.repo.save(entity);
   }
 
-  async findMine(userId: string, page = 1, limit = 20): Promise<[Activity[], number]> {
+  async findMine(
+    userId: string,
+    page = 1,
+    limit = 20,
+    filters?: {
+      startDate?: string;
+      endDate?: string;
+      activityTypeId?: string;
+      hasExpense?: boolean;
+    },
+  ): Promise<[Activity[], number]> {
     const take = Math.min(Math.max(limit, 1), 100);
     const skip = Math.max(page - 1, 0) * take;
 
-    return this.repo.findAndCount({
-      where: { userId, status: ActivityStatus.ACTIVE } as FindOptionsWhere<Activity>,
-      order: { activityDate: 'DESC', createdAt: 'DESC' },
-      skip,
-      take,
-    });
+    const qb = this.repo
+      .createQueryBuilder('activity')
+      .where('activity.userId = :userId', { userId })
+      .andWhere('activity.status = :status', { status: ActivityStatus.ACTIVE });
+
+    if (filters?.startDate) {
+      qb.andWhere('activity.activityDate >= :startDate', { startDate: filters.startDate });
+    }
+    if (filters?.endDate) {
+      qb.andWhere('activity.activityDate <= :endDate', { endDate: filters.endDate });
+    }
+    if (filters?.activityTypeId) {
+      qb.andWhere('activity.activityTypeId = :activityTypeId', {
+        activityTypeId: filters.activityTypeId,
+      });
+    }
+    if (filters?.hasExpense !== undefined) {
+      qb.andWhere('activity.hasExpense = :hasExpense', { hasExpense: filters.hasExpense });
+    }
+
+    qb.orderBy('activity.activityDate', 'DESC').addOrderBy('activity.createdAt', 'DESC');
+    qb.skip(skip).take(take);
+
+    return qb.getManyAndCount();
   }
 
   async findOneMine(id: string, userId: string): Promise<Activity> {
