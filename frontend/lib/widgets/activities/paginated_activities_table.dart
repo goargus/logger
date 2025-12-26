@@ -8,6 +8,8 @@ class PaginatedActivitiesTable extends StatelessWidget {
   final int total;
   final Function(int) onPageChange;
   final Function(Activity) onRowTap;
+  final Function(Activity)? onEdit;
+  final Function(Activity)? onDelete;
 
   const PaginatedActivitiesTable({
     super.key,
@@ -17,7 +19,11 @@ class PaginatedActivitiesTable extends StatelessWidget {
     required this.total,
     required this.onPageChange,
     required this.onRowTap,
+    this.onEdit,
+    this.onDelete,
   });
+
+  bool get _showActions => onEdit != null || onDelete != null;
 
   @override
   Widget build(BuildContext context) {
@@ -84,37 +90,44 @@ class PaginatedActivitiesTable extends StatelessWidget {
                         headingRowColor: WidgetStateProperty.all(
                           Colors.grey.shade50,
                         ),
-                        columns: const [
-                          DataColumn(
+                        columns: [
+                          const DataColumn(
                             label: Text(
                               'Fecha',
                               style: TextStyle(fontWeight: FontWeight.w600),
                             ),
                           ),
-                          DataColumn(
+                          const DataColumn(
                             label: Text(
                               'Tipo',
                               style: TextStyle(fontWeight: FontWeight.w600),
                             ),
                           ),
-                          DataColumn(
+                          const DataColumn(
                             label: Text(
                               'Descripcion',
                               style: TextStyle(fontWeight: FontWeight.w600),
                             ),
                           ),
-                          DataColumn(
+                          const DataColumn(
                             label: Text(
                               'Gasto',
                               style: TextStyle(fontWeight: FontWeight.w600),
                             ),
                           ),
-                          DataColumn(
+                          const DataColumn(
                             label: Text(
                               'Estado',
                               style: TextStyle(fontWeight: FontWeight.w600),
                             ),
                           ),
+                          if (_showActions)
+                            const DataColumn(
+                              label: Text(
+                                'Acciones',
+                                style: TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                            ),
                         ],
                         rows: items.map((activity) {
                           return DataRow(
@@ -155,6 +168,10 @@ class PaginatedActivitiesTable extends StatelessWidget {
                                 ),
                               ),
                               DataCell(_buildStatusBadge(activity)),
+                              if (_showActions)
+                                DataCell(
+                                  _buildActionButtons(context, activity),
+                                ),
                             ],
                           );
                         }).toList(),
@@ -228,6 +245,41 @@ class PaginatedActivitiesTable extends StatelessWidget {
       'Dic'
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  Widget _buildActionButtons(BuildContext context, Activity activity) {
+    final theme = Theme.of(context);
+    final isLocked = activity.locked;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (onEdit != null)
+          IconButton(
+            icon: Icon(
+              Icons.edit_outlined,
+              size: 18,
+              color: isLocked ? Colors.grey.shade400 : theme.primaryColor,
+            ),
+            onPressed: isLocked ? null : () => onEdit!(activity),
+            tooltip: isLocked ? 'Bloqueado' : 'Editar',
+            padding: const EdgeInsets.all(4),
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          ),
+        if (onDelete != null)
+          IconButton(
+            icon: Icon(
+              Icons.delete_outlined,
+              size: 18,
+              color: isLocked ? Colors.grey.shade400 : theme.colorScheme.error,
+            ),
+            onPressed: isLocked ? null : () => onDelete!(activity),
+            tooltip: isLocked ? 'Bloqueado' : 'Eliminar',
+            padding: const EdgeInsets.all(4),
+            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+          ),
+      ],
+    );
   }
 
   Widget _buildStatusBadge(Activity activity) {

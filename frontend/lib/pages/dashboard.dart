@@ -15,8 +15,10 @@ import '../widgets/pills/month_header_pill.dart';
 import '../widgets/lists/activities_section.dart';
 import '../widgets/stats/stats_section.dart';
 import '../widgets/buttons/primary_action_button.dart';
-import '../widgets/dialogs/create_activity_dialog.dart';
+import '../widgets/dialogs/activity_form_dialog.dart';
+import '../widgets/dialogs/delete_activity_dialog.dart';
 
+import '../models/activity.dart';
 import '../providers/auth.dart';
 import '../providers/activities.dart';
 import '../providers/expenses.dart';
@@ -47,7 +49,7 @@ class _DashboardContentState extends ConsumerState<DashboardContent> {
       final created = await showDialog<Map<String, dynamic>?>(
         context: context,
         barrierDismissible: false,
-        builder: (_) => CreateActivityDialog(
+        builder: (_) => ActivityFormDialog(
           baseUrl: ApiConfig.baseUrl,
           getAccessToken: () async {
             return await AuthUtils.getAccessTokenEnsured(ref) ?? '';
@@ -84,6 +86,87 @@ class _DashboardContentState extends ConsumerState<DashboardContent> {
       }
     } catch (e) {
       debugPrint('Error en _openCreateDialog: $e');
+      if (mounted) {
+        Snackbars.showError(context, 'Error: $e');
+      }
+    }
+  }
+
+  Future<void> _openEditDialog(Activity activity) async {
+    if (!mounted) return;
+
+    final activityData = {
+      'id': activity.id,
+      'activityTypeId': activity.activityTypeId,
+      'activityDate': activity.date.toIso8601String(),
+      'description': activity.description,
+      'hasExpense': activity.hasExpense,
+      'expenseAmount': activity.expense.toString(),
+    };
+
+    try {
+      final result = await showDialog<Map<String, dynamic>?>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => ActivityFormDialog(
+          baseUrl: ApiConfig.baseUrl,
+          existingActivity: activityData,
+          getAccessToken: () async {
+            return await AuthUtils.getAccessTokenEnsured(ref) ?? '';
+          },
+          onRequireLogin: () {
+            Navigator.of(context).pop();
+            ref.read(authNotifierProvider.notifier).login();
+          },
+        ),
+      );
+
+      if (result != null && mounted) {
+        ref.read(recentActivitiesProvider.notifier).refresh();
+        ref.read(monthlyExpensesProvider.notifier).refresh();
+        Snackbars.showSuccess(context, 'Actividad actualizada');
+      }
+    } catch (e) {
+      debugPrint('Error en _openEditDialog: $e');
+      if (mounted) {
+        Snackbars.showError(context, 'Error: $e');
+      }
+    }
+  }
+
+  Future<void> _openDeleteDialog(Activity activity) async {
+    if (!mounted) return;
+
+    final activityData = {
+      'id': activity.id,
+      'activityTypeName': activity.category,
+      'activityDate': activity.date.toIso8601String(),
+    };
+
+    try {
+      final deleted = await showDialog<bool?>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => DeleteActivityDialog(
+          activity: activityData,
+          baseUrl: ApiConfig.baseUrl,
+          getAccessToken: () async {
+            return await AuthUtils.getAccessTokenEnsured(ref) ?? '';
+          },
+          onRequireLogin: () {
+            Navigator.of(context).pop();
+            ref.read(authNotifierProvider.notifier).login();
+          },
+        ),
+      );
+
+      if (deleted == true && mounted) {
+        ref.read(recentActivitiesProvider.notifier).refresh();
+        ref.read(monthlyExpensesProvider.notifier).refresh();
+        Snackbars.showSuccess(context, 'Actividad eliminada');
+      }
+    } catch (e) {
+      debugPrint('Error en _openDeleteDialog: $e');
       if (mounted) {
         Snackbars.showError(context, 'Error: $e');
       }
@@ -161,6 +244,8 @@ class _DashboardContentState extends ConsumerState<DashboardContent> {
               onRefresh: () {
                 ref.read(recentActivitiesProvider.notifier).refresh();
               },
+              onEdit: _openEditDialog,
+              onDelete: _openDeleteDialog,
             ),
             loading: () => ActivitiesSection(
               isLoading: true,
@@ -169,6 +254,8 @@ class _DashboardContentState extends ConsumerState<DashboardContent> {
               onRefresh: () {
                 ref.read(recentActivitiesProvider.notifier).refresh();
               },
+              onEdit: _openEditDialog,
+              onDelete: _openDeleteDialog,
             ),
             error: (error, stack) => Column(
               children: [
@@ -179,6 +266,8 @@ class _DashboardContentState extends ConsumerState<DashboardContent> {
                   onRefresh: () {
                     ref.read(recentActivitiesProvider.notifier).refresh();
                   },
+                  onEdit: _openEditDialog,
+                  onDelete: _openDeleteDialog,
                 ),
                 const SizedBox(height: LayoutConstants.spacing12),
                 Container(

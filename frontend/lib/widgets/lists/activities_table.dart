@@ -3,7 +3,15 @@ import '../../models/activity.dart';
 
 class ActivitiesTable extends StatelessWidget {
   final List<Activity> items;
-  const ActivitiesTable({super.key, required this.items});
+  final Function(Activity)? onEdit;
+  final Function(Activity)? onDelete;
+
+  const ActivitiesTable({
+    super.key,
+    required this.items,
+    this.onEdit,
+    this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -116,8 +124,19 @@ class ActivitiesTable extends StatelessWidget {
                                     minWidth: 36,
                                     minHeight: 36,
                                   ),
-                                  onPressed: () {},
-                                  icon: const Icon(Icons.edit, size: 16),
+                                  onPressed: a.locked
+                                      ? null
+                                      : (onEdit != null
+                                          ? () => onEdit!(a)
+                                          : null),
+                                  tooltip: a.locked ? 'Bloqueado' : 'Editar',
+                                  icon: Icon(
+                                    Icons.edit,
+                                    size: 16,
+                                    color: a.locked
+                                        ? Colors.grey.shade400
+                                        : null,
+                                  ),
                                 ),
                                 const SizedBox(width: 4),
                                 IconButton.filledTonal(
@@ -126,9 +145,19 @@ class ActivitiesTable extends StatelessWidget {
                                     minWidth: 36,
                                     minHeight: 36,
                                   ),
-                                  onPressed: () {},
-                                  icon: const Icon(Icons.delete_outline,
-                                      size: 16),
+                                  onPressed: a.locked
+                                      ? null
+                                      : (onDelete != null
+                                          ? () => onDelete!(a)
+                                          : null),
+                                  tooltip: a.locked ? 'Bloqueado' : 'Eliminar',
+                                  icon: Icon(
+                                    Icons.delete_outline,
+                                    size: 16,
+                                    color: a.locked
+                                        ? Colors.grey.shade400
+                                        : Theme.of(context).colorScheme.error,
+                                  ),
                                 ),
                               ],
                             ),
