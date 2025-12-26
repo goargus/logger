@@ -9,6 +9,8 @@ class ActivitiesSection extends StatelessWidget {
   final bool isAuthenticated;
   final List<Activity> activities;
   final VoidCallback onRefresh;
+  final Function(Activity)? onEdit;
+  final Function(Activity)? onDelete;
 
   const ActivitiesSection({
     super.key,
@@ -16,6 +18,8 @@ class ActivitiesSection extends StatelessWidget {
     required this.isAuthenticated,
     required this.activities,
     required this.onRefresh,
+    this.onEdit,
+    this.onDelete,
   });
 
   @override
@@ -55,6 +59,10 @@ class ActivitiesSection extends StatelessWidget {
       );
     }
 
-    return ActivitiesTable(items: activities);
+    return ActivitiesTable(
+      items: activities,
+      onEdit: onEdit,
+      onDelete: onDelete,
+    );
   }
 }

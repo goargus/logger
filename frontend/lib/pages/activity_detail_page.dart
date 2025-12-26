@@ -3,7 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../models/activity.dart';
 import '../providers/activities.dart';
+import '../providers/auth.dart';
 import '../router.dart';
+import '../config/api_config.dart';
+import '../auth/auth_utils.dart';
+import '../core/snackbars.dart';
+import '../widgets/dialogs/activity_form_dialog.dart';
+import '../widgets/dialogs/delete_activity_dialog.dart';
 
 /// Content-only widget for activity detail - shell is handled by AppShell via router
 class ActivityDetailContent extends ConsumerStatefulWidget {
@@ -49,6 +55,71 @@ class _ActivityDetailContentState extends ConsumerState<ActivityDetailContent> {
           _isLoading = false;
         });
       }
+    }
+  }
+
+  Future<void> _showEditDialog() async {
+    if (_activity == null) return;
+
+    final activityData = {
+      'id': _activity!.id,
+      'activityTypeId': _activity!.activityTypeId,
+      'activityDate': _activity!.date.toIso8601String(),
+      'description': _activity!.description,
+      'hasExpense': _activity!.hasExpense,
+      'expenseAmount': _activity!.expense.toString(),
+    };
+
+    final result = await showDialog<Map<String, dynamic>?>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ActivityFormDialog(
+        baseUrl: ApiConfig.baseUrl,
+        existingActivity: activityData,
+        getAccessToken: () async {
+          return await AuthUtils.getAccessTokenEnsured(ref) ?? '';
+        },
+        onRequireLogin: () {
+          Navigator.of(context).pop();
+          ref.read(authNotifierProvider.notifier).login();
+        },
+      ),
+    );
+
+    if (result != null && mounted) {
+      Snackbars.showSuccess(context, 'Actividad actualizada');
+      _loadActivity();
+    }
+  }
+
+  Future<void> _showDeleteDialog() async {
+    if (_activity == null) return;
+
+    final activityData = {
+      'id': _activity!.id,
+      'activityTypeName': _activity!.category,
+      'activityDate': _activity!.date.toIso8601String(),
+    };
+
+    final deleted = await showDialog<bool?>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => DeleteActivityDialog(
+        activity: activityData,
+        baseUrl: ApiConfig.baseUrl,
+        getAccessToken: () async {
+          return await AuthUtils.getAccessTokenEnsured(ref) ?? '';
+        },
+        onRequireLogin: () {
+          Navigator.of(context).pop();
+          ref.read(authNotifierProvider.notifier).login();
+        },
+      ),
+    );
+
+    if (deleted == true && mounted) {
+      Snackbars.showSuccess(context, 'Actividad eliminada');
+      context.go(AppRoutes.activities);
     }
   }
 
@@ -140,7 +211,7 @@ class _ActivityDetailContentState extends ConsumerState<ActivityDetailContent> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Status badge at the top
+            // Status badge and actions at the top
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -150,7 +221,30 @@ class _ActivityDetailContentState extends ConsumerState<ActivityDetailContent> {
                         fontWeight: FontWeight.w600,
                       ),
                 ),
-                _buildStatusBadge(activity),
+                Row(
+                  children: [
+                    _buildStatusBadge(activity),
+                    if (!activity.locked) ...[
+                      const SizedBox(width: 12),
+                      IconButton(
+                        icon: const Icon(Icons.edit_outlined),
+                        onPressed: _showEditDialog,
+                        tooltip: 'Editar',
+                        style: IconButton.styleFrom(
+                          foregroundColor: Theme.of(context).primaryColor,
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outlined),
+                        onPressed: _showDeleteDialog,
+                        tooltip: 'Eliminar',
+                        style: IconButton.styleFrom(
+                          foregroundColor: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ],
             ),
             const Divider(height: 32),

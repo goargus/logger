@@ -93,4 +93,35 @@ class ActivityService {
     final data = await apiClient.get('activities/$id');
     return data as Map<String, dynamic>;
   }
+
+  Future<Map<String, dynamic>> updateActivity(
+    String id, {
+    String? activityTypeId,
+    DateTime? activityDate,
+    String? description,
+    bool? hasExpense,
+    String? expenseAmount,
+  }) async {
+    final payload = <String, dynamic>{};
+
+    if (activityTypeId != null) payload['activityTypeId'] = activityTypeId;
+    if (activityDate != null) {
+      payload['activityDate'] = activityDate.toUtc().toIso8601String();
+    }
+    if (description != null) payload['description'] = description.trim();
+    if (hasExpense != null) payload['hasExpense'] = hasExpense;
+    if (hasExpense == true && expenseAmount != null) {
+      payload['expenseAmount'] = expenseAmount.trim();
+    }
+    if (hasExpense == false) {
+      payload['expenseAmount'] = null;
+    }
+
+    final result = await apiClient.patch('activities/$id', body: payload);
+    return result as Map<String, dynamic>;
+  }
+
+  Future<void> deleteActivity(String id) async {
+    await apiClient.delete('activities/$id?confirm=true');
+  }
 }

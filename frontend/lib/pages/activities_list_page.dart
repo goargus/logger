@@ -1,19 +1,93 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../models/activity.dart';
 import '../widgets/activities/activity_filters.dart';
 import '../widgets/activities/paginated_activities_table.dart';
 import '../widgets/common/pdf_export_button.dart';
+import '../widgets/dialogs/activity_form_dialog.dart';
+import '../widgets/dialogs/delete_activity_dialog.dart';
 import '../providers/activities_list_provider.dart';
+import '../providers/auth.dart';
 import '../core/layout_constants.dart';
+import '../core/snackbars.dart';
+import '../config/api_config.dart';
+import '../auth/auth_utils.dart';
 import '../router.dart';
 
 /// Content-only widget for activities list - shell is handled by AppShell via router
-class ActivitiesListContent extends ConsumerWidget {
+class ActivitiesListContent extends ConsumerStatefulWidget {
   const ActivitiesListContent({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ActivitiesListContent> createState() =>
+      _ActivitiesListContentState();
+}
+
+class _ActivitiesListContentState extends ConsumerState<ActivitiesListContent> {
+  Future<void> _showEditDialog(Activity activity) async {
+    final activityData = {
+      'id': activity.id,
+      'activityTypeId': activity.activityTypeId,
+      'activityDate': activity.date.toIso8601String(),
+      'description': activity.description,
+      'hasExpense': activity.hasExpense,
+      'expenseAmount': activity.expense.toString(),
+    };
+
+    final result = await showDialog<Map<String, dynamic>?>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ActivityFormDialog(
+        baseUrl: ApiConfig.baseUrl,
+        existingActivity: activityData,
+        getAccessToken: () async {
+          return await AuthUtils.getAccessTokenEnsured(ref) ?? '';
+        },
+        onRequireLogin: () {
+          Navigator.of(context).pop();
+          ref.read(authNotifierProvider.notifier).login();
+        },
+      ),
+    );
+
+    if (result != null && mounted) {
+      Snackbars.showSuccess(context, 'Actividad actualizada');
+      ref.read(activitiesListProvider.notifier).refresh();
+    }
+  }
+
+  Future<void> _showDeleteDialog(Activity activity) async {
+    final activityData = {
+      'id': activity.id,
+      'activityTypeName': activity.category,
+      'activityDate': activity.date.toIso8601String(),
+    };
+
+    final deleted = await showDialog<bool?>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => DeleteActivityDialog(
+        activity: activityData,
+        baseUrl: ApiConfig.baseUrl,
+        getAccessToken: () async {
+          return await AuthUtils.getAccessTokenEnsured(ref) ?? '';
+        },
+        onRequireLogin: () {
+          Navigator.of(context).pop();
+          ref.read(authNotifierProvider.notifier).login();
+        },
+      ),
+    );
+
+    if (deleted == true && mounted) {
+      Snackbars.showSuccess(context, 'Actividad eliminada');
+      ref.read(activitiesListProvider.notifier).refresh();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final activitiesAsync = ref.watch(activitiesListProvider);
 
     return SingleChildScrollView(
@@ -64,6 +138,8 @@ class ActivitiesListContent extends ConsumerWidget {
                   context.go(AppRoutes.activityDetailPath(activity.id!));
                 }
               },
+              onEdit: _showEditDialog,
+              onDelete: _showDeleteDialog,
             ),
             loading: () => const Center(
               child: Padding(
