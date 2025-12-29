@@ -309,3 +309,25 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 }
+
+/// Provider to check if current user can view hierarchy reports
+final canViewReportsProvider = Provider<bool>((ref) {
+  final authState = ref.watch(authNotifierProvider);
+  final primaryRole = authState.user?['primary_role'] as Map<String, dynamic>?;
+  final roleName = primaryRole?['name'] as String?;
+
+  // Leadership roles that can view hierarchy reports
+  const leadershipRoles = [
+    'admin',
+    'System Admin',
+    'president',
+    'Union President',
+    'Association President',
+    'Field Director',
+    'Union Secretary',
+    'Association Secretary',
+    'Field Secretary',
+  ];
+
+  return roleName != null && leadershipRoles.contains(roleName);
+});
