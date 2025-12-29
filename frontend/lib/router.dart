@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,7 +5,8 @@ import 'widgets/layouts/app_shell.dart';
 import 'pages/dashboard.dart';
 import 'pages/activities_list_page.dart';
 import 'pages/activity_detail_page.dart';
-import 'pages/reports_view.dart';
+import 'pages/reports_page.dart';
+import 'pages/user_activities_page.dart';
 
 /// Route path constants
 class AppRoutes {
@@ -14,9 +14,13 @@ class AppRoutes {
   static const activities = '/activities';
   static const activityDetail = '/activities/:id';
   static const reports = '/reports';
+  static const userActivities = '/reports/user/:userId';
 
   /// Generate activity detail path with ID
   static String activityDetailPath(String id) => '/activities/$id';
+
+  /// Generate user activities path with user ID
+  static String userActivitiesPath(String userId) => '/reports/user/$userId';
 }
 
 /// GoRouter configuration provider
@@ -56,8 +60,17 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: AppRoutes.reports,
             pageBuilder: (context, state) => const NoTransitionPage(
-              child: ReportsViewContent(),
+              child: ReportsPage(),
             ),
+          ),
+          GoRoute(
+            path: AppRoutes.userActivities,
+            pageBuilder: (context, state) {
+              final userId = state.pathParameters['userId']!;
+              return NoTransitionPage(
+                child: UserActivitiesPage(userId: userId),
+              );
+            },
           ),
         ],
       ),

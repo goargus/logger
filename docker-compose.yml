@@ -62,6 +62,7 @@ services:
       - ./backend/src:/app/src
       - ./backend/test:/app/test
       - ./backend/config:/app/config
+      - ./backend/scripts:/app/scripts
       - ./backend/package.json:/app/package.json
       - ./backend/tsconfig.json:/app/tsconfig.json
       - ./backend/package-lock.json:/app/package-lock.json
@@ -100,6 +101,8 @@ services:
       dockerfile: Dockerfile
     container_name: frontend
     restart: always
+    stdin_open: true  # Allows attaching for hot reload (press 'r')
+    tty: true         # Allocates TTY for interactive commands
     ports:
       - "8080:8080"
     environment:
@@ -113,6 +116,16 @@ services:
       - ./frontend/web:/app/web
       - ./frontend/assets:/app/assets
       - ./frontend/pubspec.yaml:/app/pubspec.yaml
+    develop:
+      watch:
+        - action: sync
+          path: ./frontend/lib
+          target: /app/lib
+        - action: sync
+          path: ./frontend/web
+          target: /app/web
+        - action: rebuild
+          path: ./frontend/pubspec.yaml
 
 volumes:
   postgres_data:

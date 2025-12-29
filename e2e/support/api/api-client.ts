@@ -75,4 +75,9 @@ export const ENDPOINTS = {
 
   // Entities
   ENTITIES: '/entities',
+
+  // Entity Hierarchy (for hierarchical reports)
+  // Usage: `${ENDPOINTS.ENTITIES}/${entityId}/tree`
+  // Usage: `${ENDPOINTS.ENTITIES}/${entityId}/descendants`
+  // Usage: `${ENDPOINTS.ENTITIES}/${entityId}/children`
 } as const;
