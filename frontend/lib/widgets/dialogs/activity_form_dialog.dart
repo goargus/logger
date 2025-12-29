@@ -356,7 +356,7 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
                         }
 
                         return DropdownButtonFormField<ActivityType>(
-                          value: _selectedType,
+                          initialValue: _selectedType,
                           isExpanded: true,
                           items: types
                               .map((t) => DropdownMenuItem<ActivityType>(

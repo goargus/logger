@@ -1,6 +1,9 @@
-import 'dart:html' as html;
 import 'dart:convert';
+import 'dart:js_interop';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:web/web.dart' as web;
 
 /// Button widget for exporting reports
 class ExportButton extends StatefulWidget {
@@ -91,15 +94,19 @@ class _ExportButtonState extends State<ExportButton> {
   }
 
   void _downloadFile(ExportData data) {
-    final blob = html.Blob([data.bytes], data.mimeType);
-    final url = html.Url.createObjectUrlFromBlob(blob);
-    final anchor = html.AnchorElement(href: url)
-      ..setAttribute('download', data.filename)
+    if (!kIsWeb) return;
+    
+    final uint8List = Uint8List.fromList(data.bytes);
+    final blob = web.Blob([uint8List.toJS].toJS, web.BlobPropertyBag(type: data.mimeType));
+    final url = web.URL.createObjectURL(blob);
+    final anchor = web.document.createElement('a') as web.HTMLAnchorElement
+      ..href = url
+      ..download = data.filename
       ..style.display = 'none';
-    html.document.body!.children.add(anchor);
+    web.document.body?.appendChild(anchor);
     anchor.click();
-    html.document.body!.children.remove(anchor);
-    html.Url.revokeObjectUrl(url);
+    web.document.body?.removeChild(anchor);
+    web.URL.revokeObjectURL(url);
   }
 
   @override

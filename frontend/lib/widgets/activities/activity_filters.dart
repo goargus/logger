@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/activities_filter.dart';
@@ -254,7 +253,7 @@ class _ActivityFiltersState extends ConsumerState<ActivityFilters> {
                         )
                       : DropdownButtonFormField<String?>(
                           key: ValueKey('type_$_selectedActivityTypeId'),
-                          value: _selectedActivityTypeId,
+                          initialValue: _selectedActivityTypeId,
                           decoration: const InputDecoration(
                             labelText: 'Tipo de Actividad',
                             border: OutlineInputBorder(),
@@ -282,7 +281,7 @@ class _ActivityFiltersState extends ConsumerState<ActivityFilters> {
                 Expanded(
                   child: DropdownButtonFormField<bool?>(
                     key: ValueKey('expense_$_hasExpenseFilter'),
-                    value: _hasExpenseFilter,
+                    initialValue: _hasExpenseFilter,
                     decoration: const InputDecoration(
                       labelText: 'Gastos',
                       border: OutlineInputBorder(),
