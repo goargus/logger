@@ -151,8 +151,7 @@ class UsersReportSummary {
     );
   }
 
-  double get complianceRate =>
-      totalUsers > 0 ? usersSubmitted / totalUsers : 0;
+  double get complianceRate => totalUsers > 0 ? usersSubmitted / totalUsers : 0;
 }
 
 /// Full users report response
@@ -174,8 +173,8 @@ class UsersReportResponse {
 
     return UsersReportResponse(
       users: usersList,
-      pagination:
-          UsersReportPagination.fromApi(json['pagination'] as Map<String, dynamic>),
+      pagination: UsersReportPagination.fromApi(
+          json['pagination'] as Map<String, dynamic>),
       summary:
           UsersReportSummary.fromApi(json['summary'] as Map<String, dynamic>),
     );

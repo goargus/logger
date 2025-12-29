@@ -155,7 +155,8 @@ class HierarchyReportsState {
       isLoadingUsers: isLoadingUsers ?? this.isLoadingUsers,
       usersPage: usersPage ?? this.usersPage,
       usersSearch: usersSearch ?? this.usersSearch,
-      usersComplianceFilter: usersComplianceFilter ?? this.usersComplianceFilter,
+      usersComplianceFilter:
+          usersComplianceFilter ?? this.usersComplianceFilter,
       usersSortBy: usersSortBy ?? this.usersSortBy,
       usersSortOrder: usersSortOrder ?? this.usersSortOrder,
       error: error,
@@ -488,7 +489,8 @@ final entityServiceProvider = Provider<EntityService>((ref) {
 
 /// Provider for hierarchy reports state
 final hierarchyReportsProvider =
-    StateNotifierProvider<HierarchyReportsNotifier, HierarchyReportsState>((ref) {
+    StateNotifierProvider<HierarchyReportsNotifier, HierarchyReportsState>(
+        (ref) {
   final entityService = ref.watch(entityServiceProvider);
   final reportsService = ref.watch(reportsServiceProvider);
 

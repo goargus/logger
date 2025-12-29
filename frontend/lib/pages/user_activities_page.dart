@@ -291,7 +291,8 @@ class _UserActivitiesPageState extends ConsumerState<UserActivitiesPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inbox_outlined, size: 48, color: theme.colorScheme.onSurfaceVariant),
+            Icon(Icons.inbox_outlined,
+                size: 48, color: theme.colorScheme.onSurfaceVariant),
             const SizedBox(height: 16),
             Text(
               'No hay actividades para este período',
@@ -364,8 +365,7 @@ class _UserActivitiesPageState extends ConsumerState<UserActivitiesPage> {
           _buildActivitiesList(theme),
 
           // Pagination
-          if (_response!.pagination.totalPages > 1)
-            _buildPagination(theme),
+          if (_response!.pagination.totalPages > 1) _buildPagination(theme),
         ],
       ),
     );
@@ -571,7 +571,8 @@ class _UserActivitiesPageState extends ConsumerState<UserActivitiesPage> {
           ),
         ],
       ),
-      isThreeLine: activity.description != null && activity.description!.isNotEmpty,
+      isThreeLine:
+          activity.description != null && activity.description!.isNotEmpty,
       onTap: () => _showActivityDetail(activity),
     );
   }

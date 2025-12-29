@@ -95,9 +95,10 @@ class _ExportButtonState extends State<ExportButton> {
 
   void _downloadFile(ExportData data) {
     if (!kIsWeb) return;
-    
+
     final uint8List = Uint8List.fromList(data.bytes);
-    final blob = web.Blob([uint8List.toJS].toJS, web.BlobPropertyBag(type: data.mimeType));
+    final blob = web.Blob(
+        [uint8List.toJS].toJS, web.BlobPropertyBag(type: data.mimeType));
     final url = web.URL.createObjectURL(blob);
     final anchor = web.document.createElement('a') as web.HTMLAnchorElement
       ..href = url
@@ -195,7 +196,8 @@ class ExportData {
     required this.mimeType,
   });
 
-  factory ExportData.fromString(String content, String filename, String mimeType) {
+  factory ExportData.fromString(
+      String content, String filename, String mimeType) {
     return ExportData(
       bytes: utf8.encode(content),
       filename: filename,

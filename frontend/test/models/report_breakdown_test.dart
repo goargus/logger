@@ -57,9 +57,12 @@ void main() {
     group('sorting', () {
       test('should sort by count descending', () {
         final breakdowns = [
-          ReportBreakdown.fromApi({'name': 'Low', 'count': 2, 'expenses': 100.0}),
-          ReportBreakdown.fromApi({'name': 'High', 'count': 10, 'expenses': 50.0}),
-          ReportBreakdown.fromApi({'name': 'Medium', 'count': 5, 'expenses': 200.0}),
+          ReportBreakdown.fromApi(
+              {'name': 'Low', 'count': 2, 'expenses': 100.0}),
+          ReportBreakdown.fromApi(
+              {'name': 'High', 'count': 10, 'expenses': 50.0}),
+          ReportBreakdown.fromApi(
+              {'name': 'Medium', 'count': 5, 'expenses': 200.0}),
         ];
 
         breakdowns.sort((a, b) => b.count.compareTo(a.count));
@@ -71,9 +74,12 @@ void main() {
 
       test('should sort by expenses descending', () {
         final breakdowns = [
-          ReportBreakdown.fromApi({'name': 'Low', 'count': 10, 'expenses': 50.0}),
-          ReportBreakdown.fromApi({'name': 'High', 'count': 2, 'expenses': 500.0}),
-          ReportBreakdown.fromApi({'name': 'Medium', 'count': 5, 'expenses': 200.0}),
+          ReportBreakdown.fromApi(
+              {'name': 'Low', 'count': 10, 'expenses': 50.0}),
+          ReportBreakdown.fromApi(
+              {'name': 'High', 'count': 2, 'expenses': 500.0}),
+          ReportBreakdown.fromApi(
+              {'name': 'Medium', 'count': 5, 'expenses': 200.0}),
         ];
 
         breakdowns.sort((a, b) => b.totalExpenses.compareTo(a.totalExpenses));

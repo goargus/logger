@@ -28,7 +28,8 @@ class HierarchyEntityBreakdown {
     return HierarchyEntityBreakdown(
       entityId: data['entityId'] as String,
       entityName: data['entityName'] as String,
-      entityType: EntityType.fromString(data['entityType'] as String? ?? 'FIELD'),
+      entityType:
+          EntityType.fromString(data['entityType'] as String? ?? 'FIELD'),
       parentId: data['parentId'] as String?,
       activities: (data['activities'] as num?)?.toInt() ?? 0,
       expenses: (data['expenses'] as num?)?.toDouble() ?? 0.0,
@@ -100,7 +101,8 @@ class HierarchySummaryResponse {
       usersSubmitted: (totals['usersSubmitted'] as num?)?.toInt() ?? 0,
       complianceRate: (totals['complianceRate'] as num?)?.toDouble() ?? 0.0,
       hierarchyBreakdown: breakdownData
-          .map((item) => HierarchyEntityBreakdown.fromApi(item as Map<String, dynamic>))
+          .map((item) =>
+              HierarchyEntityBreakdown.fromApi(item as Map<String, dynamic>))
           .toList(),
     );
   }

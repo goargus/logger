@@ -139,8 +139,10 @@ class UserActivitiesResponse {
     return UserActivitiesResponse(
       user: UserInfo.fromApi(json['user'] as Map<String, dynamic>),
       activities: activitiesList,
-      totals: UserActivitiesTotals.fromApi(json['totals'] as Map<String, dynamic>),
-      pagination: UserActivitiesPagination.fromApi(json['pagination'] as Map<String, dynamic>),
+      totals:
+          UserActivitiesTotals.fromApi(json['totals'] as Map<String, dynamic>),
+      pagination: UserActivitiesPagination.fromApi(
+          json['pagination'] as Map<String, dynamic>),
     );
   }
 
@@ -156,7 +158,8 @@ class UserActivitiesResponse {
       ),
       activities: [],
       totals: UserActivitiesTotals(count: 0, expenses: 0),
-      pagination: UserActivitiesPagination(page: 1, limit: 20, total: 0, totalPages: 0),
+      pagination:
+          UserActivitiesPagination(page: 1, limit: 20, total: 0, totalPages: 0),
     );
   }
 

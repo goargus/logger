@@ -122,7 +122,8 @@ class EntityTreeBreadcrumb extends StatelessWidget {
   final String selectedEntityId;
   final ValueChanged<String>? onEntityTap;
 
-  List<EntityInfo> _buildPathToEntity(EntityTreeNode node, String targetId, List<EntityInfo> currentPath) {
+  List<EntityInfo> _buildPathToEntity(
+      EntityTreeNode node, String targetId, List<EntityInfo> currentPath) {
     final nodeInfo = EntityInfo(
       id: node.id,
       name: node.name,
@@ -153,9 +154,8 @@ class EntityTreeBreadcrumb extends StatelessWidget {
 
     return EntityBreadcrumb(
       path: path,
-      onEntityTap: onEntityTap != null
-          ? (entity) => onEntityTap!(entity.id)
-          : null,
+      onEntityTap:
+          onEntityTap != null ? (entity) => onEntityTap!(entity.id) : null,
     );
   }
 }

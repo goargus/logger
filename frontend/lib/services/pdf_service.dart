@@ -29,7 +29,8 @@ class PdfService {
           pw.SizedBox(height: 20),
 
           // Summary stats
-          _buildSummarySection(totalActivities, activitiesWithExpense, totalExpenses),
+          _buildSummarySection(
+              totalActivities, activitiesWithExpense, totalExpenses),
           pw.SizedBox(height: 30),
 
           // Activities table

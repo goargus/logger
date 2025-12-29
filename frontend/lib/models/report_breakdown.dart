@@ -107,9 +107,8 @@ class ReportBreakdownWithComparison {
       totalExpenses: (data['expenses'] as num?)?.toDouble() ?? 0.0,
       previousCount: (previous?['count'] as num?)?.toInt(),
       previousExpenses: (previous?['expenses'] as num?)?.toDouble(),
-      change: changeData != null
-          ? ReportBreakdownChange.fromApi(changeData)
-          : null,
+      change:
+          changeData != null ? ReportBreakdownChange.fromApi(changeData) : null,
       growthDirection: GrowthDirection.values.firstWhere(
         (e) => e.name == growthStr,
         orElse: () => GrowthDirection.positive,
@@ -185,9 +184,8 @@ class BreakdownsComparisonTotals {
       currentExpenses: (current['expenses'] as num?)?.toDouble() ?? 0.0,
       previousCount: (previous?['count'] as num?)?.toInt(),
       previousExpenses: (previous?['expenses'] as num?)?.toDouble(),
-      change: changeData != null
-          ? ReportBreakdownChange.fromApi(changeData)
-          : null,
+      change:
+          changeData != null ? ReportBreakdownChange.fromApi(changeData) : null,
     );
   }
 }

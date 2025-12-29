@@ -209,7 +209,8 @@ class _ActivityFiltersState extends ConsumerState<ActivityFilters> {
               }).toList(),
             ),
 
-            if (_selectedPreset == TimePreset.custom && _customDateRange != null)
+            if (_selectedPreset == TimePreset.custom &&
+                _customDateRange != null)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Text(
@@ -233,15 +234,16 @@ class _ActivityFiltersState extends ConsumerState<ActivityFilters> {
                             labelText: 'Tipo de Actividad',
                             border: OutlineInputBorder(),
                             isDense: true,
-                            contentPadding:
-                                EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 12),
                           ),
                           child: Row(
                             children: [
                               const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
                               ),
                               const SizedBox(width: 8),
                               Text(
@@ -258,8 +260,8 @@ class _ActivityFiltersState extends ConsumerState<ActivityFilters> {
                             labelText: 'Tipo de Actividad',
                             border: OutlineInputBorder(),
                             isDense: true,
-                            contentPadding:
-                                EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 12),
                           ),
                           items: [
                             const DropdownMenuItem(
