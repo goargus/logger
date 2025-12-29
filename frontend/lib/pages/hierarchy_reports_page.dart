@@ -19,10 +19,12 @@ class HierarchyReportsContent extends ConsumerStatefulWidget {
   const HierarchyReportsContent({super.key});
 
   @override
-  ConsumerState<HierarchyReportsContent> createState() => _HierarchyReportsContentState();
+  ConsumerState<HierarchyReportsContent> createState() =>
+      _HierarchyReportsContentState();
 }
 
-class _HierarchyReportsContentState extends ConsumerState<HierarchyReportsContent> {
+class _HierarchyReportsContentState
+    extends ConsumerState<HierarchyReportsContent> {
   @override
   void initState() {
     super.initState();
@@ -33,7 +35,8 @@ class _HierarchyReportsContentState extends ConsumerState<HierarchyReportsConten
 
   Future<void> _initializeHierarchy() async {
     final authState = ref.read(authNotifierProvider);
-    final primaryEntity = authState.user?['primary_entity'] as Map<String, dynamic>?;
+    final primaryEntity =
+        authState.user?['primary_entity'] as Map<String, dynamic>?;
     final entityId = primaryEntity?['id'] as String?;
 
     if (entityId != null) {
@@ -239,10 +242,14 @@ class _HierarchyReportsContentState extends ConsumerState<HierarchyReportsConten
                 context.push(AppRoutes.userActivitiesPath(userId));
               },
               onSortChange: (sortBy, sortOrder) {
-                ref.read(hierarchyReportsProvider.notifier).sortUsers(sortBy, sortOrder);
+                ref
+                    .read(hierarchyReportsProvider.notifier)
+                    .sortUsers(sortBy, sortOrder);
               },
               onComplianceFilterChange: (filter) {
-                ref.read(hierarchyReportsProvider.notifier).filterUsersByCompliance(filter);
+                ref
+                    .read(hierarchyReportsProvider.notifier)
+                    .filterUsersByCompliance(filter);
               },
               onSearchChange: (search) {
                 ref.read(hierarchyReportsProvider.notifier).searchUsers(search);
@@ -285,7 +292,9 @@ class _HierarchyReportsContentState extends ConsumerState<HierarchyReportsConten
                   child: PeriodTypeSelector(
                     selectedType: state.periodType,
                     onTypeChanged: (type) {
-                      ref.read(hierarchyReportsProvider.notifier).setPeriodType(type);
+                      ref
+                          .read(hierarchyReportsProvider.notifier)
+                          .setPeriodType(type);
                     },
                   ),
                 ),
@@ -301,7 +310,9 @@ class _HierarchyReportsContentState extends ConsumerState<HierarchyReportsConten
                     year: state.year,
                     periodIndex: state.periodIndex,
                     onPrevious: () {
-                      ref.read(hierarchyReportsProvider.notifier).previousPeriod();
+                      ref
+                          .read(hierarchyReportsProvider.notifier)
+                          .previousPeriod();
                     },
                     onNext: () {
                       ref.read(hierarchyReportsProvider.notifier).nextPeriod();
@@ -310,7 +321,8 @@ class _HierarchyReportsContentState extends ConsumerState<HierarchyReportsConten
                 ),
                 const SizedBox(width: 16),
                 ExportButton(
-                  onExport: (format, reportType) => _handleExport(format, reportType, state),
+                  onExport: (format, reportType) =>
+                      _handleExport(format, reportType, state),
                 ),
                 const SizedBox(width: 8),
                 IconButton(
@@ -437,7 +449,6 @@ class _HierarchyReportsContentState extends ConsumerState<HierarchyReportsConten
       ),
     );
   }
-
 }
 
 class _StatCard extends StatelessWidget {

@@ -37,9 +37,9 @@ class NotSubmittedUser {
   });
 
   factory NotSubmittedUser.fromApi(Map<String, dynamic> json) {
-    final rolesList = (json['roles'] as List<dynamic>?)
-        ?.map((e) => e.toString())
-        .toList() ?? [];
+    final rolesList =
+        (json['roles'] as List<dynamic>?)?.map((e) => e.toString()).toList() ??
+            [];
 
     return NotSubmittedUser(
       userId: json['userId'] as String,
@@ -62,12 +62,14 @@ class ComplianceResponse {
 
   factory ComplianceResponse.fromApi(Map<String, dynamic> json) {
     final submittedList = (json['submitted'] as List<dynamic>?)
-        ?.map((e) => SubmittedUser.fromApi(e as Map<String, dynamic>))
-        .toList() ?? [];
+            ?.map((e) => SubmittedUser.fromApi(e as Map<String, dynamic>))
+            .toList() ??
+        [];
 
     final notSubmittedList = (json['notSubmitted'] as List<dynamic>?)
-        ?.map((e) => NotSubmittedUser.fromApi(e as Map<String, dynamic>))
-        .toList() ?? [];
+            ?.map((e) => NotSubmittedUser.fromApi(e as Map<String, dynamic>))
+            .toList() ??
+        [];
 
     return ComplianceResponse(
       submitted: submittedList,

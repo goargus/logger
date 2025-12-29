@@ -133,9 +133,8 @@ class ActivitiesTable extends StatelessWidget {
                                   icon: Icon(
                                     Icons.edit,
                                     size: 16,
-                                    color: a.locked
-                                        ? Colors.grey.shade400
-                                        : null,
+                                    color:
+                                        a.locked ? Colors.grey.shade400 : null,
                                   ),
                                 ),
                                 const SizedBox(width: 4),

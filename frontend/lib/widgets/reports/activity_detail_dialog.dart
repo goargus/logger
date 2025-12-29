@@ -100,7 +100,8 @@ class ActivityDetailDialog extends StatelessWidget {
             ],
 
             // Description
-            if (activity.description != null && activity.description!.isNotEmpty) ...[
+            if (activity.description != null &&
+                activity.description!.isNotEmpty) ...[
               const Divider(),
               const SizedBox(height: 8),
               Text(
@@ -206,8 +207,18 @@ class ActivityDetailDialog extends StatelessWidget {
     try {
       final date = DateTime.parse(dateStr);
       final months = [
-        'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-        'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'
+        'Ene',
+        'Feb',
+        'Mar',
+        'Abr',
+        'May',
+        'Jun',
+        'Jul',
+        'Ago',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dic'
       ];
       return '${date.day} ${months[date.month - 1]} ${date.year}';
     } catch (_) {

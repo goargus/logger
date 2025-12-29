@@ -82,6 +82,7 @@ describe('ReportsService - getUsersReport', () => {
             validateEntityInUserScope: jest.fn(),
             getEntityHierarchy: jest.fn(),
             getUsersInHierarchy: jest.fn(),
+            getRoleAssignmentsForUsers: jest.fn().mockResolvedValue(new Map()),
           },
         },
         {

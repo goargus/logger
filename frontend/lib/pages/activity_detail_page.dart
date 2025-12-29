@@ -356,8 +356,9 @@ class _ActivityDetailContentState extends ConsumerState<ActivityDetailContent> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Row(
-        crossAxisAlignment:
-            isDescription ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+        crossAxisAlignment: isDescription
+            ? CrossAxisAlignment.start
+            : CrossAxisAlignment.center,
         children: [
           Icon(
             icon,

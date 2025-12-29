@@ -288,7 +288,8 @@ class ReportsService {
     final contentDisposition = response.headers['content-disposition'];
     String filename = 'reporte.$format';
     if (contentDisposition != null) {
-      final match = RegExp(r'filename="([^"]+)"').firstMatch(contentDisposition);
+      final match =
+          RegExp(r'filename="([^"]+)"').firstMatch(contentDisposition);
       if (match != null) {
         filename = match.group(1) ?? filename;
       }
@@ -297,7 +298,8 @@ class ReportsService {
     return ExportResponse(
       data: response.body,
       filename: filename,
-      contentType: response.headers['content-type'] ?? 'application/octet-stream',
+      contentType:
+          response.headers['content-type'] ?? 'application/octet-stream',
     );
   }
 }

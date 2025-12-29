@@ -200,7 +200,8 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
       }
 
       if (resp.statusCode == 403) {
-        setState(() => _error = 'Esta actividad está bloqueada y no se puede modificar.');
+        setState(() =>
+            _error = 'Esta actividad está bloqueada y no se puede modificar.');
         return;
       }
 
@@ -356,7 +357,7 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
                         }
 
                         return DropdownButtonFormField<ActivityType>(
-                          value: _selectedType,
+                          initialValue: _selectedType,
                           isExpanded: true,
                           items: types
                               .map((t) => DropdownMenuItem<ActivityType>(

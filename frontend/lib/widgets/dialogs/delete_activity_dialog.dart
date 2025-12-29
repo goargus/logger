@@ -70,11 +70,11 @@ class _DeleteActivityDialogState extends State<DeleteActivityDialog> {
 
       if (isUnauthorized) {
         widget.onRequireLogin?.call();
-        setState(
-            () => _error = 'Sesión expirada. Por favor, inicia sesión nuevamente.');
+        setState(() =>
+            _error = 'Sesión expirada. Por favor, inicia sesión nuevamente.');
       } else if (isForbidden) {
-        setState(
-            () => _error = 'Esta actividad está bloqueada y no se puede eliminar.');
+        setState(() =>
+            _error = 'Esta actividad está bloqueada y no se puede eliminar.');
       } else {
         setState(() => _error = e.userMessage);
       }

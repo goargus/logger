@@ -50,7 +50,8 @@ class ActivitiesListState {
       limit: limit ?? this.limit,
       total: total ?? this.total,
       filter: filter ?? this.filter,
-      selectedPreset: clearPreset ? null : (selectedPreset ?? this.selectedPreset),
+      selectedPreset:
+          clearPreset ? null : (selectedPreset ?? this.selectedPreset),
     );
   }
 }

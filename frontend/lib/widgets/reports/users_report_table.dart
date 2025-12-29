@@ -333,9 +333,8 @@ class _UsersReportTableState extends State<UsersReportTable> {
 
     // Multiple roles - show as chips with tooltip
     return Tooltip(
-      message: activeRoles
-          .map((r) => '${r.roleName} @ ${r.entityName}')
-          .join('\n'),
+      message:
+          activeRoles.map((r) => '${r.roleName} @ ${r.entityName}').join('\n'),
       child: Wrap(
         spacing: 4,
         runSpacing: 2,
@@ -388,8 +387,9 @@ class _UsersReportTableState extends State<UsersReportTable> {
             children: [
               IconButton(
                 icon: const Icon(Icons.first_page),
-                onPressed:
-                    pagination.hasPreviousPage ? () => widget.onPageChange(1) : null,
+                onPressed: pagination.hasPreviousPage
+                    ? () => widget.onPageChange(1)
+                    : null,
                 tooltip: 'Primera pagina',
               ),
               IconButton(

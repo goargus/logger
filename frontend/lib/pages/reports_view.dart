@@ -54,11 +54,13 @@ class _ReportsViewContentState extends ConsumerState<ReportsViewContent> {
         periodEnd: periodEnd,
       );
 
-      final comparisonBreakdown = await _reportsService.getBreakdownWithComparison(
+      final comparisonBreakdown =
+          await _reportsService.getBreakdownWithComparison(
         periodType: _periodType,
         year: _year,
         month: _periodType == ReportPeriodType.monthly ? _periodIndex : null,
-        quarter: _periodType == ReportPeriodType.quarterly ? _periodIndex : null,
+        quarter:
+            _periodType == ReportPeriodType.quarterly ? _periodIndex : null,
         half: _periodType == ReportPeriodType.biannual ? _periodIndex : null,
       );
 
