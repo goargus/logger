@@ -19,6 +19,7 @@ import { PeriodBoundaryCalculator } from './time/period-boundary.calculator';
 import { BreakdownComparisonCalculator } from './calculators/breakdown-comparison.calculator';
 import { HierarchyBreakdownCalculator } from './calculators/hierarchy-breakdown.calculator';
 import { EntityType } from '../entities/entity.entity';
+import { CsvExporter } from './export/csv-exporter';
 
 describe('ReportsService - Hierarchy Features', () => {
   let service: ReportsService;
@@ -179,6 +180,12 @@ describe('ReportsService - Hierarchy Features', () => {
           provide: HierarchyBreakdownCalculator,
           useValue: {
             calculate: jest.fn().mockResolvedValue(mockHierarchyBreakdown),
+          },
+        },
+        {
+          provide: CsvExporter,
+          useValue: {
+            exportToCsv: jest.fn(),
           },
         },
       ],

@@ -21,6 +21,7 @@ import { ExpensesCalculator } from './calculators/expenses.calculator';
 import { PeriodBoundaryCalculator } from './time/period-boundary.calculator';
 import { BreakdownComparisonCalculator } from './calculators/breakdown-comparison.calculator';
 import { HierarchyBreakdownCalculator } from './calculators/hierarchy-breakdown.calculator';
+import { CsvExporter } from './export/csv-exporter';
 
 describe('ReportsService', () => {
   let service: ReportsService;
@@ -80,6 +81,12 @@ describe('ReportsService', () => {
           provide: HierarchyBreakdownCalculator,
           useValue: {
             calculate: jest.fn().mockResolvedValue([]),
+          },
+        },
+        {
+          provide: CsvExporter,
+          useValue: {
+            exportToCsv: jest.fn(),
           },
         },
         {
