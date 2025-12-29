@@ -116,6 +116,33 @@ class ApiClient {
     }
   }
 
+  /// Get raw response (for file downloads)
+  Future<http.Response> getRaw(
+    String path, {
+    Map<String, String>? queryParameters,
+    Map<String, String>? headers,
+  }) async {
+    final uri = _buildUri(path, queryParameters);
+    final requestHeaders = await _buildHeaders(headers);
+    // Don't set Content-Type for raw requests
+    requestHeaders.remove('Content-Type');
+
+    try {
+      final response =
+          await http.get(uri, headers: requestHeaders).timeout(timeout);
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return response;
+      }
+
+      // Handle errors
+      _handleResponse(response);
+      throw Exception('Unexpected error');
+    } catch (e) {
+      throw _mapException(e);
+    }
+  }
+
   Uri _buildUri(String path, [Map<String, String>? queryParameters]) {
     final url = baseUrl.endsWith('/') ? baseUrl : '$baseUrl/';
     final fullPath = path.startsWith('/') ? path.substring(1) : path;
