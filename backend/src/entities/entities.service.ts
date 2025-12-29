@@ -13,6 +13,7 @@ import { Entity, EntityType } from './entity.entity';
 import { CreateEntityDto } from './dto/create-entity.dto';
 import { UpdateEntityDto } from './dto/update-entity.dto';
 import { HierarchyValidationService } from './hierarchy-validation.service';
+import { EntityTreeNode } from './dto/entity-tree.dto';
 import { ReportingPeriodsService } from '../reporting-periods/reporting-periods.service';
 
 @Injectable()
@@ -208,5 +209,65 @@ export class EntitiesService {
 
   async softDelete(id: string): Promise<{ affected: number }> {
     return this.remove(id);
+  }
+
+  /**
+   * Find all descendant entities recursively using BFS.
+   * Only returns active entities.
+   * @param id - The root entity ID
+   * @returns Array of all descendant entities (not including root)
+   */
+  async findDescendants(id: string): Promise<Entity[]> {
+    // Verify the entity exists
+    await this.findOne(id);
+
+    const descendants: Entity[] = [];
+    const queue: string[] = [id];
+
+    while (queue.length > 0) {
+      const currentId = queue.shift()!;
+      const children = await this.repo.find({
+        where: { parent_id: currentId, is_active: true },
+        order: { name: 'ASC' },
+      });
+
+      for (const child of children) {
+        descendants.push(child);
+        queue.push(child.id);
+      }
+    }
+
+    return descendants;
+  }
+
+  /**
+   * Get the entity hierarchy as a nested tree structure.
+   * @param rootId - The root entity ID
+   * @returns Tree structure with nested children
+   */
+  async getHierarchyTree(rootId: string): Promise<EntityTreeNode> {
+    const root = await this.findOne(rootId);
+    return this.buildTreeNode(root);
+  }
+
+  /**
+   * Build a tree node recursively for an entity.
+   * @param entity - The entity to convert to a tree node
+   * @returns EntityTreeNode with nested children
+   */
+  private async buildTreeNode(entity: Entity): Promise<EntityTreeNode> {
+    const children = await this.findChildren(entity.id);
+    const childNodes = await Promise.all(
+      children.map((child) => this.buildTreeNode(child)),
+    );
+
+    return {
+      id: entity.id,
+      name: entity.name,
+      type: entity.type,
+      code: entity.code,
+      is_active: entity.is_active,
+      children: childNodes,
+    };
   }
 }

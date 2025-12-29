@@ -19,11 +19,24 @@ export interface SummaryTotals {
   complianceRate: number;
 }
 
+export interface HierarchicalEntityBreakdownItem {
+  entityId: string;
+  entityName: string;
+  entityType: string;
+  parentId: string | null;
+  activities: number;
+  expenses: number;
+  usersExpected: number;
+  usersSubmitted: number;
+  complianceRate: number;
+}
+
 export interface SummaryResponse {
   period: PeriodInfo;
   scope: 'personal' | 'entity';
   entity: EntityInfo;
   totals: SummaryTotals;
+  hierarchyBreakdown?: HierarchicalEntityBreakdownItem[];
 }
 
 export interface TypeBreakdown {

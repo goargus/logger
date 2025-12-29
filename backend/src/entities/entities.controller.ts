@@ -119,10 +119,24 @@ export class EntitiesController {
   }
 
   @Get(':id/children')
-  @ApiOperation({ summary: 'Get child entities of a parent entity' })
-  @ApiResponse({ status: 200, description: 'List of child entities' })
+  @ApiOperation({ summary: 'Get direct child entities of a parent entity' })
+  @ApiResponse({ status: 200, description: 'List of direct child entities' })
   async getChildren(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.entitiesService.findChildren(id);
+  }
+
+  @Get(':id/descendants')
+  @ApiOperation({ summary: 'Get all descendant entities recursively (BFS)' })
+  @ApiResponse({ status: 200, description: 'Flat list of all descendant entities' })
+  async getDescendants(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.entitiesService.findDescendants(id);
+  }
+
+  @Get(':id/tree')
+  @ApiOperation({ summary: 'Get entity hierarchy as nested tree structure' })
+  @ApiResponse({ status: 200, description: 'Nested tree with children at each level' })
+  async getHierarchyTree(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.entitiesService.getHierarchyTree(id);
   }
 
   @Patch(':id/deactivate')

@@ -114,6 +114,15 @@ export class ReportQueryDto {
   @Transform(({ value }) => value === 'true' || value === true)
   @IsBoolean()
   includeComparison?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Include per-entity hierarchy breakdown (requires canViewReports permission)',
+    default: false,
+  })
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean()
+  includeHierarchyBreakdown?: boolean;
 }
 
 export class RankingsQueryDto extends ReportQueryDto {

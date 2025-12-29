@@ -20,6 +20,7 @@ import { RankingsCalculator } from './calculators/rankings.calculator';
 import { ExpensesCalculator } from './calculators/expenses.calculator';
 import { PeriodBoundaryCalculator } from './time/period-boundary.calculator';
 import { BreakdownComparisonCalculator } from './calculators/breakdown-comparison.calculator';
+import { HierarchyBreakdownCalculator } from './calculators/hierarchy-breakdown.calculator';
 
 describe('ReportsService', () => {
   let service: ReportsService;
@@ -75,6 +76,12 @@ describe('ReportsService', () => {
         ExpensesCalculator,
         PeriodBoundaryCalculator,
         BreakdownComparisonCalculator,
+        {
+          provide: HierarchyBreakdownCalculator,
+          useValue: {
+            calculate: jest.fn().mockResolvedValue([]),
+          },
+        },
         {
           provide: getRepositoryToken(Activity),
           useValue: {
