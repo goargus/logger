@@ -22,11 +22,7 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "strict": true,
-  "types": ["node", "jest"]
-  }
-,
-  "include": [
-    "src",
-    "scripts"
-  ]
+    "types": ["node", "jest"]
+  },
+  "include": ["src", "scripts"]
 }
