@@ -70,10 +70,12 @@ class AuthNotifier extends StateNotifier<AuthState> {
   /// Generate a cryptographically secure random code_verifier for PKCE
   /// Length: 43-128 characters, charset: A-Z a-z 0-9 - . _ ~
   String _generateCodeVerifier() {
-    const charset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+    const charset =
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
     final random = Random.secure();
     const length = 128; // Maximum length for better security
-    return List.generate(length, (_) => charset[random.nextInt(charset.length)]).join();
+    return List.generate(length, (_) => charset[random.nextInt(charset.length)])
+        .join();
   }
 
   /// Generate code_challenge from code_verifier using SHA256 and base64url encoding
@@ -178,12 +180,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
       }
 
       // Retrieve the PKCE code_verifier from localStorage
-      final codeVerifier = web.window.localStorage.getItem('pkce_code_verifier');
+      final codeVerifier =
+          web.window.localStorage.getItem('pkce_code_verifier');
       if (codeVerifier == null || codeVerifier.isEmpty) {
-        throw Exception('Missing PKCE verifier. Authentication flow may have been interrupted.');
+        throw Exception(
+            'Missing PKCE verifier. Authentication flow may have been interrupted.');
       }
 
-      debugPrint('[AuthNotifier] Exchanging authorization code with PKCE verifier...');
+      debugPrint(
+          '[AuthNotifier] Exchanging authorization code with PKCE verifier...');
 
       final tokenResponse = await http.post(
         Uri.parse('https://${AuthConfig.domain}/oauth/token'),
@@ -294,7 +299,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
       // Store code_verifier in localStorage BEFORE redirecting
       web.window.localStorage.setItem('pkce_code_verifier', codeVerifier);
 
-      debugPrint('[AuthNotifier] Generated PKCE challenge, initiating Auth0 redirect...');
+      debugPrint(
+          '[AuthNotifier] Generated PKCE challenge, initiating Auth0 redirect...');
 
       final authUrl = Uri.https(AuthConfig.domain, '/authorize', {
         'response_type': 'code',
