@@ -1,13 +1,11 @@
 class AuthConfig {
   static const String domain = String.fromEnvironment('AUTH0_DOMAIN');
   static const String clientId = String.fromEnvironment('AUTH0_CLIENT_ID');
-  static const String redirectUri =
-      String.fromEnvironment('AUTH0_REDIRECT_URI');
+
+  static String get redirectUri => String.fromEnvironment('AUTH0_REDIRECT_URI');
+
   static const String audience = String.fromEnvironment('AUTH0_AUDIENCE');
 
   static bool get isConfigured =>
-      domain.isNotEmpty &&
-      clientId.isNotEmpty &&
-      redirectUri.isNotEmpty &&
-      audience.isNotEmpty;
+      domain.isNotEmpty && clientId.isNotEmpty && audience.isNotEmpty;
 }

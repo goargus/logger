@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -64,6 +66,26 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
   bool _bootstrapped = false;
   bool _isRedirecting = false;
+
+  /// Generate a cryptographically secure random code_verifier for PKCE
+  /// Length: 43-128 characters, charset: A-Z a-z 0-9 - . _ ~
+  String _generateCodeVerifier() {
+    const charset =
+        'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
+    final random = Random.secure();
+    const length = 128; // Maximum length for better security
+    return List.generate(length, (_) => charset[random.nextInt(charset.length)])
+        .join();
+  }
+
+  /// Generate code_challenge from code_verifier using SHA256 and base64url encoding
+  /// Returns BASE64URL(SHA256(code_verifier)) without padding
+  String _generateCodeChallenge(String verifier) {
+    final bytes = utf8.encode(verifier);
+    final digest = sha256.convert(bytes);
+    // Use base64Url encoding without padding
+    return base64Url.encode(digest.bytes).replaceAll('=', '');
+  }
 
   Future<void> _bootstrap() async {
     if (_bootstrapped) return;
@@ -153,9 +175,20 @@ class AuthNotifier extends StateNotifier<AuthState> {
       final uri = Uri.parse(web.window.location.href);
       final code = uri.queryParameters['code'];
 
-      if (code == null) {
-        throw Exception('No authorization code found in URL');
+      if (code == null || code.isEmpty) {
+        throw Exception('No authorization code found in callback URL');
       }
+
+      // Retrieve the PKCE code_verifier from localStorage
+      final codeVerifier =
+          web.window.localStorage.getItem('pkce_code_verifier');
+      if (codeVerifier == null || codeVerifier.isEmpty) {
+        throw Exception(
+            'Missing PKCE verifier. Authentication flow may have been interrupted.');
+      }
+
+      debugPrint(
+          '[AuthNotifier] Exchanging authorization code with PKCE verifier...');
 
       final tokenResponse = await http.post(
         Uri.parse('https://${AuthConfig.domain}/oauth/token'),
@@ -165,6 +198,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
           'client_id': AuthConfig.clientId,
           'code': code,
           'redirect_uri': AuthConfig.redirectUri,
+          'code_verifier': codeVerifier,
         }),
       );
 
@@ -186,6 +220,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
           final mergedUserInfo = {...userInfo, ...backendProfile};
 
           web.window.localStorage.setItem('auth_token', accessToken);
+          // Remove PKCE verifier after successful token exchange
+          web.window.localStorage.removeItem('pkce_code_verifier');
           await _session.saveToken(accessToken);
 
           web.window.history.replaceState(null, '', AuthConfig.redirectUri);
@@ -256,6 +292,16 @@ class AuthNotifier extends StateNotifier<AuthState> {
     _isRedirecting = true;
 
     try {
+      // Generate PKCE code_verifier and code_challenge
+      final codeVerifier = _generateCodeVerifier();
+      final codeChallenge = _generateCodeChallenge(codeVerifier);
+
+      // Store code_verifier in localStorage BEFORE redirecting
+      web.window.localStorage.setItem('pkce_code_verifier', codeVerifier);
+
+      debugPrint(
+          '[AuthNotifier] Generated PKCE challenge, initiating Auth0 redirect...');
+
       final authUrl = Uri.https(AuthConfig.domain, '/authorize', {
         'response_type': 'code',
         'client_id': AuthConfig.clientId,
@@ -263,6 +309,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
         'scope': 'openid profile email',
         'audience': AuthConfig.audience,
         'state': DateTime.now().millisecondsSinceEpoch.toString(),
+        'code_challenge': codeChallenge,
+        'code_challenge_method': 'S256',
       });
 
       web.window.location.assign(authUrl.toString());
