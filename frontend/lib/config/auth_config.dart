@@ -2,7 +2,7 @@ class AuthConfig {
   static const String domain = String.fromEnvironment('AUTH0_DOMAIN');
   static const String clientId = String.fromEnvironment('AUTH0_CLIENT_ID');
 
-  static String get redirectUri => String.fromEnvironment('AUTH0_REDIRECT_URI');
+  static const String redirectUri = String.fromEnvironment('AUTH0_REDIRECT_URI');
 
   static const String audience = String.fromEnvironment('AUTH0_AUDIENCE');
 
