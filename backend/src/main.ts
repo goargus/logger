@@ -6,12 +6,12 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  const allowedOrigins = process.env.CORS_ORIGINS
-    ? process.env.CORS_ORIGINS.split(',')
-    : ['http://localhost:8080', 'http://localhost:3000'];
-
   app.enableCors({
-    origin: allowedOrigins,
+    origin: [
+      'http://localhost:8080',
+      'http://localhost:3000',
+      'https://secretary-backend.pages.dev',
+    ],
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -29,7 +29,9 @@ async function bootstrap() {
   // Swagger configuration
   const config = new DocumentBuilder()
     .setTitle('Secretary API')
-    .setDescription('Activity Management System API for tracking organizational activities and reporting periods')
+    .setDescription(
+      'Activity Management System API for tracking organizational activities and reporting periods',
+    )
     .setVersion('1.0')
     .addBearerAuth(
       {
