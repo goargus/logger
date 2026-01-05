@@ -16,49 +16,49 @@ const USERS = [
     email: 'daniel.contreras@uhn.test',
     full_name: 'Daniel Contreras',
     sub: 'auth0|69583d736ccfb90819e2300c',
-    role: 'SYSTEM_ADMIN',
+    role: 'ADMIN',
     entity: 'Unión Hondureña',
   },
   {
     email: 'admin.central@uhn.test',
     full_name: 'Admin Asociación Central',
     sub: 'auth0|69583e476d2265af6faf2db8',
-    role: 'ASSOCIATION_ADMIN',
+    role: 'ADMIN',
     entity: 'Asociación Central',
   },
   {
     email: 'admin.noroccidental@uhn.test',
     full_name: 'Admin Asociación Nor-occidental',
     sub: 'auth0|69583e5e6ccfb90819e23085',
-    role: 'ASSOCIATION_ADMIN',
+    role: 'ADMIN',
     entity: 'Asociación Nor-occidental',
   },
   {
     email: 'admin.nororiental@uhn.test',
     full_name: 'Admin Asociación Nor-oriental',
     sub: 'auth0|69583e8889bb367a376574dd',
-    role: 'ASSOCIATION_ADMIN',
+    role: 'ADMIN',
     entity: 'Asociación Nor-oriental',
   },
   {
     email: 'obrero.copan@uhn.test',
     full_name: 'Obrero Campo Copán',
     sub: 'auth0|69583ec26d2265af6faf2deb',
-    role: 'FIELD_WORKER',
+    role: 'MISSIONARY',
     entity: 'Campo Copán',
   },
   {
     email: 'obrero.tegucigalpa@uhn.test',
     full_name: 'Obrero Campo Tegucigalpa',
     sub: 'auth0|69583ed7292a80e2ca479bda',
-    role: 'FIELD_WORKER',
+    role: 'MISSIONARY',
     entity: 'Campo Tegucigalpa',
   },
   {
     email: 'obrero.sps@uhn.test',
     full_name: 'Obrero Campo San Pedro Sula',
     sub: 'auth0|69583eec89bb367a37657519',
-    role: 'FIELD_WORKER',
+    role: 'MISSIONARY',
     entity: 'Campo San Pedro Sula',
   },
 ];
@@ -89,6 +89,8 @@ async function run() {
       user.username = u.email;
       user.full_name = u.full_name;
       user.status = UserStatus.ACTIVE;
+      user.role = role;
+      user.entity = entity;
 
       await userRepo.save(user);
     }
@@ -119,10 +121,19 @@ async function run() {
     });
 
     if (!existingAssignment) {
+      const startDate = new Date().toISOString().split('T')[0];
+      // Calculate end date based on entity's term length (default 5 years)
+      const endYear = new Date().getFullYear() + (entity.term_length_years || 5);
+      const endDate = `${endYear}-12-31`;
+      
       const assignment = assignmentRepo.create({
         user,
         role,
         entity,
+        start_date: startDate,
+        end_date: endDate,
+        created_by: user.id,
+        updated_by: user.id,
       });
       await assignmentRepo.save(assignment);
     }
