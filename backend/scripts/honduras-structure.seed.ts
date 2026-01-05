@@ -41,9 +41,17 @@ async function run() {
     }
   }
 
+  const platform = await createIfNotExists({
+    name: 'Plataforma Global',
+    type: EntityType.PLATFORM,
+    code: 'PLAT',
+    description: 'Plataforma raíz del sistema',
+  });
+
   const union = await createIfNotExists({
     name: 'Unión Hondureña',
     type: EntityType.UNION,
+    parentId: platform.id,
     code: 'UHN',
     location: 'Honduras',
     description: 'Estructura de ejemplo para datos iniciales',
