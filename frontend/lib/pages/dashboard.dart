@@ -22,9 +22,9 @@ import '../models/activity.dart';
 import '../providers/auth.dart';
 import '../providers/activities.dart';
 import '../providers/expenses.dart';
+import '../providers/dashboard_stats.dart';
 import '../config/api_config.dart';
 
-/// Content-only widget for dashboard - shell is handled by AppShell via router
 class DashboardContent extends ConsumerStatefulWidget {
   const DashboardContent({super.key});
 
@@ -33,14 +33,13 @@ class DashboardContent extends ConsumerStatefulWidget {
 }
 
 class _DashboardContentState extends ConsumerState<DashboardContent> {
-  final DashboardStats _cfg = const DashboardStats(
-    visits: 15,
-    bibleStudies: 10,
-    viaticoUsed: 1500,
-    reportsCount: 20,
-    month: 10,
-    year: 2025,
-  );
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      ref.read(dashboardStatsProvider.notifier).refresh();
+    });
+  }
 
   Future<void> _openCreateDialog() async {
     if (!mounted) return;
@@ -62,8 +61,8 @@ class _DashboardContentState extends ConsumerState<DashboardContent> {
       );
 
       if (created != null && mounted) {
-        // Refresh activities
         ref.read(recentActivitiesProvider.notifier).refresh();
+        ref.read(dashboardStatsProvider.notifier).refresh();
 
         final expense = () {
           final v = created['expenseAmount'] ?? created['expense_amount'];
@@ -72,7 +71,6 @@ class _DashboardContentState extends ConsumerState<DashboardContent> {
           return double.tryParse(s) ?? 0.0;
         }();
 
-        // Refresh expenses if there's an expense amount
         if (expense > 0) {
           ref.read(monthlyExpensesProvider.notifier).refresh();
         }
@@ -124,6 +122,7 @@ class _DashboardContentState extends ConsumerState<DashboardContent> {
       if (result != null && mounted) {
         ref.read(recentActivitiesProvider.notifier).refresh();
         ref.read(monthlyExpensesProvider.notifier).refresh();
+        ref.read(dashboardStatsProvider.notifier).refresh();
         Snackbars.showSuccess(context, 'Actividad actualizada');
       }
     } catch (e) {
@@ -163,6 +162,7 @@ class _DashboardContentState extends ConsumerState<DashboardContent> {
       if (deleted == true && mounted) {
         ref.read(recentActivitiesProvider.notifier).refresh();
         ref.read(monthlyExpensesProvider.notifier).refresh();
+        ref.read(dashboardStatsProvider.notifier).refresh();
         Snackbars.showSuccess(context, 'Actividad eliminada');
       }
     } catch (e) {
@@ -178,6 +178,7 @@ class _DashboardContentState extends ConsumerState<DashboardContent> {
     final authState = ref.watch(authNotifierProvider);
     final activitiesAsync = ref.watch(recentActivitiesProvider);
     final expensesAsync = ref.watch(monthlyExpensesProvider);
+    final dashboardStatsAsync = ref.watch(dashboardStatsProvider);
 
     final userName = authState.user?['first_name'] ??
         authState.user?['name'] ??
@@ -193,22 +194,36 @@ class _DashboardContentState extends ConsumerState<DashboardContent> {
           const SizedBox(height: LayoutConstants.spacing20),
           const MonthHeaderPill(),
           const SizedBox(height: LayoutConstants.spacing20),
-          // Expenses section with AsyncValue
-          expensesAsync.when(
-            data: (expenses) => StatsSection(
-              stats: _cfg,
-              isLoadingExpenses: false,
-              monthlyExpenseTotal: expenses.total,
-              onReportsTap: () => context.go(AppRoutes.reports),
+          // Stats section with AsyncValue
+          dashboardStatsAsync.when(
+            data: (stats) => expensesAsync.when(
+              data: (expenses) => StatsSection(
+                stats: stats,
+                isLoadingExpenses: false,
+                monthlyExpenseTotal: expenses.total,
+                onReportsTap: () => context.go(AppRoutes.reports),
+              ),
+              loading: () => StatsSection(
+                stats: stats,
+                isLoadingExpenses: true,
+                monthlyExpenseTotal: 0.0,
+                onReportsTap: () => context.go(AppRoutes.reports),
+              ),
+              error: (error, stack) => StatsSection(
+                stats: stats,
+                isLoadingExpenses: false,
+                monthlyExpenseTotal: 0.0,
+                onReportsTap: () => context.go(AppRoutes.reports),
+              ),
             ),
             loading: () => StatsSection(
-              stats: _cfg,
+              stats: DashboardStats.empty(),
               isLoadingExpenses: true,
               monthlyExpenseTotal: 0.0,
               onReportsTap: () => context.go(AppRoutes.reports),
             ),
             error: (error, stack) => StatsSection(
-              stats: _cfg,
+              stats: DashboardStats.empty(),
               isLoadingExpenses: false,
               monthlyExpenseTotal: 0.0,
               onReportsTap: () => context.go(AppRoutes.reports),
@@ -223,7 +238,6 @@ class _DashboardContentState extends ConsumerState<DashboardContent> {
                 onPressed: _openCreateDialog,
               ),
               const SizedBox(width: LayoutConstants.spacing12),
-              // Show refresh button on error
               if (activitiesAsync.hasError)
                 TextButton.icon(
                   onPressed: () {
@@ -235,7 +249,6 @@ class _DashboardContentState extends ConsumerState<DashboardContent> {
             ],
           ),
           const SizedBox(height: LayoutConstants.spacing24),
-          // Activities section with AsyncValue
           activitiesAsync.when(
             data: (activities) => ActivitiesSection(
               isLoading: false,
