@@ -65,6 +65,7 @@ describe('ActivityTypesController', () => {
     const mockService = {
       findAll: jest.fn(),
       findAllByUserRole: jest.fn(),
+      findAllByUserRoleAssignments: jest.fn(),
       findOne: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
@@ -127,7 +128,7 @@ describe('ActivityTypesController', () => {
       const authorizedTypes = [mockActivityTypes[0]];
 
       identityService.resolveUserBySubAndIssuer.mockResolvedValue(mockUser as any);
-      service.findAllByUserRole.mockResolvedValue(authorizedTypes as ActivityType[]);
+      service.findAllByUserRoleAssignments.mockResolvedValue(authorizedTypes as ActivityType[]);
 
       const result = await controller.getAuthorized(mockRequest);
 
@@ -135,7 +136,7 @@ describe('ActivityTypesController', () => {
         'auth0|123456',
         'https://test.auth0.com/',
       );
-      expect(service.findAllByUserRole).toHaveBeenCalledWith('role-missionary');
+      expect(service.findAllByUserRoleAssignments).toHaveBeenCalledWith('user-123');
       expect(result).toEqual(authorizedTypes);
     });
 
@@ -153,7 +154,7 @@ describe('ActivityTypesController', () => {
       } as Request & { user: JwtValidatedUser };
 
       identityService.resolveUserBySubAndIssuer.mockResolvedValue(mockUser as any);
-      service.findAllByUserRole.mockResolvedValue([]);
+      service.findAllByUserRoleAssignments.mockResolvedValue([]);
 
       const result = await controller.getAuthorized(mockRequest);
 
