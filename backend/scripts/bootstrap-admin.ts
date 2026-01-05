@@ -79,35 +79,7 @@ async function ensureAdminRole(roleRepo: Repository<Role>, roleId?: string): Pro
   return role;
 }
 
-async function ensureDefaultUnion(
-  entityRepo: Repository<OrgEntity>,
-  entityId?: string,
-): Promise<OrgEntity> {
-  if (entityId) {
-    const entity = await entityRepo.findOne({ where: { id: entityId } });
-    if (!entity) {
-      console.error(`Entity with ID ${entityId} not found`);
-      process.exit(1);
-    }
-    return entity;
-  }
 
-  let entity = await entityRepo.findOne({
-    where: { name: 'Default Union', type: EntityType.UNION },
-  });
-  if (!entity) {
-    console.log('Creating default union for admin user...');
-    entity = entityRepo.create({
-      name: 'Default Union',
-      type: EntityType.UNION,
-      description: 'Default union for administrative users',
-    });
-    entity = await entityRepo.save(entity);
-    console.log('Default union created');
-  }
-  
-  return entity;
-}
 
 async function bootstrapAdmin() {
   console.log('Starting admin bootstrap process...');
@@ -162,7 +134,31 @@ async function bootstrapAdmin() {
     }
 
     const role = await ensureAdminRole(roleRepo, config.roleId);
-    const entity = await ensureDefaultUnion(entityRepo, config.entityId);
+    
+    let entityId = process.env.ADMIN_ENTITY_ID;
+
+    if (!entityId) {
+      const hondurasUnion = await entityRepo.findOne({
+        where: {
+          name: 'Unión Hondureña',
+          type: EntityType.UNION,
+        },
+      });
+
+      if (!hondurasUnion) {
+        throw new Error(
+          'Unión Hondureña no existe. Ejecuta primero el seed de Honduras.',
+        );
+      }
+
+      entityId = hondurasUnion.id;
+    }
+
+    const entity = await entityRepo.findOne({ where: { id: entityId } });
+    if (!entity) {
+      console.error(`Entity with ID ${entityId} not found`);
+      process.exit(1);
+    }
 
     console.log('Creating admin user...');
     const adminUser = userRepo.create({
