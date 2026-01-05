@@ -24,5 +24,6 @@
     "strict": true,
     "types": ["node", "jest"]
   },
-  "include": ["src", "scripts"]
+  "include": ["src", "scripts"],
+  "exclude": ["scripts/legacy"]
 }
