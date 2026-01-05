@@ -4,6 +4,7 @@ import { ActivityType } from './activity-type.entity';
 import { ActivityTypesService } from './activity-types.service';
 import { ActivityTypesController } from './activity-types.controller';
 import { Role } from '../roles/role.entity';
+import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
 import { ACTIVITY_TYPE_USAGE_POLICY } from './usage/activity-type-usage.policy';
 import type { ActivityTypeUsagePolicy } from './usage/activity-type-usage.policy';
 import { NullActivityTypeUsagePolicy } from './usage/null-activity-type-usage.policy';
@@ -12,7 +13,7 @@ import { IdpIdentity } from '../idp-identities/idp-identity.entity';
 import { User } from '../users/user.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ActivityType, Role, IdpIdentity, User])],
+  imports: [TypeOrmModule.forFeature([ActivityType, Role, UserRoleAssignment, IdpIdentity, User])],
   controllers: [ActivityTypesController],
   providers: [
     ActivityTypesService,

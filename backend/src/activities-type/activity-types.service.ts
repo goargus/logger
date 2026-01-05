@@ -5,6 +5,7 @@ import { ActivityType } from './activity-type.entity';
 import { CreateActivityTypeDto } from './dto/create-activity-type.dto';
 import { UpdateActivityTypeDto } from './dto/update-activity-type.dto';
 import { Role } from '../roles/role.entity';
+import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
 import {
   ACTIVITY_TYPE_USAGE_POLICY,
   ActivityTypeUsagePolicy,
@@ -15,6 +16,7 @@ export class ActivityTypesService {
   constructor(
     @InjectRepository(ActivityType) private readonly repo: Repository<ActivityType>,
     @InjectRepository(Role) private readonly rolesRepo: Repository<Role>,
+    @InjectRepository(UserRoleAssignment) private readonly uraRepo: Repository<UserRoleAssignment>,
     @Inject(ACTIVITY_TYPE_USAGE_POLICY) private readonly usagePolicy: ActivityTypeUsagePolicy,
   ) {}
 
@@ -59,6 +61,27 @@ export class ActivityTypesService {
       .createQueryBuilder('activity_type')
       .leftJoinAndSelect('activity_type.allowed_roles', 'role')
       .where('role.id = :roleId', { roleId: userRoleId })
+      .getMany();
+  }
+
+  async findAllByUserRoleAssignments(userId: string): Promise<ActivityType[]> {
+    // Get all role IDs from user's active role assignments
+    const roleAssignments = await this.uraRepo.find({
+      where: { user: { id: userId } },
+      relations: ['role'],
+    });
+
+    if (roleAssignments.length === 0) {
+      return [];
+    }
+
+    const roleIds = roleAssignments.map((assignment) => assignment.role.id);
+
+    // Get all activity types that match any of the user's roles
+    return this.repo
+      .createQueryBuilder('activity_type')
+      .leftJoinAndSelect('activity_type.allowed_roles', 'role')
+      .where('role.id IN (:...roleIds)', { roleIds })
       .getMany();
   }
 
