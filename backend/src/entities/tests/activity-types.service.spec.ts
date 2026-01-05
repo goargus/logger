@@ -6,6 +6,7 @@ import { Repository, In, ObjectLiteral } from 'typeorm';
 import { ActivityTypesService } from '../../activities-type/activity-types.service';
 import { ActivityType, GrowthDirection } from '../../activities-type/activity-type.entity';
 import { Role } from '../../roles/role.entity';
+import { UserRoleAssignment } from '../../roles/user-role-assignment.entity';
 import { ACTIVITY_TYPE_USAGE_POLICY } from '../../activities-type/usage/activity-type-usage.policy';
 
 class UsagePolicyStub {
@@ -28,6 +29,7 @@ describe('ActivityTypesService', () => {
   let service: ActivityTypesService;
   let activityTypeRepo: jest.Mocked<Repository<ActivityType>>;
   let roleRepo: jest.Mocked<Repository<Role>>;
+  let uraRepo: jest.Mocked<Repository<UserRoleAssignment>>;
   let usagePolicy: UsagePolicyStub;
 
   const roleMissionary: Role = {
@@ -71,6 +73,7 @@ describe('ActivityTypesService', () => {
   beforeEach(async () => {
     activityTypeRepo = createMockRepo<ActivityType>();
     roleRepo = createMockRepo<Role>();
+    uraRepo = createMockRepo<UserRoleAssignment>();
     usagePolicy = new UsagePolicyStub();
 
     const module: TestingModule = await Test.createTestingModule({
@@ -78,6 +81,7 @@ describe('ActivityTypesService', () => {
         ActivityTypesService,
         { provide: getRepositoryToken(ActivityType), useValue: activityTypeRepo },
         { provide: getRepositoryToken(Role), useValue: roleRepo },
+        { provide: getRepositoryToken(UserRoleAssignment), useValue: uraRepo },
         { provide: ACTIVITY_TYPE_USAGE_POLICY, useValue: usagePolicy },
       ],
     })
