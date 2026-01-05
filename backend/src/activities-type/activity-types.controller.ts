@@ -45,7 +45,7 @@ export class ActivityTypesController {
   async getAuthorized(@Req() req: Request) {
     const { sub, iss } = (req.user as JwtValidatedUser) ?? {};
     const user = await this.identityService.resolveUserBySubAndIssuer(sub, iss);
-    return this.service.findAllByUserRole(user.role_id);
+    return this.service.findAllByUserRoleAssignments(user.id);
   }
 
   @Get(':id')
