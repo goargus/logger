@@ -20,34 +20,34 @@ class DashboardStats {
   factory DashboardStats.fromApi(Map<String, dynamic> data) {
     final summary = data['summary'] as Map<String, dynamic>?;
     final breakdown = data['breakdown'] as Map<String, dynamic>?;
-    
+
     final totals = summary?['totals'] as Map<String, dynamic>? ?? {};
     final totalActivities = (totals['activities'] as num?)?.toInt() ?? 0;
     final totalExpenses = (totals['expenses'] as num?)?.toDouble() ?? 0.0;
-    
+
     final period = summary?['period'] as Map<String, dynamic>? ?? {};
     final startDate = period['startDate'] as String? ?? '';
     final now = DateTime.now();
-    final periodDate = startDate.isNotEmpty 
-        ? DateTime.tryParse(startDate) ?? now 
-        : now;
-    
+    final periodDate =
+        startDate.isNotEmpty ? DateTime.tryParse(startDate) ?? now : now;
+
     final byType = breakdown?['byType'] as List<dynamic>? ?? [];
     int visits = 0;
     int bibleStudies = 0;
-    
+
     for (final item in byType) {
       final itemMap = item as Map<String, dynamic>;
       final name = (itemMap['name'] as String? ?? '').toLowerCase();
       final count = (itemMap['count'] as num?)?.toInt() ?? 0;
-      
-      if (name.contains('visita') && (name.contains('misioner') || name.contains('interesad'))) {
+
+      if (name.contains('visita') &&
+          (name.contains('misioner') || name.contains('interesad'))) {
         visits += count;
       } else if (name.contains('estudio') && name.contains('bíblico')) {
         bibleStudies += count;
       }
     }
-    
+
     return DashboardStats(
       visits: visits,
       bibleStudies: bibleStudies,

@@ -17,13 +17,13 @@ class DashboardStatsNotifier extends StateNotifier<AsyncValue<DashboardStats>> {
 
   Future<void> fetch({String? periodStart, String? periodEnd}) async {
     state = const AsyncValue.loading();
-    
+
     try {
       final data = await service.getDashboardStats(
         periodStart: periodStart,
         periodEnd: periodEnd,
       );
-      
+
       final stats = DashboardStats.fromApi(data);
       state = AsyncValue.data(stats);
     } catch (e, stack) {
@@ -37,7 +37,8 @@ class DashboardStatsNotifier extends StateNotifier<AsyncValue<DashboardStats>> {
 }
 
 final dashboardStatsProvider =
-    StateNotifierProvider<DashboardStatsNotifier, AsyncValue<DashboardStats>>((ref) {
+    StateNotifierProvider<DashboardStatsNotifier, AsyncValue<DashboardStats>>(
+        (ref) {
   final service = ref.watch(dashboardStatsServiceProvider);
   return DashboardStatsNotifier(service);
 });
