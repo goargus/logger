@@ -25,6 +25,32 @@ async function seedRolesAndActivities() {
 
   const roleActivityMappings: RoleActivityMapping[] = [
     {
+      roleName: 'ADMIN',
+      roleDescription: 'Administrador del sistema con acceso completo',
+      activityTypes: [],
+    },
+    {
+      roleName: 'MISSIONARY',
+      roleDescription: 'Misionero/Obrero de campo con actividades evangelísticas',
+      activityTypes: [
+        { name: 'Visitas a miembros', description: 'Visitas a miembros de la iglesia' },
+        { name: 'Visitas a interesados', description: 'Visitas a personas interesadas' },
+        { name: 'Visita a infantes', description: 'Visitas a infantes' },
+        { name: 'Estudios bíblicos', description: 'Estudios bíblicos' },
+        { name: 'Cultos en hogares', description: 'Cultos realizados en hogares' },
+        { name: 'Conversaciones oportunas', description: 'Conversaciones evangelísticas oportunas' },
+        { name: 'Contactos Misioneros', description: 'Contactos con fines misioneros' },
+        { name: 'Predicaciones', description: 'Predicaciones y sermones' },
+        { name: 'Dirección de programas', description: 'Dirección de programas de la iglesia' },
+        { name: 'Seminarios', description: 'Seminarios y capacitaciones' },
+        { name: 'Reuniones de comité', description: 'Reuniones de comité' },
+        { name: 'Reunión de iglesia', description: 'Reunión de iglesia regular' },
+        { name: 'Viaje', description: 'Viajes relacionados con el ministerio' },
+        { name: 'Oficina', description: 'Trabajo de oficina y administrativo' },
+        { name: 'Días libres', description: 'Días libres' },
+      ],
+    },
+    {
       roleName: 'Ministro',
       roleDescription: 'Ministro con privilegios completos para actividades ministeriales',
       activityTypes: [
