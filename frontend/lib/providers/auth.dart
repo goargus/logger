@@ -67,23 +67,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
   bool _bootstrapped = false;
   bool _isRedirecting = false;
 
-  /// Generate a cryptographically secure random code_verifier for PKCE
-  /// Length: 43-128 characters, charset: A-Z a-z 0-9 - . _ ~
   String _generateCodeVerifier() {
     const charset =
         'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~';
     final random = Random.secure();
-    const length = 128; // Maximum length for better security
+    const length = 128;
     return List.generate(length, (_) => charset[random.nextInt(charset.length)])
         .join();
   }
 
-  /// Generate code_challenge from code_verifier using SHA256 and base64url encoding
-  /// Returns BASE64URL(SHA256(code_verifier)) without padding
   String _generateCodeChallenge(String verifier) {
     final bytes = utf8.encode(verifier);
     final digest = sha256.convert(bytes);
-    // Use base64Url encoding without padding
     return base64Url.encode(digest.bytes).replaceAll('=', '');
   }
 
@@ -179,7 +174,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
         throw Exception('No authorization code found in callback URL');
       }
 
-      // Retrieve the PKCE code_verifier from localStorage
       final codeVerifier =
           web.window.localStorage.getItem('pkce_code_verifier');
       if (codeVerifier == null || codeVerifier.isEmpty) {
@@ -220,7 +214,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
           final mergedUserInfo = {...userInfo, ...backendProfile};
 
           web.window.localStorage.setItem('auth_token', accessToken);
-          // Remove PKCE verifier after successful token exchange
           web.window.localStorage.removeItem('pkce_code_verifier');
           await _session.saveToken(accessToken);
 
@@ -276,7 +269,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
         );
       } else {
         web.window.localStorage.removeItem('auth_token');
-        throw Exception('Invalid token');
+        await _session.clear();
+        state = state.copyWith(
+          isLoading: false,
+          isAuthenticated: false,
+          accessToken: null,
+          user: null,
+        );
+        if (!_isRedirecting) {
+          await login();
+        }
+        return;
       }
     } catch (e) {
       state = state.copyWith(
@@ -292,11 +295,9 @@ class AuthNotifier extends StateNotifier<AuthState> {
     _isRedirecting = true;
 
     try {
-      // Generate PKCE code_verifier and code_challenge
       final codeVerifier = _generateCodeVerifier();
       final codeChallenge = _generateCodeChallenge(codeVerifier);
 
-      // Store code_verifier in localStorage BEFORE redirecting
       web.window.localStorage.setItem('pkce_code_verifier', codeVerifier);
 
       debugPrint(
@@ -342,29 +343,42 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<void> logout() async {
     try {
       web.window.localStorage.removeItem('auth_token');
+      web.window.localStorage.removeItem('pkce_code_verifier');
+      
+      await _session.clear();
+      
+      state = AuthState.initial().copyWith(isLoading: true);
 
+      var returnUrl = AuthConfig.redirectUri.replaceAll(RegExp(r'/$'), '');
+      
       final logoutUrl = Uri.https(AuthConfig.domain, '/v2/logout', {
         'client_id': AuthConfig.clientId,
-        'returnTo': AuthConfig.redirectUri,
+        'returnTo': returnUrl,
       });
 
+      debugPrint('[AuthNotifier] Logging out, redirecting to: $logoutUrl');
+      
+      await Future.delayed(const Duration(milliseconds: 100));
+      
       web.window.location.assign(logoutUrl.toString());
-    } finally {
+    } catch (e) {
+      debugPrint('[AuthNotifier] Error during logout: $e');
       try {
+        web.window.localStorage.removeItem('auth_token');
+        web.window.localStorage.removeItem('pkce_code_verifier');
         await _session.clear();
       } catch (_) {}
-      state = AuthState.initial().copyWith(isLoading: false);
+      state = AuthState.initial();
+      web.window.location.reload();
     }
   }
 }
 
-/// Provider to check if current user can view hierarchy reports
 final canViewReportsProvider = Provider<bool>((ref) {
   final authState = ref.watch(authNotifierProvider);
   final primaryRole = authState.user?['primary_role'] as Map<String, dynamic>?;
   final roleName = primaryRole?['name'] as String?;
 
-  // Leadership roles that can view hierarchy reports
   const leadershipRoles = [
     'admin',
     'System Admin',
