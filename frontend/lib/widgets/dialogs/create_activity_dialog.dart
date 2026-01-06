@@ -272,7 +272,7 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                         }
 
                         return DropdownButtonFormField<UserRoleAssignment>(
-                          value: _selectedRole,
+                        initialValue: _selectedRole,
                           isExpanded: true,
                           items: activeRoles
                               .map((r) => DropdownMenuItem<UserRoleAssignment>(
@@ -399,7 +399,7 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                         }
 
                         return DropdownButtonFormField<ActivityType>(
-                          value: _selectedType,
+                        initialValue: _selectedType,
                           isExpanded: true,
                           items: types
                               .map((t) => DropdownMenuItem<ActivityType>(

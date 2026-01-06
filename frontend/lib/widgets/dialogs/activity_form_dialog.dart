@@ -336,7 +336,7 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
                         }
 
                         return DropdownButtonFormField<UserRoleAssignment>(
-                          value: _selectedRole,
+                        initialValue: _selectedRole,
                           isExpanded: true,
                           items: activeRoles
                               .map((r) => DropdownMenuItem<UserRoleAssignment>(
