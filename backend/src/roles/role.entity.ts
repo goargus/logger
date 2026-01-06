@@ -7,6 +7,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { User } from '../users/user.entity';
+import { RolePermission } from './role-permission.entity';
 
 @Entity({ name: 'roles' })
 export class Role {
@@ -19,21 +20,6 @@ export class Role {
   @Column({ type: 'varchar', length: 255, nullable: true })
   description?: string | null;
 
-  @Column({ type: 'boolean', default: false, name: 'can_view_reports' })
-  canViewReports!: boolean;
-
-  @Column({ type: 'boolean', default: false, name: 'can_manage_own_activities' })
-  canManageOwnActivities!: boolean;
-
-  @Column({ type: 'boolean', default: false, name: 'can_manage_hierarchy_activities' })
-  canManageHierarchyActivities!: boolean;
-
-  @Column({ type: 'boolean', default: false, name: 'can_manage_entities' })
-  canManageEntities!: boolean;
-
-  @Column({ type: 'boolean', default: false, name: 'is_system_admin' })
-  isSystemAdmin!: boolean;
-
   @CreateDateColumn()
   created_at!: Date;
 
@@ -42,4 +28,15 @@ export class Role {
 
   @OneToMany(() => User, (user) => user.role)
   users!: User[];
+
+  @OneToMany(() => RolePermission, (rp) => rp.role, { cascade: true })
+  rolePermissions!: RolePermission[];
+
+  /**
+   * Helper getter to extract permission strings from rolePermissions relation.
+   * Requires rolePermissions to be loaded via relations.
+   */
+  get permissions(): string[] {
+    return this.rolePermissions?.map((rp) => rp.permission) || [];
+  }
 }
