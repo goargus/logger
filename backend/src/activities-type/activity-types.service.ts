@@ -85,6 +85,13 @@ export class ActivityTypesService {
       .getMany();
   }
 
+  async getUserRoleAssignments(userId: string): Promise<UserRoleAssignment[]> {
+    return this.uraRepo.find({
+      where: { user: { id: userId } },
+      relations: ['role', 'entity'],
+    });
+  }
+
   async findOne(id: string): Promise<ActivityType> {
     const found = await this.repo.findOne({ where: { id } });
     if (!found) throw new NotFoundException('Activity type not found.');

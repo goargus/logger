@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../dialogs/calendar_dialog.dart';
 import '../../models/activity_type.dart';
+import '../../models/user_role_assignment.dart';
 import '../../services/activity_type.dart';
 import '../../core/validators.dart';
 import '../../core/api_client.dart';
@@ -35,8 +36,10 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
   final _formKey = GlobalKey<FormState>();
 
   late final ActivityTypeService _typeService;
+  late Future<List<UserRoleAssignment>> _rolesFuture;
   late Future<List<ActivityType>> _typesFuture;
 
+  UserRoleAssignment? _selectedRole;
   ActivityType? _selectedType;
 
   final TextEditingController _dateCtrl = TextEditingController();
@@ -68,6 +71,9 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
       apiClient: apiClient,
       path: widget.typesPath,
     );
+
+    _rolesFuture = _typeService.fetchUserRoles();
+    _typesFuture = _typeService.fetchAll();
 
     // Pre-populate fields if editing
     if (isEditMode) {
@@ -164,7 +170,6 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
       http.Response resp;
 
       if (isEditMode) {
-        // Update existing activity
         resp = await http.patch(
           Uri.parse('${widget.baseUrl}/activities/$_activityId'),
           headers: {
@@ -174,7 +179,6 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
           body: jsonEncode(payload),
         );
       } else {
-        // Create new activity
         resp = await http.post(
           Uri.parse('${widget.baseUrl}/activities'),
           headers: {
@@ -273,6 +277,102 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
                   children: [
                     Align(
                       alignment: Alignment.centerLeft,
+                      child: Text('Rol', style: theme.textTheme.labelLarge),
+                    ),
+                    const SizedBox(height: 8),
+                    FutureBuilder<List<UserRoleAssignment>>(
+                      future: _rolesFuture,
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Row(
+                              children: [
+                                SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
+                                ),
+                                SizedBox(width: 10),
+                                Text('Cargando roles...'),
+                              ],
+                            ),
+                          );
+                        }
+
+                        if (snapshot.hasError) {
+                          final err = snapshot.error?.toString() ?? 'Error';
+                          return Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Error al cargar los roles: $err',
+                                style: theme.textTheme.bodyMedium
+                                    ?.copyWith(color: theme.colorScheme.error),
+                              ),
+                              const SizedBox(height: 8),
+                              OutlinedButton.icon(
+                                onPressed: _submitting
+                                    ? null
+                                    : () {
+                                        setState(() => _rolesFuture =
+                                            _typeService.fetchUserRoles());
+                                      },
+                                icon: const Icon(Icons.refresh),
+                                label: const Text('Reintentar'),
+                              ),
+                            ],
+                          );
+                        }
+
+                        final roles =
+                            snapshot.data ?? const <UserRoleAssignment>[];
+                        final activeRoles =
+                            roles.where((r) => r.isActive).toList();
+
+                        if (activeRoles.isEmpty) {
+                          return Text('No tienes roles asignados.',
+                              style: theme.textTheme.bodyMedium);
+                        }
+
+                        return DropdownButtonFormField<UserRoleAssignment>(
+                          initialValue: _selectedRole,
+                          isExpanded: true,
+                          items: activeRoles
+                              .map((r) => DropdownMenuItem<UserRoleAssignment>(
+                                    value: r,
+                                    child: Text(r.role.name),
+                                  ))
+                              .toList(),
+                          onChanged: _submitting
+                              ? null
+                              : (v) {
+                                  setState(() {
+                                    _selectedRole = v;
+                                    _selectedType = null;
+                                    if (v != null) {
+                                      _typesFuture =
+                                          _typeService.fetchByRole(v.role.id);
+                                    }
+                                  });
+                                },
+                          validator: (v) => Validators.requiredField(
+                            v,
+                            fieldName: 'El rol',
+                          ),
+                          decoration: const InputDecoration(
+                            border: OutlineInputBorder(),
+                            hintText: 'Selecciona un rol',
+                            isDense: true,
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Align(
+                      alignment: Alignment.centerLeft,
                       child: Text('Tipo de actividad',
                           style: theme.textTheme.labelLarge),
                     ),
@@ -280,6 +380,15 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
                     FutureBuilder<List<ActivityType>>(
                       future: _typesFuture,
                       builder: (context, snapshot) {
+                        if (_selectedRole == null) {
+                          return Text(
+                            'Primero selecciona un rol',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: Colors.grey.shade600,
+                            ),
+                          );
+                        }
+
                         if (snapshot.connectionState ==
                             ConnectionState.waiting) {
                           return const Padding(
