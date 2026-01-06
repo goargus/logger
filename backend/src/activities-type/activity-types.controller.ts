@@ -48,6 +48,28 @@ export class ActivityTypesController {
     return this.service.findAllByUserRoleAssignments(user.id);
   }
 
+  @Get('user-roles/me')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Get current user role assignments' })
+  @ApiResponse({ status: 200, description: 'List of user role assignments' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getMyRoleAssignments(@Req() req: Request) {
+    const { sub, iss } = (req.user as JwtValidatedUser) ?? {};
+    const user = await this.identityService.resolveUserBySubAndIssuer(sub, iss);
+    return this.service.getUserRoleAssignments(user.id);
+  }
+
+  @Get('by-role/:roleId')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'List activity types by specific role' })
+  @ApiResponse({ status: 200, description: 'List of activity types for the role' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async getByRole(@Param('roleId', new ParseUUIDPipe()) roleId: string) {
+    return this.service.findAllByUserRole(roleId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a single activity type by ID' })
   @ApiResponse({ status: 200, description: 'Activity type details' })
