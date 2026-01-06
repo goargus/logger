@@ -40,10 +40,10 @@ class DashboardStats {
       final name = (itemMap['name'] as String? ?? '').toLowerCase();
       final count = (itemMap['count'] as num?)?.toInt() ?? 0;
 
-      if (name.contains('visita') &&
-          (name.contains('misioner') || name.contains('interesad'))) {
+      if (name.contains('visita')) {
         visits += count;
-      } else if (name.contains('estudio') && name.contains('bíblico')) {
+      } 
+      else if (name.contains('estudio') && name.contains('b') && name.contains('blic')) {
         bibleStudies += count;
       }
     }
