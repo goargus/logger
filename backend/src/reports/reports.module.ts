@@ -26,7 +26,14 @@ import { CsvExporter } from './export/csv-exporter';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Activity, User, Entity, ReportingPeriod, ActivityType, UserRoleAssignment]),
+    TypeOrmModule.forFeature([
+      Activity,
+      User,
+      Entity,
+      ReportingPeriod,
+      ActivityType,
+      UserRoleAssignment,
+    ]),
     AuthModule,
   ],
   controllers: [ReportsController],
