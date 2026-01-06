@@ -47,4 +47,12 @@ export class CreateEntityDto {
   @IsOptional()
   @IsString()
   location?: string;
+
+  @ApiPropertyOptional({
+    description: 'Currency symbol for displaying monetary values (typically set at Union level)',
+    example: 'L',
+  })
+  @IsOptional()
+  @IsString()
+  currencySymbol?: string;
 }

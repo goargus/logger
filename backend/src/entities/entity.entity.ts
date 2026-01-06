@@ -41,6 +41,9 @@ export class Entity {
   @Column({ length: 255, nullable: true })
   location?: string;
 
+  @Column({ length: 10, nullable: true, name: 'currency_symbol' })
+  currency_symbol?: string;
+
   @Column({ default: true })
   is_active!: boolean;
 

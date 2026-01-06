@@ -37,4 +37,12 @@ export class UpdateEntityDto {
   @IsOptional()
   @IsBoolean()
   is_active?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Currency symbol for displaying monetary values (typically set at Union level)',
+    example: 'L',
+  })
+  @IsOptional()
+  @IsString()
+  currencySymbol?: string;
 }
