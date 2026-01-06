@@ -16,49 +16,49 @@ const USERS = [
     email: 'daniel.contreras@uhn.test',
     full_name: 'Daniel Contreras',
     sub: 'auth0|69583d736ccfb90819e2300c',
-    roles: ['ADMIN'],
+    roles: ['Union President'],
     entity: 'Unión Hondureña',
   },
   {
     email: 'admin.central@uhn.test',
     full_name: 'Admin Asociación Central',
     sub: 'auth0|69583e476d2265af6faf2db8',
-    roles: ['ADMIN'],
+    roles: ['Association President'],
     entity: 'Asociación Central',
   },
   {
     email: 'admin.noroccidental@uhn.test',
     full_name: 'Admin Asociación Nor-occidental',
     sub: 'auth0|69583e5e6ccfb90819e23085',
-    roles: ['ADMIN'],
+    roles: ['Association President'],
     entity: 'Asociación Nor-occidental',
   },
   {
     email: 'admin.nororiental@uhn.test',
     full_name: 'Admin Asociación Nor-oriental',
     sub: 'auth0|69583e8889bb367a376574dd',
-    roles: ['ADMIN'],
+    roles: ['Association President'],
     entity: 'Asociación Nor-oriental',
   },
   {
     email: 'obrero.copan@uhn.test',
     full_name: 'Obrero Campo Copán',
     sub: 'auth0|69583ec26d2265af6faf2deb',
-    roles: ['MISSIONARY', 'Anciano'],
+    roles: ['Missionary', 'Anciano'],
     entity: 'Campo Copán',
   },
   {
     email: 'obrero.tegucigalpa@uhn.test',
     full_name: 'Obrero Campo Tegucigalpa',
     sub: 'auth0|69583ed7292a80e2ca479bda',
-    roles: ['MISSIONARY', 'Director de Jóvenes'],
+    roles: ['Missionary', 'Director de Jóvenes'],
     entity: 'Campo Tegucigalpa',
   },
   {
     email: 'obrero.sps@uhn.test',
     full_name: 'Obrero Campo San Pedro Sula',
     sub: 'auth0|69583eec89bb367a37657519',
-    roles: ['MISSIONARY', 'Director de Obra Misionera'],
+    roles: ['Missionary', 'Director de Obra Misionera'],
     entity: 'Campo San Pedro Sula',
   },
 ];
@@ -100,6 +100,11 @@ async function run() {
       user.role = primaryRole;
       user.entity = entity;
 
+      await userRepo.save(user);
+    } else {
+      // Update existing user's primary role and entity
+      user.role = primaryRole;
+      user.entity = entity;
       await userRepo.save(user);
     }
 

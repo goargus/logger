@@ -24,13 +24,45 @@ async function seedRolesAndActivities() {
   const activityTypeRepo = app.get<Repository<ActivityType>>(getRepositoryToken(ActivityType));
 
   const roleActivityMappings: RoleActivityMapping[] = [
+    // Leadership roles (from role.constants.ts LEADERSHIP_ROLES)
     {
-      roleName: 'ADMIN',
+      roleName: 'System Admin',
       roleDescription: 'Administrador del sistema con acceso completo',
       activityTypes: [],
     },
     {
-      roleName: 'MISSIONARY',
+      roleName: 'Union President',
+      roleDescription: 'Presidente de Unión con visibilidad completa de la unión',
+      activityTypes: [],
+    },
+    {
+      roleName: 'Association President',
+      roleDescription: 'Presidente de Asociación con visibilidad de la asociación',
+      activityTypes: [],
+    },
+    {
+      roleName: 'Field Director',
+      roleDescription: 'Director de Campo con visibilidad del campo',
+      activityTypes: [],
+    },
+    {
+      roleName: 'Union Secretary',
+      roleDescription: 'Secretario de Unión con gestión de actividades de la unión',
+      activityTypes: [],
+    },
+    {
+      roleName: 'Association Secretary',
+      roleDescription: 'Secretario de Asociación con gestión de actividades de la asociación',
+      activityTypes: [],
+    },
+    {
+      roleName: 'Field Secretary',
+      roleDescription: 'Secretario de Campo con gestión de actividades del campo',
+      activityTypes: [],
+    },
+    // Missionary role (from role.constants.ts MISSIONARY_ROLES)
+    {
+      roleName: 'Missionary',
       roleDescription: 'Misionero/Obrero de campo con actividades evangelísticas',
       activityTypes: [
         { name: 'Visitas a miembros', description: 'Visitas a miembros de la iglesia' },
