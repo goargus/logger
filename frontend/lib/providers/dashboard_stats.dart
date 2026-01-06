@@ -35,10 +35,12 @@ class DashboardStatsNotifier extends StateNotifier<AsyncValue<DashboardStats>> {
     final now = DateTime.now();
     final firstDay = DateTime(now.year, now.month, 1);
     final lastDay = DateTime(now.year, now.month + 1, 0);
-    
-    final periodStart = '${firstDay.year}-${firstDay.month.toString().padLeft(2, '0')}-${firstDay.day.toString().padLeft(2, '0')}';
-    final periodEnd = '${lastDay.year}-${lastDay.month.toString().padLeft(2, '0')}-${lastDay.day.toString().padLeft(2, '0')}';
-    
+
+    final periodStart =
+        '${firstDay.year}-${firstDay.month.toString().padLeft(2, '0')}-${firstDay.day.toString().padLeft(2, '0')}';
+    final periodEnd =
+        '${lastDay.year}-${lastDay.month.toString().padLeft(2, '0')}-${lastDay.day.toString().padLeft(2, '0')}';
+
     fetch(periodStart: periodStart, periodEnd: periodEnd);
   }
 }

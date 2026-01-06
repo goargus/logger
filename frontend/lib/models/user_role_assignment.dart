@@ -59,8 +59,10 @@ class UserRoleAssignment {
   factory UserRoleAssignment.fromJson(Map<String, dynamic> json) {
     return UserRoleAssignment(
       id: json['id'] as String,
-      role: UserRoleAssignmentRole.fromJson(json['role'] as Map<String, dynamic>),
-      entity: UserRoleAssignmentEntity.fromJson(json['entity'] as Map<String, dynamic>),
+      role:
+          UserRoleAssignmentRole.fromJson(json['role'] as Map<String, dynamic>),
+      entity: UserRoleAssignmentEntity.fromJson(
+          json['entity'] as Map<String, dynamic>),
       startDate: json['start_date'] as String,
       endDate: json['end_date'] as String,
     );

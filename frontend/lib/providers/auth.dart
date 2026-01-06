@@ -344,22 +344,22 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       web.window.localStorage.removeItem('auth_token');
       web.window.localStorage.removeItem('pkce_code_verifier');
-      
+
       await _session.clear();
-      
+
       state = AuthState.initial().copyWith(isLoading: true);
 
       var returnUrl = AuthConfig.redirectUri.replaceAll(RegExp(r'/$'), '');
-      
+
       final logoutUrl = Uri.https(AuthConfig.domain, '/v2/logout', {
         'client_id': AuthConfig.clientId,
         'returnTo': returnUrl,
       });
 
       debugPrint('[AuthNotifier] Logging out, redirecting to: $logoutUrl');
-      
+
       await Future.delayed(const Duration(milliseconds: 100));
-      
+
       web.window.location.assign(logoutUrl.toString());
     } catch (e) {
       debugPrint('[AuthNotifier] Error during logout: $e');

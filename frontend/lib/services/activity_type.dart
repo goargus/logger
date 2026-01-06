@@ -51,7 +51,8 @@ class ActivityTypeService {
   Future<List<UserRoleAssignment>> fetchUserRoles() async {
     try {
       final decoded = await apiClient.get('/activity-types/user-roles/me');
-      debugPrint('[ActivityTypeService] Successfully fetched user role assignments');
+      debugPrint(
+          '[ActivityTypeService] Successfully fetched user role assignments');
 
       final list = _extractList(decoded);
       return list.map<UserRoleAssignment>((e) {
@@ -73,7 +74,8 @@ class ActivityTypeService {
   Future<List<ActivityType>> fetchByRole(String roleId) async {
     try {
       final decoded = await apiClient.get('/activity-types/by-role/$roleId');
-      debugPrint('[ActivityTypeService] Successfully fetched activity types for role $roleId');
+      debugPrint(
+          '[ActivityTypeService] Successfully fetched activity types for role $roleId');
 
       final list = _extractList(decoded);
       return list.map<ActivityType>((e) {
@@ -87,9 +89,9 @@ class ActivityTypeService {
         );
       }).toList();
     } catch (e) {
-      debugPrint('[ActivityTypeService] Error fetching activity types by role: $e');
+      debugPrint(
+          '[ActivityTypeService] Error fetching activity types by role: $e');
       rethrow;
     }
   }
 }
-

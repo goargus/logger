@@ -327,16 +327,18 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
                           );
                         }
 
-                        final roles = snapshot.data ?? const <UserRoleAssignment>[];
-                        final activeRoles = roles.where((r) => r.isActive).toList();
-                        
+                        final roles =
+                            snapshot.data ?? const <UserRoleAssignment>[];
+                        final activeRoles =
+                            roles.where((r) => r.isActive).toList();
+
                         if (activeRoles.isEmpty) {
                           return Text('No tienes roles asignados.',
                               style: theme.textTheme.bodyMedium);
                         }
 
                         return DropdownButtonFormField<UserRoleAssignment>(
-                        initialValue: _selectedRole,
+                          initialValue: _selectedRole,
                           isExpanded: true,
                           items: activeRoles
                               .map((r) => DropdownMenuItem<UserRoleAssignment>(
@@ -351,7 +353,8 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
                                     _selectedRole = v;
                                     _selectedType = null;
                                     if (v != null) {
-                                      _typesFuture = _typeService.fetchByRole(v.role.id);
+                                      _typesFuture =
+                                          _typeService.fetchByRole(v.role.id);
                                     }
                                   });
                                 },

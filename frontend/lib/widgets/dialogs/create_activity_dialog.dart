@@ -263,16 +263,18 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                           );
                         }
 
-                        final roles = snapshot.data ?? const <UserRoleAssignment>[];
-                        final activeRoles = roles.where((r) => r.isActive).toList();
-                        
+                        final roles =
+                            snapshot.data ?? const <UserRoleAssignment>[];
+                        final activeRoles =
+                            roles.where((r) => r.isActive).toList();
+
                         if (activeRoles.isEmpty) {
                           return Text('No tienes roles asignados.',
                               style: theme.textTheme.bodyMedium);
                         }
 
                         return DropdownButtonFormField<UserRoleAssignment>(
-                        initialValue: _selectedRole,
+                          initialValue: _selectedRole,
                           isExpanded: true,
                           items: activeRoles
                               .map((r) => DropdownMenuItem<UserRoleAssignment>(
@@ -287,7 +289,8 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                                     _selectedRole = v;
                                     _selectedType = null;
                                     if (v != null) {
-                                      _typesFuture = _typeService.fetchByRole(v.role.id);
+                                      _typesFuture =
+                                          _typeService.fetchByRole(v.role.id);
                                     }
                                   });
                                 },
@@ -399,7 +402,7 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                         }
 
                         return DropdownButtonFormField<ActivityType>(
-                        initialValue: _selectedType,
+                          initialValue: _selectedType,
                           isExpanded: true,
                           items: types
                               .map((t) => DropdownMenuItem<ActivityType>(

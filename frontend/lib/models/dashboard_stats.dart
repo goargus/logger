@@ -42,8 +42,9 @@ class DashboardStats {
 
       if (name.contains('visita')) {
         visits += count;
-      } 
-      else if (name.contains('estudio') && name.contains('b') && name.contains('blic')) {
+      } else if (name.contains('estudio') &&
+          name.contains('b') &&
+          name.contains('blic')) {
         bibleStudies += count;
       }
     }
