@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Role } from '../src/roles/role.entity';
 import { ActivityType } from '../src/activities-type/activity-type.entity';
+import { RolePermission } from '../src/roles/role-permission.entity';
+import { Permission } from '../src/auth/permissions/permission.enum';
 
 interface ActivityTypeData {
   name: string;
@@ -13,8 +15,40 @@ interface ActivityTypeData {
 interface RoleActivityMapping {
   roleName: string;
   roleDescription: string;
+  permissions: Permission[];
   activityTypes: ActivityTypeData[];
 }
+
+// Permission sets for different role types
+const SYSTEM_ADMIN_PERMISSIONS: Permission[] = [Permission.SYSTEM_ADMIN];
+
+const LEADERSHIP_PERMISSIONS: Permission[] = [
+  Permission.REPORT_VIEW_HIERARCHY,
+  Permission.ACTIVITY_READ_HIERARCHY,
+  Permission.ENTITY_READ_HIERARCHY,
+  Permission.USER_READ_HIERARCHY,
+  Permission.REPORTING_PERIOD_READ_HIERARCHY,
+  Permission.ROLE_READ,
+  Permission.ACTIVITY_TYPE_READ,
+];
+
+const SECRETARY_PERMISSIONS: Permission[] = [
+  ...LEADERSHIP_PERMISSIONS,
+  Permission.ACTIVITY_MANAGE_HIERARCHY,
+  Permission.ENTITY_UPDATE_OWN,
+  Permission.USER_UPDATE_HIERARCHY,
+];
+
+const MISSIONARY_PERMISSIONS: Permission[] = [
+  Permission.ACTIVITY_CREATE_OWN,
+  Permission.ACTIVITY_READ_OWN,
+  Permission.ACTIVITY_UPDATE_OWN,
+  Permission.ACTIVITY_DELETE_OWN,
+  Permission.USER_READ_OWN,
+  Permission.ACTIVITY_TYPE_READ,
+  Permission.ENTITY_READ,
+  Permission.REPORTING_PERIOD_READ,
+];
 
 async function seedRolesAndActivities() {
   console.log('Starting roles and activity types seeding...');
@@ -22,48 +56,59 @@ async function seedRolesAndActivities() {
   const app = await NestFactory.createApplicationContext(AppModule);
   const roleRepo = app.get<Repository<Role>>(getRepositoryToken(Role));
   const activityTypeRepo = app.get<Repository<ActivityType>>(getRepositoryToken(ActivityType));
+  const rolePermissionRepo = app.get<Repository<RolePermission>>(getRepositoryToken(RolePermission));
 
   const roleActivityMappings: RoleActivityMapping[] = [
-    // Leadership roles (from role.constants.ts LEADERSHIP_ROLES)
+    // System Admin with full access
     {
       roleName: 'System Admin',
       roleDescription: 'Administrador del sistema con acceso completo',
+      permissions: SYSTEM_ADMIN_PERMISSIONS,
       activityTypes: [],
     },
+    // Leadership roles with REPORT_VIEW_HIERARCHY permissions
     {
       roleName: 'Union President',
       roleDescription: 'Presidente de Unión con visibilidad completa de la unión',
+      permissions: LEADERSHIP_PERMISSIONS,
       activityTypes: [],
     },
     {
       roleName: 'Association President',
       roleDescription: 'Presidente de Asociación con visibilidad de la asociación',
+      permissions: LEADERSHIP_PERMISSIONS,
       activityTypes: [],
     },
     {
       roleName: 'Field Director',
       roleDescription: 'Director de Campo con visibilidad del campo',
+      permissions: LEADERSHIP_PERMISSIONS,
       activityTypes: [],
     },
+    // Secretary roles with ACTIVITY_MANAGE_HIERARCHY permissions
     {
       roleName: 'Union Secretary',
       roleDescription: 'Secretario de Unión con gestión de actividades de la unión',
+      permissions: SECRETARY_PERMISSIONS,
       activityTypes: [],
     },
     {
       roleName: 'Association Secretary',
       roleDescription: 'Secretario de Asociación con gestión de actividades de la asociación',
+      permissions: SECRETARY_PERMISSIONS,
       activityTypes: [],
     },
     {
       roleName: 'Field Secretary',
       roleDescription: 'Secretario de Campo con gestión de actividades del campo',
+      permissions: SECRETARY_PERMISSIONS,
       activityTypes: [],
     },
-    // Missionary role (from role.constants.ts MISSIONARY_ROLES)
+    // Missionary roles with ACTIVITY_*_OWN permissions
     {
       roleName: 'Missionary',
       roleDescription: 'Misionero/Obrero de campo con actividades evangelísticas',
+      permissions: MISSIONARY_PERMISSIONS,
       activityTypes: [
         { name: 'Visitas a miembros', description: 'Visitas a miembros de la iglesia' },
         { name: 'Visitas a interesados', description: 'Visitas a personas interesadas' },
@@ -85,6 +130,7 @@ async function seedRolesAndActivities() {
     {
       roleName: 'Ministro',
       roleDescription: 'Ministro con privilegios completos para actividades ministeriales',
+      permissions: MISSIONARY_PERMISSIONS,
       activityTypes: [
         { name: 'Bautismos', description: 'Ceremonias de bautismo' },
         { name: 'Santa Cena', description: 'Servicio de Santa Cena' },
@@ -141,6 +187,7 @@ async function seedRolesAndActivities() {
     {
       roleName: 'Anciano',
       roleDescription: 'Anciano de iglesia con responsabilidades pastorales',
+      permissions: MISSIONARY_PERMISSIONS,
       activityTypes: [
         { name: 'Bautismos', description: 'Ceremonias de bautismo' },
         { name: 'Santa Cena', description: 'Servicio de Santa Cena' },
@@ -195,6 +242,7 @@ async function seedRolesAndActivities() {
     {
       roleName: 'Obreros',
       roleDescription: 'Obreros con actividades misioneras y evangelísticas',
+      permissions: MISSIONARY_PERMISSIONS,
       activityTypes: [
         { name: 'Visitas a miembros', description: 'Visitas a miembros de la iglesia' },
         { name: 'Visitas a interesados', description: 'Visitas a personas interesadas' },
@@ -229,6 +277,7 @@ async function seedRolesAndActivities() {
     {
       roleName: 'Director de Obra Misionera',
       roleDescription: 'Director de Obra Misionera con responsabilidades de supervisión',
+      permissions: MISSIONARY_PERMISSIONS,
       activityTypes: [
         { name: 'Seminarios', description: 'Seminarios y capacitaciones' },
         { name: 'Charlas y orientaciones', description: 'Charlas y orientaciones' },
@@ -258,6 +307,7 @@ async function seedRolesAndActivities() {
     {
       roleName: 'Director de Asistencia Social',
       roleDescription: 'Director de Asistencia Social con responsabilidades comunitarias',
+      permissions: MISSIONARY_PERMISSIONS,
       activityTypes: [
         {
           name: 'Oficina y trámites',
@@ -301,6 +351,7 @@ async function seedRolesAndActivities() {
     {
       roleName: 'Director de Salud',
       roleDescription: 'Director de Salud con responsabilidades de salud y bienestar',
+      permissions: MISSIONARY_PERMISSIONS,
       activityTypes: [
         {
           name: 'Oficina y trámites',
@@ -332,6 +383,7 @@ async function seedRolesAndActivities() {
     {
       roleName: 'Director de Jóvenes',
       roleDescription: 'Director de Jóvenes con responsabilidades juveniles',
+      permissions: MISSIONARY_PERMISSIONS,
       activityTypes: [
         {
           name: 'Preparación de material didáctico',
@@ -355,6 +407,7 @@ async function seedRolesAndActivities() {
     {
       roleName: 'Secretario',
       roleDescription: 'Secretario con responsabilidades administrativas',
+      permissions: MISSIONARY_PERMISSIONS,
       activityTypes: [
         { name: 'Elaboración de actas', description: 'Elaboración de actas' },
         { name: 'Elaboración de circulares', description: 'Elaboración de circulares' },
@@ -389,9 +442,12 @@ async function seedRolesAndActivities() {
     }
   }
 
-  console.log('\n=== Creating Roles and Associations ===');
+  console.log('\n=== Creating Roles and Permissions ===');
   for (const mapping of roleActivityMappings) {
-    let role = await roleRepo.findOne({ where: { name: mapping.roleName } });
+    let role = await roleRepo.findOne({
+      where: { name: mapping.roleName },
+      relations: ['rolePermissions'],
+    });
     if (!role) {
       console.log(`Creating role: ${mapping.roleName}`);
       role = roleRepo.create({
@@ -402,6 +458,19 @@ async function seedRolesAndActivities() {
       console.log(`Role created: ${mapping.roleName}`);
     } else {
       console.log(`Role already exists: ${mapping.roleName}`);
+    }
+
+    // Create permissions for the role
+    const existingPermissions = new Set(role.rolePermissions?.map((rp) => rp.permission) || []);
+    for (const permission of mapping.permissions) {
+      if (!existingPermissions.has(permission)) {
+        const rolePermission = rolePermissionRepo.create({
+          role,
+          permission,
+        });
+        await rolePermissionRepo.save(rolePermission);
+        console.log(`  - Added permission: ${permission}`);
+      }
     }
 
     console.log(`Associating activity types with role: ${mapping.roleName}`);
