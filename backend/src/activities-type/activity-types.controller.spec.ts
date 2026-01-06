@@ -6,6 +6,8 @@ import { JwtValidatedUser } from '../auth/jwt.strategy';
 import { Request } from 'express';
 import { ActivityType } from './activity-type.entity';
 import { UserStatus } from '../users/user-status.enum';
+import { RolesGuard } from '../auth/roles.guard';
+import { PermissionsService } from '../auth/permissions/permissions.service';
 
 describe('ActivityTypesController', () => {
   let controller: ActivityTypesController;
@@ -41,10 +43,10 @@ describe('ActivityTypesController', () => {
       id: 'role-missionary',
       name: 'Missionary',
       description: 'Missionary role',
-      canViewReports: false,
       created_at: new Date(),
       updated_at: new Date(),
       users: [],
+      rolePermissions: [],
     },
     entity: {
       id: 'entity-123',
@@ -87,6 +89,13 @@ describe('ActivityTypesController', () => {
           provide: IdentityResolutionService,
           useValue: mockIdentityService,
         },
+        {
+          provide: PermissionsService,
+          useValue: {
+            userHasPermission: jest.fn().mockResolvedValue(true),
+          },
+        },
+        RolesGuard,
       ],
     }).compile();
 

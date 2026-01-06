@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ReportsController } from './reports.controller';
 import { ReportsService } from './reports.service';
 import { IdentityResolutionService } from '../auth/identity-resolution.service';
+import { PermissionsService } from '../auth/permissions/permissions.service';
+import { RolesGuard } from '../auth/roles.guard';
 
 describe('ReportsController', () => {
   let controller: ReportsController;
@@ -47,6 +49,13 @@ describe('ReportsController', () => {
           provide: IdentityResolutionService,
           useValue: mockIdentityService,
         },
+        {
+          provide: PermissionsService,
+          useValue: {
+            userHasPermission: jest.fn().mockResolvedValue(true),
+          },
+        },
+        RolesGuard,
       ],
     }).compile();
 

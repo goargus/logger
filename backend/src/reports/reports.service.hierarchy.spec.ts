@@ -20,6 +20,7 @@ import { BreakdownComparisonCalculator } from './calculators/breakdown-compariso
 import { HierarchyBreakdownCalculator } from './calculators/hierarchy-breakdown.calculator';
 import { EntityType } from '../entities/entity.entity';
 import { CsvExporter } from './export/csv-exporter';
+import { PermissionsService } from '../auth/permissions/permissions.service';
 
 describe('ReportsService - Hierarchy Features', () => {
   let service: ReportsService;
@@ -34,14 +35,14 @@ describe('ReportsService - Hierarchy Features', () => {
   const actorWithReports = {
     id: 'actor-1',
     entity_id: 'entity-1',
-    role: { canViewReports: true },
+    role: { rolePermissions: [] },
     entity: { id: 'entity-1', name: 'Test Union', type: EntityType.UNION },
   } as unknown as User;
 
   const actorWithoutReports = {
     id: 'actor-2',
     entity_id: 'entity-2',
-    role: { canViewReports: false },
+    role: { rolePermissions: [] },
     entity: { id: 'entity-2', name: 'Test Field', type: EntityType.FIELD },
   } as unknown as User;
 
@@ -188,6 +189,14 @@ describe('ReportsService - Hierarchy Features', () => {
             exportToCsv: jest.fn(),
           },
         },
+        {
+          provide: PermissionsService,
+          useValue: {
+            userHasPermission: jest.fn().mockResolvedValue(true),
+            getPermissionsForRole: jest.fn().mockResolvedValue([]),
+            getEffectivePermissionsForUser: jest.fn().mockResolvedValue(new Map()),
+          },
+        },
       ],
     }).compile();
 
@@ -210,10 +219,10 @@ describe('ReportsService - Hierarchy Features', () => {
 
       expect(result).toHaveProperty('hierarchyBreakdown');
       expect(result.hierarchyBreakdown).toEqual(mockHierarchyBreakdown);
-      expect(hierarchyBreakdownCalculator.calculate).toHaveBeenCalledWith(
-        mockActivities,
-        ['entity-1', 'entity-2'],
-      );
+      expect(hierarchyBreakdownCalculator.calculate).toHaveBeenCalledWith(mockActivities, [
+        'entity-1',
+        'entity-2',
+      ]);
     });
 
     it('should not include hierarchy breakdown when flag is false', async () => {
@@ -270,10 +279,11 @@ describe('ReportsService - Hierarchy Features', () => {
         includeHierarchyBreakdown: true,
       });
 
-      expect(hierarchyBreakdownCalculator.calculate).toHaveBeenCalledWith(
-        mockActivities,
-        ['entity-3', 'entity-4', 'entity-5'],
-      );
+      expect(hierarchyBreakdownCalculator.calculate).toHaveBeenCalledWith(mockActivities, [
+        'entity-3',
+        'entity-4',
+        'entity-5',
+      ]);
     });
   });
 });

@@ -5,6 +5,8 @@ import { CreateUserDto } from '../../users/dto/create-user.dto';
 import { UpdateUserDto } from '../../users/dto/update-user.dto';
 import { UserStatus } from '../../users/user-status.enum';
 import { User } from '../../users/user.entity';
+import { PermissionsService } from '../../auth/permissions/permissions.service';
+import { RolesGuard } from '../../auth/roles.guard';
 
 describe('AdminUsersController (create & update)', () => {
   let controller: AdminUsersController;
@@ -40,6 +42,13 @@ describe('AdminUsersController (create & update)', () => {
             update: jest.fn(),
           },
         },
+        {
+          provide: PermissionsService,
+          useValue: {
+            userHasPermission: jest.fn().mockResolvedValue(true),
+          },
+        },
+        RolesGuard,
       ],
     }).compile();
 
