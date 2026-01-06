@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/layout_constants.dart';
+import '../../providers/auth.dart';
 import '../../router.dart';
 import '../../theme/app_theme.dart';
 
-class SidebarNav extends StatelessWidget {
+class SidebarNav extends ConsumerWidget {
   final String userName;
   final String userEmail;
   final String? userPicture;
@@ -20,7 +22,7 @@ class SidebarNav extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Container(
       width: LayoutConstants.sidebarWidth,
       height: double.infinity,
@@ -102,7 +104,7 @@ class SidebarNav extends StatelessWidget {
               thickness: LayoutConstants.dividerThickness,
               color: Theme.of(context).dividerColor,
             ),
-            _buildUserProfile(context),
+            _buildUserProfile(context, ref),
           ],
         ),
       ),
@@ -228,7 +230,7 @@ class SidebarNav extends StatelessWidget {
     );
   }
 
-  Widget _buildUserProfile(BuildContext context) {
+  Widget _buildUserProfile(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsetsDirectional.fromSTEB(
         LayoutConstants.spacing16,
@@ -236,87 +238,125 @@ class SidebarNav extends StatelessWidget {
         LayoutConstants.spacing16,
         LayoutConstants.spacing12,
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.max,
-        children: [
-          Container(
-            width: LayoutConstants.profileImageSize,
-            height: LayoutConstants.profileImageSize,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.2),
-              borderRadius:
-                  BorderRadius.circular(LayoutConstants.borderRadius12),
-              border: Border.all(
-                color: Colors.white,
-                width: LayoutConstants.borderWidth2,
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(2.0),
-              child: ClipRRect(
-                borderRadius:
-                    BorderRadius.circular(LayoutConstants.borderRadius8),
-                child: userPicture != null
-                    ? Image.network(
-                        userPicture!,
-                        width: LayoutConstants.profileImageInner,
-                        height: LayoutConstants.profileImageInner,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            width: LayoutConstants.profileImageInner,
-                            height: LayoutConstants.profileImageInner,
-                            color: Colors.white24,
-                            child: const Icon(
-                              Icons.person,
-                              color: Colors.white,
-                            ),
-                          );
-                        },
-                      )
-                    : Container(
-                        width: LayoutConstants.profileImageInner,
-                        height: LayoutConstants.profileImageInner,
-                        color: Colors.white24,
-                        child: const Icon(
-                          Icons.person,
-                          color: Colors.white,
-                        ),
-                      ),
-              ),
-            ),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsetsDirectional.fromSTEB(
-                LayoutConstants.spacing12,
-                0.0,
-                0.0,
-                0.0,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.max,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    userName,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: Colors.white,
-                          letterSpacing: 0.0,
-                        ),
+      child: PopupMenuButton<String>(
+        offset: const Offset(0, -60),
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(LayoutConstants.borderRadius8),
+        ),
+        onSelected: (value) {
+          if (value == 'logout') {
+            ref.read(authNotifierProvider.notifier).logout();
+          }
+        },
+        itemBuilder: (BuildContext context) => [
+          PopupMenuItem<String>(
+            value: 'logout',
+            child: Row(
+              children: [
+                Icon(
+                  Icons.logout,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Cerrar sesión',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.error,
                   ),
-                  Text(
-                    userEmail,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.white70,
-                          letterSpacing: 0.0,
-                        ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
+        child: Row(
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            Container(
+              width: LayoutConstants.profileImageSize,
+              height: LayoutConstants.profileImageSize,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.2),
+                borderRadius:
+                    BorderRadius.circular(LayoutConstants.borderRadius12),
+                border: Border.all(
+                  color: Colors.white,
+                  width: LayoutConstants.borderWidth2,
+                ),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(2.0),
+                child: ClipRRect(
+                  borderRadius:
+                      BorderRadius.circular(LayoutConstants.borderRadius8),
+                  child: userPicture != null
+                      ? Image.network(
+                          userPicture!,
+                          width: LayoutConstants.profileImageInner,
+                          height: LayoutConstants.profileImageInner,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: LayoutConstants.profileImageInner,
+                              height: LayoutConstants.profileImageInner,
+                              color: Colors.white24,
+                              child: const Icon(
+                                Icons.person,
+                                color: Colors.white,
+                              ),
+                            );
+                          },
+                        )
+                      : Container(
+                          width: LayoutConstants.profileImageInner,
+                          height: LayoutConstants.profileImageInner,
+                          color: Colors.white24,
+                          child: const Icon(
+                            Icons.person,
+                            color: Colors.white,
+                          ),
+                        ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsetsDirectional.fromSTEB(
+                  LayoutConstants.spacing12,
+                  0.0,
+                  0.0,
+                  0.0,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.max,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      userName,
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            color: Colors.white,
+                            letterSpacing: 0.0,
+                          ),
+                    ),
+                    Text(
+                      userEmail,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Colors.white70,
+                            letterSpacing: 0.0,
+                          ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const Icon(
+              Icons.arrow_drop_up,
+              color: Colors.white,
+              size: 24,
+            ),
+          ],
+        ),
       ),
     );
   }
