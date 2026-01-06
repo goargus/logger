@@ -11,6 +11,7 @@ import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
 import { Role } from '../roles/role.entity';
 import { ActivityType } from '../activities-type/activity-type.entity';
 import { getCurrentDateString, isDateInRange } from '../common/date.utils';
+import { Permission } from '../auth/permissions/permission.enum';
 
 export interface UserWithRoles extends User {
   roleAssignments?: UserRoleAssignment[];
@@ -34,8 +35,13 @@ export class CaslAbilityFactory {
 
     const roleAssignments = user.roleAssignments || (await this.loadActiveRoleAssignments(user.id));
 
-    const isSystemAdmin = roleAssignments.some((ra) => ra.role.isSystemAdmin);
-    if (isSystemAdmin) {
+    // Check for SYSTEM_ADMIN permission (grants all abilities)
+    const hasSystemAdmin = roleAssignments.some((ra) => {
+      const permissions = ra.role.permissions;
+      return permissions.includes(Permission.SYSTEM_ADMIN);
+    });
+
+    if (hasSystemAdmin) {
       can(Action.Manage, 'all');
       return build();
     }
@@ -45,42 +51,76 @@ export class CaslAbilityFactory {
 
     for (const assignment of roleAssignments) {
       const role = assignment.role;
+      const permissions = new Set(role.permissions);
       const entityId = assignment.entity.id;
-
       const accessibleEntityIds = entityHierarchyMap.get(entityId) || [entityId];
 
-      if (role.canViewReports) {
-        can(Action.Read, Activity, { userId: { $in: accessibleEntityIds } } as never);
-        can(Action.Read, ReportingPeriod, { entityId: { $in: accessibleEntityIds } } as never);
-        can(Action.Read, Entity, { id: { $in: accessibleEntityIds } } as never);
-        can(Action.Read, User, { entityId: { $in: accessibleEntityIds } } as never);
+      // Activity: Own permissions
+      if (permissions.has(Permission.ACTIVITY_CREATE_OWN)) {
+        can(Action.Create, Activity, { userId: user.id } as never);
+      }
+      if (permissions.has(Permission.ACTIVITY_READ_OWN)) {
+        can(Action.Read, Activity, { userId: user.id } as never);
+      }
+      if (permissions.has(Permission.ACTIVITY_UPDATE_OWN)) {
+        can(Action.Update, Activity, { userId: user.id } as never);
+      }
+      if (permissions.has(Permission.ACTIVITY_DELETE_OWN)) {
+        can(Action.Delete, Activity, { userId: user.id } as never);
       }
 
-      if (role.canManageOwnActivities) {
-        can(Action.Create, Activity, { userId: user.id } as never);
-        can(Action.Read, Activity, { userId: user.id } as never);
-        can(Action.Update, Activity, { userId: user.id } as never);
-        can(Action.Delete, Activity, { userId: user.id } as never);
-        can(Action.Read, User, { id: user.id } as never);
-        can(Action.Read, ActivityType);
+      // Activity: Hierarchy permissions
+      if (permissions.has(Permission.ACTIVITY_READ_HIERARCHY)) {
+        can(Action.Read, Activity, { entityId: { $in: accessibleEntityIds } } as never);
+      }
+      if (permissions.has(Permission.ACTIVITY_MANAGE_HIERARCHY)) {
+        can(Action.Create, Activity, { entityId: { $in: accessibleEntityIds } } as never);
+        can(Action.Update, Activity, { entityId: { $in: accessibleEntityIds } } as never);
+      }
+
+      // Report permissions (maps to reading activities/periods in hierarchy)
+      if (permissions.has(Permission.REPORT_VIEW_HIERARCHY)) {
+        can(Action.Read, ReportingPeriod, { entityId: { $in: accessibleEntityIds } } as never);
+      }
+
+      // Entity permissions
+      if (permissions.has(Permission.ENTITY_READ)) {
         can(Action.Read, Entity, { id: entityId } as never);
+      }
+      if (permissions.has(Permission.ENTITY_READ_HIERARCHY)) {
+        can(Action.Read, Entity, { id: { $in: accessibleEntityIds } } as never);
+      }
+      if (permissions.has(Permission.ENTITY_UPDATE_OWN)) {
+        can(Action.Update, Entity, { id: entityId } as never);
+      }
+
+      // User permissions
+      if (permissions.has(Permission.USER_READ_OWN)) {
+        can(Action.Read, User, { id: user.id } as never);
+      }
+      if (permissions.has(Permission.USER_READ_HIERARCHY)) {
+        can(Action.Read, User, { entityId: { $in: accessibleEntityIds } } as never);
+      }
+      if (permissions.has(Permission.USER_UPDATE_HIERARCHY)) {
+        can(Action.Update, User, { entityId: entityId } as never);
+      }
+
+      // Role permissions
+      if (permissions.has(Permission.ROLE_READ)) {
+        can(Action.Read, Role);
+      }
+
+      // Activity Type permissions
+      if (permissions.has(Permission.ACTIVITY_TYPE_READ)) {
+        can(Action.Read, ActivityType);
+      }
+
+      // Reporting Period permissions
+      if (permissions.has(Permission.REPORTING_PERIOD_READ)) {
         can(Action.Read, ReportingPeriod, { entityId: entityId } as never);
       }
-
-      if (role.canManageHierarchyActivities) {
-        can(Action.Create, Activity, { entityId: { $in: accessibleEntityIds } } as never);
-        can(Action.Read, Activity, { entityId: { $in: accessibleEntityIds } } as never);
-        can(Action.Update, Activity, { entityId: { $in: accessibleEntityIds } } as never);
-        can(Action.Read, Entity, { id: { $in: accessibleEntityIds } } as never);
-        can(Action.Read, User, { entityId: { $in: accessibleEntityIds } } as never);
-      }
-
-      if (role.canManageEntities) {
-        can(Action.Read, Entity, { id: { $in: accessibleEntityIds } } as never);
-        can(Action.Update, Entity, { id: entityId } as never);
-        can(Action.Read, User, { entityId: { $in: accessibleEntityIds } } as never);
-        can(Action.Update, User, { entityId: entityId } as never);
-        can(Action.Read, Role);
+      if (permissions.has(Permission.REPORTING_PERIOD_READ_HIERARCHY)) {
+        can(Action.Read, ReportingPeriod, { entityId: { $in: accessibleEntityIds } } as never);
       }
     }
 
@@ -95,7 +135,7 @@ export class CaslAbilityFactory {
         where: {
           user: { id: userId },
         },
-        relations: ['role', 'entity', 'user'],
+        relations: ['role', 'role.rolePermissions', 'entity', 'user'],
       })
       .then((assignments) =>
         assignments.filter((a) => isDateInRange(today, a.start_date, a.end_date)),
