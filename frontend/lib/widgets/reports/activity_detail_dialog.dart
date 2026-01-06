@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/user_activities.dart';
+import '../../utils/currency_formatter.dart';
 
 /// Dialog to display full activity details
 class ActivityDetailDialog extends StatelessWidget {
@@ -7,21 +8,25 @@ class ActivityDetailDialog extends StatelessWidget {
     super.key,
     required this.activity,
     this.userName,
+    this.currencySymbol = '\$',
   });
 
   final UserActivity activity;
   final String? userName;
+  final String currencySymbol;
 
   static Future<void> show(
     BuildContext context, {
     required UserActivity activity,
     String? userName,
+    String currencySymbol = '\$',
   }) {
     return showDialog(
       context: context,
       builder: (context) => ActivityDetailDialog(
         activity: activity,
         userName: userName,
+        currencySymbol: currencySymbol,
       ),
     );
   }
@@ -93,7 +98,7 @@ class ActivityDetailDialog extends StatelessWidget {
                 theme,
                 icon: Icons.attach_money,
                 label: 'Gasto',
-                value: '\$${activity.expenseAmount ?? '0'}',
+                value: CurrencyFormatter.formatString(activity.expenseAmount, currencySymbol),
                 valueColor: theme.colorScheme.tertiary,
               ),
               const SizedBox(height: 12),

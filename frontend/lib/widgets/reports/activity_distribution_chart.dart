@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../models/report_breakdown.dart';
 import '../../models/user_activities.dart';
+import '../../utils/currency_formatter.dart';
 
 /// Data item for activity distribution chart
 class ActivityDistributionItem {
@@ -38,12 +39,14 @@ class ActivityDistributionChart extends StatefulWidget {
     this.title = 'Distribución de Actividades',
     this.showExpenses = false,
     this.height = 250,
+    this.currencySymbol = '\$',
   });
 
   final List<ActivityDistributionItem> items;
   final String title;
   final bool showExpenses;
   final double height;
+  final String currencySymbol;
 
   /// Create from ReportBreakdown list
   factory ActivityDistributionChart.fromBreakdowns({
@@ -52,6 +55,7 @@ class ActivityDistributionChart extends StatefulWidget {
     String title = 'Distribución de Actividades',
     bool showExpenses = false,
     double height = 250,
+    String currencySymbol = '\$',
   }) {
     // Sort by count or expenses descending
     final sorted = List<ReportBreakdown>.from(breakdowns);
@@ -75,6 +79,7 @@ class ActivityDistributionChart extends StatefulWidget {
       title: title,
       showExpenses: showExpenses,
       height: height,
+      currencySymbol: currencySymbol,
     );
   }
 
@@ -85,6 +90,7 @@ class ActivityDistributionChart extends StatefulWidget {
     String title = 'Distribución de Actividades',
     bool showExpenses = false,
     double height = 250,
+    String currencySymbol = '\$',
   }) {
     // Group activities by type
     final typeMap = <String, _TypeAccumulator>{};
@@ -124,6 +130,7 @@ class ActivityDistributionChart extends StatefulWidget {
       title: title,
       showExpenses: showExpenses,
       height: height,
+      currencySymbol: currencySymbol,
     );
   }
 
@@ -302,7 +309,7 @@ class _ActivityDistributionChartState extends State<ActivityDistributionChart> {
       ),
       child: Text(
         widget.showExpenses
-            ? '\$${item.expenses.toStringAsFixed(0)}'
+            ? CurrencyFormatter.format(item.expenses, widget.currencySymbol, decimals: 0)
             : '${item.count}',
         style: const TextStyle(
           color: Colors.white,
@@ -345,7 +352,7 @@ class _ActivityDistributionChartState extends State<ActivityDistributionChart> {
                 const SizedBox(width: 4),
                 Text(
                   widget.showExpenses
-                      ? '\$${item.expenses.toStringAsFixed(0)}'
+                      ? CurrencyFormatter.format(item.expenses, widget.currencySymbol, decimals: 0)
                       : '${item.count}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.bold,

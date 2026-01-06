@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/hierarchy_breakdown.dart';
 import '../../models/entity_hierarchy.dart';
+import '../../utils/currency_formatter.dart';
 
 /// A card widget displaying per-entity breakdown in a data table
 class HierarchyBreakdownCard extends StatelessWidget {
@@ -9,11 +10,13 @@ class HierarchyBreakdownCard extends StatelessWidget {
     required this.breakdown,
     this.onEntityTap,
     this.title = 'Desglose por Entidad',
+    this.currencySymbol = '\$',
   });
 
   final List<HierarchyEntityBreakdown> breakdown;
   final ValueChanged<String>? onEntityTap;
   final String title;
+  final String currencySymbol;
 
   @override
   Widget build(BuildContext context) {
@@ -113,7 +116,7 @@ class HierarchyBreakdownCard extends StatelessWidget {
                       ),
                       DataCell(Text(entity.entityType.displayName)),
                       DataCell(Text('${entity.activities}')),
-                      DataCell(Text('\$${entity.expenses.toStringAsFixed(2)}')),
+                      DataCell(Text(CurrencyFormatter.format(entity.expenses, currencySymbol))),
                       DataCell(_ComplianceBadge(rate: entity.complianceRate)),
                     ],
                   );
