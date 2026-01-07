@@ -14,6 +14,7 @@ class UserProfile {
   final String status;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final String currencySymbol;
   final UserRole primaryRole;
   final UserEntity primaryEntity;
   final List<RoleAssignment> roleAssignments;
@@ -28,6 +29,7 @@ class UserProfile {
     required this.status,
     required this.createdAt,
     required this.updatedAt,
+    required this.currencySymbol,
     required this.primaryRole,
     required this.primaryEntity,
     required this.roleAssignments,
@@ -44,6 +46,7 @@ class UserProfile {
       status: json['status'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
       updatedAt: DateTime.parse(json['updated_at'] as String),
+      currencySymbol: json['currency_symbol'] as String? ?? '\$',
       primaryRole:
           UserRole.fromJson(json['primary_role'] as Map<String, dynamic>),
       primaryEntity:
@@ -81,6 +84,7 @@ class UserEntity {
   final String description;
   final String type;
   final String? parentId;
+  final String? currencySymbol;
 
   UserEntity({
     required this.id,
@@ -88,6 +92,7 @@ class UserEntity {
     required this.description,
     required this.type,
     this.parentId,
+    this.currencySymbol,
   });
 
   factory UserEntity.fromJson(Map<String, dynamic> json) {
@@ -97,6 +102,7 @@ class UserEntity {
       description: json['description'] as String,
       type: json['type'] as String,
       parentId: json['parent_id'] as String?,
+      currencySymbol: json['currency_symbol'] as String?,
     );
   }
 }

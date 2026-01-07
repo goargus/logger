@@ -156,7 +156,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
         'name': profile.primaryEntity.name,
         'description': profile.primaryEntity.description,
         'type': profile.primaryEntity.type,
+        'currency_symbol': profile.primaryEntity.currencySymbol,
       };
+
+      result['currency_symbol'] = profile.currencySymbol;
 
       return result;
     } catch (e) {
@@ -392,4 +395,13 @@ final canViewReportsProvider = Provider<bool>((ref) {
   ];
 
   return roleName != null && leadershipRoles.contains(roleName);
+});
+
+/// Provider for the user's effective currency symbol.
+/// Returns the currency symbol from the user's profile (resolved from their Union).
+/// Defaults to '$' if not available.
+final currencySymbolProvider = Provider<String>((ref) {
+  final authState = ref.watch(authNotifierProvider);
+  final currencySymbol = authState.user?['currency_symbol'] as String?;
+  return currencySymbol ?? '\$';
 });

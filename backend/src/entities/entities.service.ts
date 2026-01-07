@@ -10,6 +10,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Not, Repository } from 'typeorm';
 import { Entity, EntityType } from './entity.entity';
+
+const DEFAULT_CURRENCY_SYMBOL = '$';
 import { CreateEntityDto } from './dto/create-entity.dto';
 import { UpdateEntityDto } from './dto/update-entity.dto';
 import { HierarchyValidationService } from './hierarchy-validation.service';
@@ -62,6 +64,7 @@ export class EntitiesService {
       code: dto.code,
       description: dto.description,
       location: dto.location,
+      currency_symbol: dto.currencySymbol,
       parent_id: dto.parentId || null,
     };
     const entity = this.repo.create(entityData);
@@ -144,9 +147,14 @@ export class EntitiesService {
 
     const toSave: Entity = {
       ...current,
-      ...dto,
       name: nextName,
       type: nextType,
+      code: dto.code !== undefined ? dto.code : current.code,
+      description: dto.description !== undefined ? dto.description : current.description,
+      location: dto.location !== undefined ? dto.location : current.location,
+      currency_symbol:
+        dto.currencySymbol !== undefined ? dto.currencySymbol : current.currency_symbol,
+      is_active: dto.is_active !== undefined ? dto.is_active : current.is_active,
       parent_id: nextParentId,
     } as Entity;
 
@@ -257,9 +265,7 @@ export class EntitiesService {
    */
   private async buildTreeNode(entity: Entity): Promise<EntityTreeNode> {
     const children = await this.findChildren(entity.id);
-    const childNodes = await Promise.all(
-      children.map((child) => this.buildTreeNode(child)),
-    );
+    const childNodes = await Promise.all(children.map((child) => this.buildTreeNode(child)));
 
     return {
       id: entity.id,
@@ -269,5 +275,39 @@ export class EntitiesService {
       is_active: entity.is_active,
       children: childNodes,
     };
+  }
+
+  /**
+   * Get the effective currency symbol for an entity.
+   * Traverses up the hierarchy to find the Union's currency_symbol.
+   * Returns default '$' if no currency is set.
+   * @param entityId - The entity ID to resolve currency for
+   * @returns The effective currency symbol
+   */
+  async getEffectiveCurrencySymbol(entityId: string): Promise<string> {
+    let current = await this.findOne(entityId);
+
+    // Traverse up to find the Union with currency_symbol set
+    while (current) {
+      // If this entity has a currency symbol, return it
+      if (current.currency_symbol) {
+        return current.currency_symbol;
+      }
+
+      // If we're at a Union without currency_symbol, return default
+      if (current.type === EntityType.UNION) {
+        return DEFAULT_CURRENCY_SYMBOL;
+      }
+
+      // If we're at Platform level, stop (Platform doesn't have currency)
+      if (current.type === EntityType.PLATFORM || !current.parent_id) {
+        return DEFAULT_CURRENCY_SYMBOL;
+      }
+
+      // Move up to parent
+      current = await this.findOne(current.parent_id);
+    }
+
+    return DEFAULT_CURRENCY_SYMBOL;
   }
 }

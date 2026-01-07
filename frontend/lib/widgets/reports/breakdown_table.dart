@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import '../../models/report_breakdown.dart';
+import '../../utils/currency_formatter.dart';
 
 class BreakdownTable extends StatelessWidget {
   final List<ReportBreakdown> breakdown;
+  final String currencySymbol;
 
   const BreakdownTable({
     super.key,
     required this.breakdown,
+    this.currencySymbol = '\$',
   });
 
   @override
@@ -135,7 +138,7 @@ class BreakdownTable extends StatelessWidget {
                                 horizontal: 8,
                               ),
                               child: Text(
-                                '\$${item.totalExpenses.toStringAsFixed(2)}',
+                                CurrencyFormatter.format(item.totalExpenses, currencySymbol),
                                 style: const TextStyle(fontSize: 14),
                                 textAlign: TextAlign.right,
                               ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../models/users_report.dart';
+import '../../utils/currency_formatter.dart';
 
 /// Paginated table showing users with their activity metrics
 class UsersReportTable extends StatefulWidget {
@@ -15,6 +16,7 @@ class UsersReportTable extends StatefulWidget {
     this.currentSortOrder,
     this.currentComplianceFilter,
     this.isLoading = false,
+    this.currencySymbol = '\$',
   });
 
   final UsersReportResponse response;
@@ -27,6 +29,7 @@ class UsersReportTable extends StatefulWidget {
   final String? currentSortOrder;
   final ComplianceFilter? currentComplianceFilter;
   final bool isLoading;
+  final String currencySymbol;
 
   @override
   State<UsersReportTable> createState() => _UsersReportTableState();
@@ -267,7 +270,7 @@ class _UsersReportTableState extends State<UsersReportTable> {
               ),
               DataCell(
                 Text(
-                  '\$${user.totalExpenses.toStringAsFixed(2)}',
+                  CurrencyFormatter.format(user.totalExpenses, widget.currencySymbol),
                   style: theme.textTheme.bodyMedium,
                 ),
               ),

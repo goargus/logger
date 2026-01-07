@@ -3,6 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { IdentityResolutionService } from '../auth/identity-resolution.service';
+import { EntitiesService } from '../entities/entities.service';
 import { Request } from 'express';
 import { JwtValidatedUser } from '../auth/jwt.strategy';
 
@@ -12,6 +13,7 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly identityService: IdentityResolutionService,
+    private readonly entitiesService: EntitiesService,
   ) {}
 
   @Get('me')
@@ -24,6 +26,9 @@ export class UsersController {
     const { sub, iss } = (req.user as JwtValidatedUser) ?? {};
     const user = await this.identityService.resolveUserBySubAndIssuer(sub, iss);
     const profile = await this.usersService.findUserProfile(user.id);
+    const currencySymbol = await this.entitiesService.getEffectiveCurrencySymbol(
+      profile.user.entity_id,
+    );
     return {
       id: profile.user.id,
       username: profile.user.username,
@@ -34,6 +39,7 @@ export class UsersController {
       status: profile.user.status,
       created_at: profile.user.created_at,
       updated_at: profile.user.updated_at,
+      currency_symbol: currencySymbol,
       primary_role: {
         id: profile.user.role.id,
         name: profile.user.role.name,
@@ -45,6 +51,7 @@ export class UsersController {
         description: profile.user.entity.description,
         type: profile.user.entity.type,
         parent_id: profile.user.entity.parent_id,
+        currency_symbol: profile.user.entity.currency_symbol,
       },
       role_assignments: profile.roleAssignments.map((assignment) => ({
         id: assignment.id,
@@ -59,6 +66,7 @@ export class UsersController {
           description: assignment.entity.description,
           type: assignment.entity.type,
           parent_id: assignment.entity.parent_id,
+          currency_symbol: assignment.entity.currency_symbol,
         },
         created_at: assignment.created_at,
         updated_at: assignment.updated_at,

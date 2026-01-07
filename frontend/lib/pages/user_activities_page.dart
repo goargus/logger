@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../models/user_activities.dart';
 import '../models/report_period_type.dart';
 import '../providers/hierarchy_reports_provider.dart';
+import '../providers/auth.dart';
+import '../utils/currency_formatter.dart';
 import '../widgets/reports/activity_detail_dialog.dart';
 import '../widgets/reports/period_type_selector.dart';
 import '../widgets/reports/enhanced_time_selector.dart';
@@ -455,7 +457,7 @@ class _UserActivitiesPageState extends ConsumerState<UserActivitiesPage> {
               theme,
               icon: Icons.attach_money,
               label: 'Gastos',
-              value: '\$${totals.expenses.toStringAsFixed(2)}',
+              value: CurrencyFormatter.format(totals.expenses, ref.watch(currencySymbolProvider)),
             ),
           ],
         ),
@@ -560,7 +562,7 @@ class _UserActivitiesPageState extends ConsumerState<UserActivitiesPage> {
           if (activity.hasExpense)
             Chip(
               avatar: const Icon(Icons.attach_money, size: 14),
-              label: Text('\$${activity.expenseAmount ?? '0'}'),
+              label: Text(CurrencyFormatter.formatString(activity.expenseAmount, ref.watch(currencySymbolProvider))),
               visualDensity: VisualDensity.compact,
               backgroundColor: theme.colorScheme.tertiaryContainer,
             ),
@@ -582,6 +584,7 @@ class _UserActivitiesPageState extends ConsumerState<UserActivitiesPage> {
       context,
       activity: activity,
       userName: _response?.user.name,
+      currencySymbol: ref.read(currencySymbolProvider),
     );
   }
 

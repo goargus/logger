@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
 import '../../models/report_breakdown.dart';
+import '../../utils/currency_formatter.dart';
 
 class ComparisonBreakdownTable extends StatelessWidget {
   final List<ReportBreakdownWithComparison> breakdown;
   final bool showComparison;
+  final String currencySymbol;
 
   const ComparisonBreakdownTable({
     super.key,
     required this.breakdown,
     this.showComparison = true,
+    this.currencySymbol = '\$',
   });
 
   Widget _buildChangeCell(ChangeValue? change, bool isPositive) {
@@ -219,7 +222,7 @@ class ComparisonBreakdownTable extends StatelessWidget {
                                 horizontal: 8,
                               ),
                               child: Text(
-                                '\$${item.totalExpenses.toStringAsFixed(2)}',
+                                CurrencyFormatter.format(item.totalExpenses, currencySymbol),
                                 style: const TextStyle(fontSize: 14),
                                 textAlign: TextAlign.right,
                               ),

@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import '../../utils/currency_formatter.dart';
 
 class SummaryCards extends StatelessWidget {
   final int activitiesCount;
   final double expenses;
   final bool isReported;
+  final String currencySymbol;
 
   const SummaryCards({
     super.key,
     required this.activitiesCount,
     required this.expenses,
     required this.isReported,
+    this.currencySymbol = '\$',
   });
 
   @override
@@ -26,7 +29,7 @@ class SummaryCards extends StatelessWidget {
         Expanded(
           child: _SummaryCard(
             title: 'Gastos',
-            value: '\$${expenses.toStringAsFixed(2)}',
+            value: CurrencyFormatter.format(expenses, currencySymbol),
           ),
         ),
         const SizedBox(width: 16),

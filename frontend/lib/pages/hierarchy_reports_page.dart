@@ -13,6 +13,7 @@ import '../widgets/reports/activity_distribution_chart.dart';
 import '../models/users_report.dart';
 import '../providers/hierarchy_reports_provider.dart';
 import '../providers/auth.dart';
+import '../utils/currency_formatter.dart';
 
 /// Content-only widget for hierarchy reports - shell is handled by AppShell via router
 class HierarchyReportsContent extends ConsumerStatefulWidget {
@@ -184,6 +185,7 @@ class _HierarchyReportsContentState
                           child: ActivityDistributionChart.fromBreakdowns(
                             breakdowns: state.activityBreakdown,
                             title: 'Actividades por Tipo',
+                            currencySymbol: ref.watch(currencySymbolProvider),
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -192,6 +194,7 @@ class _HierarchyReportsContentState
                             breakdowns: state.activityBreakdown,
                             title: 'Gastos por Tipo',
                             showExpenses: true,
+                            currencySymbol: ref.watch(currencySymbolProvider),
                           ),
                         ),
                       ],
@@ -203,12 +206,14 @@ class _HierarchyReportsContentState
                       ActivityDistributionChart.fromBreakdowns(
                         breakdowns: state.activityBreakdown,
                         title: 'Actividades por Tipo',
+                        currencySymbol: ref.watch(currencySymbolProvider),
                       ),
                       const SizedBox(height: 16),
                       ActivityDistributionChart.fromBreakdowns(
                         breakdowns: state.activityBreakdown,
                         title: 'Gastos por Tipo',
                         showExpenses: true,
+                        currencySymbol: ref.watch(currencySymbolProvider),
                       ),
                     ],
                   );
@@ -220,6 +225,7 @@ class _HierarchyReportsContentState
             if (state.summary!.hasHierarchyBreakdown)
               HierarchyBreakdownCard(
                 breakdown: state.summary!.hierarchyBreakdown,
+                currencySymbol: ref.watch(currencySymbolProvider),
                 onEntityTap: (entityId) {
                   ref
                       .read(hierarchyReportsProvider.notifier)
@@ -235,6 +241,7 @@ class _HierarchyReportsContentState
               currentSort: state.usersSortBy,
               currentSortOrder: state.usersSortOrder,
               currentComplianceFilter: state.usersComplianceFilter,
+              currencySymbol: ref.watch(currencySymbolProvider),
               onPageChange: (page) {
                 ref.read(hierarchyReportsProvider.notifier).setUsersPage(page);
               },
@@ -400,7 +407,7 @@ class _HierarchyReportsContentState
                 ),
                 _StatCard(
                   label: 'Gastos',
-                  value: '\$${summary.totalExpenses.toStringAsFixed(2)}',
+                  value: CurrencyFormatter.format(summary.totalExpenses, ref.watch(currencySymbolProvider)),
                   icon: Icons.attach_money,
                 ),
                 _StatCard(
