@@ -309,7 +309,8 @@ class _ActivityDistributionChartState extends State<ActivityDistributionChart> {
       ),
       child: Text(
         widget.showExpenses
-            ? CurrencyFormatter.format(item.expenses, widget.currencySymbol, decimals: 0)
+            ? CurrencyFormatter.format(item.expenses, widget.currencySymbol,
+                decimals: 0)
             : '${item.count}',
         style: const TextStyle(
           color: Colors.white,
@@ -352,7 +353,9 @@ class _ActivityDistributionChartState extends State<ActivityDistributionChart> {
                 const SizedBox(width: 4),
                 Text(
                   widget.showExpenses
-                      ? CurrencyFormatter.format(item.expenses, widget.currencySymbol, decimals: 0)
+                      ? CurrencyFormatter.format(
+                          item.expenses, widget.currencySymbol,
+                          decimals: 0)
                       : '${item.count}',
                   style: theme.textTheme.bodySmall?.copyWith(
                     fontWeight: FontWeight.bold,

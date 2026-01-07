@@ -3,7 +3,8 @@ class CurrencyFormatter {
   /// Formats a numeric value with the given currency symbol.
   ///
   /// Example: formatCurrency(123.45, 'L') => 'L123.45'
-  static String format(double value, String currencySymbol, {int decimals = 2}) {
+  static String format(double value, String currencySymbol,
+      {int decimals = 2}) {
     return '$currencySymbol${value.toStringAsFixed(decimals)}';
   }
 
