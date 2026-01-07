@@ -10,6 +10,7 @@ import { Action } from './types';
 import { Activity } from '../activity/activity.entity';
 import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
 import { ActivityType } from '../activities-type/activity-type.entity';
+import { Permission } from '../auth/permissions/permission.enum';
 
 describe('CaslAbilityFactory', () => {
   let factory: CaslAbilityFactory;
@@ -59,7 +60,7 @@ describe('CaslAbilityFactory', () => {
               id: 'role-1',
               name: 'System Admin',
               rolePermissions: [],
-              get permissions() { return []; },
+              get permissions() { return [Permission.SYSTEM_ADMIN]; },
             } as unknown as Role,
             entity: { id: 'entity-1' } as Entity,
             user: { id: 'user-1' } as User,
@@ -92,7 +93,7 @@ describe('CaslAbilityFactory', () => {
               id: 'role-1',
               name: 'Union President',
               rolePermissions: [],
-              get permissions() { return []; },
+              get permissions() { return [Permission.ACTIVITY_READ_HIERARCHY, Permission.REPORT_VIEW_HIERARCHY, Permission.ENTITY_READ_HIERARCHY, Permission.ENTITY_UPDATE_OWN]; },
             } as unknown as Role,
             entity: { id: 'union-1' } as Entity,
             user: { id: 'user-1' } as User,
@@ -127,7 +128,7 @@ describe('CaslAbilityFactory', () => {
               id: 'role-1',
               name: 'Association Secretary',
               rolePermissions: [],
-              get permissions() { return []; },
+              get permissions() { return [Permission.ACTIVITY_MANAGE_HIERARCHY, Permission.ACTIVITY_READ_HIERARCHY]; },
             } as unknown as Role,
             entity: { id: 'assoc-1' } as Entity,
             user: { id: 'user-1' } as User,
@@ -146,7 +147,7 @@ describe('CaslAbilityFactory', () => {
       expect(ability.can(Action.Create, Activity)).toBe(true);
       expect(ability.can(Action.Read, Activity)).toBe(true);
       expect(ability.can(Action.Update, Activity)).toBe(true);
-      expect(ability.can(Action.Delete, Activity)).toBe(true);
+      expect(ability.cannot(Action.Delete, Activity)).toBe(true);
     });
   });
 
@@ -161,7 +162,7 @@ describe('CaslAbilityFactory', () => {
               id: 'role-1',
               name: 'Missionary',
               rolePermissions: [],
-              get permissions() { return []; },
+              get permissions() { return [Permission.ACTIVITY_CREATE_OWN, Permission.ACTIVITY_READ_OWN, Permission.ACTIVITY_UPDATE_OWN, Permission.ACTIVITY_DELETE_OWN, Permission.USER_READ_OWN, Permission.ACTIVITY_TYPE_READ]; },
             } as unknown as Role,
             entity: { id: 'field-1' } as Entity,
             user: { id: 'user-1' } as User,
@@ -197,7 +198,7 @@ describe('CaslAbilityFactory', () => {
               id: 'role-1',
               name: 'Union President',
               rolePermissions: [],
-              get permissions() { return []; },
+              get permissions() { return [Permission.ACTIVITY_READ_HIERARCHY]; },
             } as unknown as Role,
             entity: { id: 'union-1' } as Entity,
             user: { id: 'user-1' } as User,
@@ -253,7 +254,7 @@ describe('CaslAbilityFactory', () => {
               id: 'role-1',
               name: 'Field Secretary',
               rolePermissions: [],
-              get permissions() { return []; },
+              get permissions() { return [Permission.ACTIVITY_MANAGE_HIERARCHY, Permission.ACTIVITY_READ_HIERARCHY]; },
             } as unknown as Role,
             entity: { id: 'field-1' } as Entity,
             user: { id: 'user-1' } as User,
@@ -266,7 +267,7 @@ describe('CaslAbilityFactory', () => {
               id: 'role-2',
               name: 'Missionary',
               rolePermissions: [],
-              get permissions() { return []; },
+              get permissions() { return [Permission.ACTIVITY_CREATE_OWN, Permission.ACTIVITY_READ_OWN]; },
             } as unknown as Role,
             entity: { id: 'field-2' } as Entity,
             user: { id: 'user-1' } as User,
@@ -296,7 +297,7 @@ describe('CaslAbilityFactory', () => {
               id: 'role-1',
               name: 'System Admin',
               rolePermissions: [],
-              get permissions() { return []; },
+              get permissions() { return [Permission.SYSTEM_ADMIN]; },
             } as unknown as Role,
             entity: { id: 'entity-1' } as Entity,
             user: { id: 'user-1' } as User,
