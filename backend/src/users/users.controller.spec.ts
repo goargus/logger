@@ -168,6 +168,7 @@ describe('UsersController', () => {
         status: mockUser.status,
         created_at: mockUser.created_at,
         updated_at: mockUser.updated_at,
+        currency_symbol: '$',
         primary_role: {
           id: mockUser.role.id,
           name: mockUser.role.name,
@@ -179,6 +180,7 @@ describe('UsersController', () => {
           description: mockUser.entity.description,
           type: mockUser.entity.type,
           parent_id: mockUser.entity.parent_id,
+          currency_symbol: undefined,
         },
         role_assignments: [
           {
@@ -194,6 +196,7 @@ describe('UsersController', () => {
               description: mockRoleAssignments[0].entity.description,
               type: mockRoleAssignments[0].entity.type,
               parent_id: mockRoleAssignments[0].entity.parent_id,
+              currency_symbol: undefined,
             },
             created_at: mockRoleAssignments[0].created_at,
             updated_at: mockRoleAssignments[0].updated_at,

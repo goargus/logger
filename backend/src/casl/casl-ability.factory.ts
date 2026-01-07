@@ -76,6 +76,7 @@ export class CaslAbilityFactory {
       if (permissions.has(Permission.ACTIVITY_MANAGE_HIERARCHY)) {
         can(Action.Create, Activity, { entityId: { $in: accessibleEntityIds } } as never);
         can(Action.Update, Activity, { entityId: { $in: accessibleEntityIds } } as never);
+        can(Action.Delete, Activity, { entityId: { $in: accessibleEntityIds } } as never);
       }
 
       // Report permissions (maps to reading activities/periods in hierarchy)

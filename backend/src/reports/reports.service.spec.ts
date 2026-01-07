@@ -34,6 +34,7 @@ describe('ReportsService', () => {
   let accessService: ReportsAccessService;
   let timeScopeService: ReportsTimeScopeService;
   let queryFactory: ReportsActivityQueryFactory;
+  let permissionsService: PermissionsService;
 
   const mockQueryBuilder = {
     leftJoinAndSelect: jest.fn().mockReturnThis(),
@@ -150,6 +151,7 @@ describe('ReportsService', () => {
     accessService = module.get<ReportsAccessService>(ReportsAccessService);
     timeScopeService = module.get<ReportsTimeScopeService>(ReportsTimeScopeService);
     queryFactory = module.get<ReportsActivityQueryFactory>(ReportsActivityQueryFactory);
+    permissionsService = module.get<PermissionsService>(PermissionsService);
   });
 
   afterEach(() => {
@@ -192,6 +194,7 @@ describe('ReportsService', () => {
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
       jest.spyOn(entityRepo, 'findOne').mockResolvedValue(mockUser.entity as any);
+      jest.spyOn(permissionsService, 'userHasPermission').mockResolvedValue(false);
       jest.spyOn(timeScopeService, 'getOrDetermineTimeScope').mockResolvedValue({
         periodIds: [mockPeriod.id],
         period: mockPeriod as any,
@@ -275,6 +278,7 @@ describe('ReportsService', () => {
       };
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
+      jest.spyOn(permissionsService, 'userHasPermission').mockResolvedValue(false);
 
       await expect(service.getSummary('user-1', { entityId: 'entity-2' })).rejects.toThrow(
         ForbiddenException,
@@ -402,6 +406,7 @@ describe('ReportsService', () => {
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
       jest.spyOn(periodRepo, 'findOne').mockResolvedValue(mockPeriod as any);
+      jest.spyOn(permissionsService, 'userHasPermission').mockResolvedValue(false);
       mockQueryBuilder.getMany.mockResolvedValue(mockActivities);
 
       const result = await service.getBreakdowns('user-1', {});
@@ -420,6 +425,7 @@ describe('ReportsService', () => {
       };
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
+      jest.spyOn(permissionsService, 'userHasPermission').mockResolvedValue(false);
 
       await expect(service.getCompliance('user-1', {})).rejects.toThrow(ForbiddenException);
     });
@@ -538,6 +544,7 @@ describe('ReportsService', () => {
       };
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
+      jest.spyOn(permissionsService, 'userHasPermission').mockResolvedValue(false);
 
       await expect(service.getRankings('user-1', {})).rejects.toThrow(ForbiddenException);
     });
