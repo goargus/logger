@@ -6,6 +6,8 @@ import { CreateRoleDto } from '../../roles/dto/create-role.dto';
 import { UpdateRoleDto } from '../../roles/dto/update-role.dto';
 import { AssignRoleDto, RoleEnum } from '../../roles/dto/assign-role.dto';
 import { RemoveRoleDto } from '../../roles/dto/remove-role.dto';
+import { PermissionsService } from '../../auth/permissions/permissions.service';
+import { RolesGuard } from '../../auth/roles.guard';
 
 describe('RolesController', () => {
   let controller: RolesController;
@@ -33,6 +35,13 @@ describe('RolesController', () => {
       providers: [
         { provide: RolesService, useValue: mockRolesService },
         { provide: RoleAssignmentService, useValue: mockRoleAssignmentService },
+        {
+          provide: PermissionsService,
+          useValue: {
+            userHasPermission: jest.fn().mockResolvedValue(true),
+          },
+        },
+        RolesGuard,
       ],
     }).compile();
 

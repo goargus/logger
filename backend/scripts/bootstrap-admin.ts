@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from '../src/users/user.entity';
 import { Role } from '../src/roles/role.entity';
+import { RolePermission } from '../src/roles/role-permission.entity';
+import { Permission } from '../src/auth/permissions/permission.enum';
 import { Entity as OrgEntity, EntityType } from '../src/entities/entity.entity';
 import { IdpIdentitiesService } from '../src/idp-identities/idp-identities.service';
 import { UserStatus } from '../src/users/user-status.enum';
@@ -50,9 +52,16 @@ async function getAdminConfig(): Promise<AdminConfig> {
   return config as AdminConfig;
 }
 
-async function ensureAdminRole(roleRepo: Repository<Role>, roleId?: string): Promise<Role> {
+async function ensureAdminRole(
+  roleRepo: Repository<Role>,
+  rolePermissionRepo: Repository<RolePermission>,
+  roleId?: string,
+): Promise<Role> {
   if (roleId) {
-    const role = await roleRepo.findOne({ where: { id: roleId } });
+    const role = await roleRepo.findOne({
+      where: { id: roleId },
+      relations: ['rolePermissions'],
+    });
     if (!role) {
       console.error(`Role with ID ${roleId} not found`);
       process.exit(1);
@@ -60,22 +69,41 @@ async function ensureAdminRole(roleRepo: Repository<Role>, roleId?: string): Pro
     return role;
   }
 
-  let role = await roleRepo.findOne({ where: { name: 'admin' } });
+  let role = await roleRepo.findOne({
+    where: { name: 'admin' },
+    relations: ['rolePermissions'],
+  });
   if (!role) {
     console.log('Creating default admin role...');
     role = roleRepo.create({
       name: 'admin',
       description: 'System Administrator',
-      isSystemAdmin: true,
-      canViewReports: true,
-      canManageOwnActivities: true,
-      canManageHierarchyActivities: true,
-      canManageEntities: true,
     });
     role = await roleRepo.save(role);
     console.log('Admin role created');
+
+    // Add SYSTEM_ADMIN permission
+    const rolePermission = rolePermissionRepo.create({
+      role,
+      permission: Permission.SYSTEM_ADMIN,
+    });
+    await rolePermissionRepo.save(rolePermission);
+    console.log('SYSTEM_ADMIN permission added to admin role');
+  } else {
+    // Check if role already has SYSTEM_ADMIN permission
+    const hasSystemAdmin = role.rolePermissions?.some(
+      (rp) => rp.permission === Permission.SYSTEM_ADMIN,
+    );
+    if (!hasSystemAdmin) {
+      const rolePermission = rolePermissionRepo.create({
+        role,
+        permission: Permission.SYSTEM_ADMIN,
+      });
+      await rolePermissionRepo.save(rolePermission);
+      console.log('SYSTEM_ADMIN permission added to existing admin role');
+    }
   }
-  
+
   return role;
 }
 
@@ -90,6 +118,9 @@ async function bootstrapAdmin() {
   try {
     const userRepo = app.get<Repository<User>>(getRepositoryToken(User));
     const roleRepo = app.get<Repository<Role>>(getRepositoryToken(Role));
+    const rolePermissionRepo = app.get<Repository<RolePermission>>(
+      getRepositoryToken(RolePermission),
+    );
     const entityRepo = app.get<Repository<OrgEntity>>(getRepositoryToken(OrgEntity));
     const roleAssignmentRepo = app.get<Repository<UserRoleAssignment>>(
       getRepositoryToken(UserRoleAssignment),
@@ -133,25 +164,36 @@ async function bootstrapAdmin() {
       process.exit(1);
     }
 
-    const role = await ensureAdminRole(roleRepo, config.roleId);
+    const role = await ensureAdminRole(roleRepo, rolePermissionRepo, config.roleId);
     
     let entityId = process.env.ADMIN_ENTITY_ID;
 
     if (!entityId) {
-      const hondurasUnion = await entityRepo.findOne({
-        where: {
-          name: 'Unión Hondureña',
-          type: EntityType.UNION,
-        },
+      // Look for any existing platform or union entity
+      let targetEntity = await entityRepo.findOne({
+        where: { type: EntityType.PLATFORM },
       });
 
-      if (!hondurasUnion) {
-        throw new Error(
-          'Unión Hondureña no existe. Ejecuta primero el seed de Honduras.',
-        );
+      if (!targetEntity) {
+        targetEntity = await entityRepo.findOne({
+          where: { type: EntityType.UNION },
+        });
       }
 
-      entityId = hondurasUnion.id;
+      if (!targetEntity) {
+        // Create a default platform entity
+        console.log('No entity found. Creating default platform entity...');
+        targetEntity = entityRepo.create({
+          name: 'Default Platform',
+          description: 'System platform entity',
+          type: EntityType.PLATFORM,
+          is_active: true,
+        });
+        targetEntity = await entityRepo.save(targetEntity);
+        console.log(`Platform entity created with ID: ${targetEntity.id}`);
+      }
+
+      entityId = targetEntity.id;
     }
 
     const entity = await entityRepo.findOne({ where: { id: entityId } });

@@ -9,6 +9,8 @@ import { UpdateEntityDto } from '../dto/update-entity.dto';
 import { CaslAbilityFactory } from '../../casl/casl-ability.factory';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { UserRoleAssignment } from '../../roles/user-role-assignment.entity';
+import { PermissionsService } from '../../auth/permissions/permissions.service';
+import { RolesGuard } from '../../auth/roles.guard';
 
 describe('EntitiesController', () => {
   let controller: EntitiesController;
@@ -73,6 +75,13 @@ describe('EntitiesController', () => {
             find: jest.fn(),
           },
         },
+        {
+          provide: PermissionsService,
+          useValue: {
+            userHasPermission: jest.fn().mockResolvedValue(true),
+          },
+        },
+        RolesGuard,
       ],
     }).compile();
 

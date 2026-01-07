@@ -132,9 +132,7 @@ describe('HierarchyBreakdownCalculator', () => {
 
     it('should calculate compliance rate per entity', async () => {
       // Setup: Entity with 2 users, 1 submitted (50% compliance)
-      const activities = [
-        createActivity('a1', 'user-1', 'entity-1'),
-      ] as Activity[];
+      const activities = [createActivity('a1', 'user-1', 'entity-1')] as Activity[];
 
       entityRepo.find = jest.fn().mockResolvedValue([entity1]);
 
@@ -175,9 +173,7 @@ describe('HierarchyBreakdownCalculator', () => {
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
         groupBy: jest.fn().mockReturnThis(),
-        getRawMany: jest.fn().mockResolvedValue([
-          { entityId: 'entity-1', count: '2' },
-        ]),
+        getRawMany: jest.fn().mockResolvedValue([{ entityId: 'entity-1', count: '2' }]),
       };
       userRepo.createQueryBuilder = jest.fn().mockReturnValue(qbMock);
 
@@ -188,9 +184,7 @@ describe('HierarchyBreakdownCalculator', () => {
     });
 
     it('should include entity hierarchy info (parentId, type)', async () => {
-      const activities = [
-        createActivity('a1', 'user-1', 'entity-1'),
-      ] as Activity[];
+      const activities = [createActivity('a1', 'user-1', 'entity-1')] as Activity[];
 
       entityRepo.find = jest.fn().mockResolvedValue([entity1]);
 
@@ -200,9 +194,7 @@ describe('HierarchyBreakdownCalculator', () => {
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
         groupBy: jest.fn().mockReturnThis(),
-        getRawMany: jest.fn().mockResolvedValue([
-          { entityId: 'entity-1', count: '1' },
-        ]),
+        getRawMany: jest.fn().mockResolvedValue([{ entityId: 'entity-1', count: '1' }]),
       };
       userRepo.createQueryBuilder = jest.fn().mockReturnValue(qbMock);
 
@@ -232,9 +224,7 @@ describe('HierarchyBreakdownCalculator', () => {
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
         groupBy: jest.fn().mockReturnThis(),
-        getRawMany: jest.fn().mockResolvedValue([
-          { entityId: 'entity-1', count: '1' },
-        ]),
+        getRawMany: jest.fn().mockResolvedValue([{ entityId: 'entity-1', count: '1' }]),
       };
       userRepo.createQueryBuilder = jest.fn().mockReturnValue(qbMock);
 

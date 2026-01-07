@@ -19,6 +19,7 @@ import { BreakdownComparisonCalculator } from './calculators/breakdown-compariso
 import { HierarchyBreakdownCalculator } from './calculators/hierarchy-breakdown.calculator';
 import { CsvExporter } from './export/csv-exporter';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { PermissionsService } from '../auth/permissions/permissions.service';
 import { ComplianceFilter } from './dto/users-report.dto';
 
 describe('ReportsService - getUsersReport', () => {
@@ -31,14 +32,14 @@ describe('ReportsService - getUsersReport', () => {
   const mockLeader = {
     id: 'leader-uuid',
     entity_id: 'entity-uuid',
-    role: { canViewReports: true },
+    role: { rolePermissions: [] },
     entity: { id: 'entity-uuid', name: 'Test Entity', type: 'FIELD' },
   };
 
   const mockRegularUser = {
     id: 'regular-uuid',
     entity_id: 'entity-uuid',
-    role: { canViewReports: false },
+    role: { rolePermissions: [] },
     entity: { id: 'entity-uuid', name: 'Test Entity', type: 'FIELD' },
   };
 
@@ -113,6 +114,14 @@ describe('ReportsService - getUsersReport', () => {
         { provide: BreakdownComparisonCalculator, useValue: {} },
         { provide: HierarchyBreakdownCalculator, useValue: {} },
         { provide: CsvExporter, useValue: {} },
+        {
+          provide: PermissionsService,
+          useValue: {
+            userHasPermission: jest.fn().mockResolvedValue(true),
+            getPermissionsForRole: jest.fn().mockResolvedValue([]),
+            getEffectivePermissionsForUser: jest.fn().mockResolvedValue(new Map()),
+          },
+        },
       ],
     }).compile();
 
@@ -127,17 +136,13 @@ describe('ReportsService - getUsersReport', () => {
     it('should throw ForbiddenException if user does not have canViewReports permission', async () => {
       userRepo.findOne.mockResolvedValue(mockRegularUser as any);
 
-      await expect(
-        service.getUsersReport('regular-uuid', {}),
-      ).rejects.toThrow(ForbiddenException);
+      await expect(service.getUsersReport('regular-uuid', {})).rejects.toThrow(ForbiddenException);
     });
 
     it('should throw NotFoundException if actor user not found', async () => {
       userRepo.findOne.mockResolvedValue(null);
 
-      await expect(
-        service.getUsersReport('unknown-uuid', {}),
-      ).rejects.toThrow(NotFoundException);
+      await expect(service.getUsersReport('unknown-uuid', {})).rejects.toThrow(NotFoundException);
     });
 
     it('should throw ForbiddenException if requested entity is not in scope', async () => {

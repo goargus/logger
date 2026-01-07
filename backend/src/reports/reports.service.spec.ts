@@ -22,6 +22,7 @@ import { PeriodBoundaryCalculator } from './time/period-boundary.calculator';
 import { BreakdownComparisonCalculator } from './calculators/breakdown-comparison.calculator';
 import { HierarchyBreakdownCalculator } from './calculators/hierarchy-breakdown.calculator';
 import { CsvExporter } from './export/csv-exporter';
+import { PermissionsService } from '../auth/permissions/permissions.service';
 
 describe('ReportsService', () => {
   let service: ReportsService;
@@ -129,6 +130,14 @@ describe('ReportsService', () => {
             find: jest.fn().mockResolvedValue([]),
           },
         },
+        {
+          provide: PermissionsService,
+          useValue: {
+            userHasPermission: jest.fn().mockResolvedValue(true),
+            getPermissionsForRole: jest.fn().mockResolvedValue([]),
+            getEffectivePermissionsForUser: jest.fn().mockResolvedValue(new Map()),
+          },
+        },
       ],
     }).compile();
 
@@ -152,7 +161,7 @@ describe('ReportsService', () => {
       const mockUser = {
         id: 'user-1',
         entity_id: 'entity-1',
-        role: { canViewReports: false },
+        role: { rolePermissions: [] },
         entity: { id: 'entity-1', name: 'Campo Seattle', type: 'FIELD' },
       };
 
@@ -203,7 +212,7 @@ describe('ReportsService', () => {
       const mockUser = {
         id: 'user-1',
         entity_id: 'entity-1',
-        role: { canViewReports: true },
+        role: { rolePermissions: [] },
         entity: { id: 'entity-1', name: 'Campo Seattle', type: 'FIELD' },
       };
 
@@ -261,7 +270,7 @@ describe('ReportsService', () => {
       const mockUser = {
         id: 'user-1',
         entity_id: 'entity-1',
-        role: { canViewReports: false },
+        role: { rolePermissions: [] },
         entity: { id: 'entity-1' },
       };
 
@@ -276,7 +285,7 @@ describe('ReportsService', () => {
       const mockUser = {
         id: 'user-1',
         entity_id: 'entity-1',
-        role: { canViewReports: true },
+        role: { rolePermissions: [] },
         entity: { id: 'entity-1' },
       };
 
@@ -294,7 +303,7 @@ describe('ReportsService', () => {
       const mockUser = {
         id: 'user-1',
         entity_id: 'entity-1',
-        role: { canViewReports: true },
+        role: { rolePermissions: [] },
         entity: { id: 'entity-1' },
       };
 
@@ -363,7 +372,7 @@ describe('ReportsService', () => {
       const mockUser = {
         id: 'user-1',
         entity_id: 'entity-1',
-        role: { canViewReports: false },
+        role: { rolePermissions: [] },
         entity: { id: 'entity-1' },
       };
 
@@ -407,7 +416,7 @@ describe('ReportsService', () => {
       const mockUser = {
         id: 'user-1',
         entity_id: 'entity-1',
-        role: { canViewReports: false },
+        role: { rolePermissions: [] },
       };
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
@@ -419,7 +428,7 @@ describe('ReportsService', () => {
       const mockUser = {
         id: 'user-1',
         entity_id: 'entity-1',
-        role: { canViewReports: true },
+        role: { rolePermissions: [] },
         entity: { id: 'entity-1' },
       };
 
@@ -484,7 +493,7 @@ describe('ReportsService', () => {
       const mockUser = {
         id: 'user-1',
         entity_id: 'entity-1',
-        role: { canViewReports: true },
+        role: { rolePermissions: [] },
         entity: { id: 'entity-1' },
       };
 
@@ -525,7 +534,7 @@ describe('ReportsService', () => {
       const mockUser = {
         id: 'user-1',
         entity_id: 'entity-1',
-        role: { canViewReports: false },
+        role: { rolePermissions: [] },
       };
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
@@ -537,7 +546,7 @@ describe('ReportsService', () => {
       const mockUser = {
         id: 'user-1',
         entity_id: 'entity-1',
-        role: { canViewReports: true },
+        role: { rolePermissions: [] },
         entity: { id: 'entity-1' },
       };
 
@@ -593,7 +602,7 @@ describe('ReportsService', () => {
       const mockUser = {
         id: 'user-1',
         entity_id: 'entity-1',
-        role: { canViewReports: true },
+        role: { rolePermissions: [] },
         entity: { id: 'entity-1' },
       };
 

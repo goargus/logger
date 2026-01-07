@@ -4,6 +4,7 @@ import { ActivityTypesController } from '../../activities-type/activity-types.co
 import { ActivityTypesService } from '../../activities-type/activity-types.service';
 import { RolesGuard } from '../../auth/roles.guard';
 import { IdentityResolutionService } from '../../auth/identity-resolution.service';
+import { PermissionsService } from '../../auth/permissions/permissions.service';
 
 const serviceMock = {
   findAll: jest.fn(),
@@ -17,12 +18,6 @@ const identityServiceMock = {
   resolveUserBySubAndIssuer: jest.fn(),
 };
 
-class AllowAllRolesGuard {
-  canActivate() {
-    return true;
-  }
-}
-
 describe('ActivityTypesController', () => {
   let app: INestApplication;
 
@@ -32,7 +27,13 @@ describe('ActivityTypesController', () => {
       providers: [
         { provide: ActivityTypesService, useValue: serviceMock },
         { provide: IdentityResolutionService, useValue: identityServiceMock },
-        { provide: RolesGuard, useClass: AllowAllRolesGuard },
+        {
+          provide: PermissionsService,
+          useValue: {
+            userHasPermission: jest.fn().mockResolvedValue(true),
+          },
+        },
+        RolesGuard,
       ],
     }).compile();
 

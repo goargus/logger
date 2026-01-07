@@ -11,6 +11,8 @@ import { User } from '../users/user.entity';
 import { AuthController } from './auth.controller';
 import { IdpIdentity } from '../idp-identities/idp-identity.entity';
 import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
+import { PermissionsModule } from './permissions/permissions.module';
+import { RolesGuard } from './roles.guard';
 
 @Module({
   imports: [
@@ -20,9 +22,10 @@ import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
     TypeOrmModule.forFeature([User]),
     IdpIdentitiesModule,
     TypeOrmModule.forFeature([IdpIdentity, User, UserRoleAssignment]),
+    PermissionsModule,
   ],
   controllers: [AuthController],
-  providers: [JwtStrategy, AuthService, IdentityResolutionService],
-  exports: [AuthService, IdentityResolutionService],
+  providers: [JwtStrategy, AuthService, IdentityResolutionService, RolesGuard],
+  exports: [AuthService, IdentityResolutionService, RolesGuard],
 })
 export class AuthModule {}

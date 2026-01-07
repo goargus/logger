@@ -7,6 +7,9 @@ import { UserStatus } from './user-status.enum';
 import { User } from './user.entity';
 import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
 import { Request } from 'express';
+import { PermissionsService } from '../auth/permissions/permissions.service';
+import { RolesGuard } from '../auth/roles.guard';
+import { EntitiesService } from '../entities/entities.service';
 
 describe('UsersController', () => {
   let controller: UsersController;
@@ -27,7 +30,7 @@ describe('UsersController', () => {
       id: 'role-123',
       name: 'User',
       description: 'Regular user role',
-      canViewReports: false,
+      rolePermissions: [],
       created_at: new Date('2023-01-01T00:00:00Z'),
       updated_at: new Date('2023-01-01T00:00:00Z'),
       users: [],
@@ -100,6 +103,21 @@ describe('UsersController', () => {
           provide: IdentityResolutionService,
           useValue: mockIdentityService,
         },
+        {
+          provide: EntitiesService,
+          useValue: {
+            findOne: jest.fn(),
+            findAll: jest.fn(),
+            getEffectiveCurrencySymbol: jest.fn().mockResolvedValue('$'),
+          },
+        },
+        {
+          provide: PermissionsService,
+          useValue: {
+            userHasPermission: jest.fn().mockResolvedValue(true),
+          },
+        },
+        RolesGuard,
       ],
     }).compile();
 

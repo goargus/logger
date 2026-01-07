@@ -32,33 +32,31 @@ describe('ActivityTypesService', () => {
   let uraRepo: jest.Mocked<Repository<UserRoleAssignment>>;
   let usagePolicy: UsagePolicyStub;
 
-  const roleMissionary: Role = {
+  const roleMissionary = {
     id: '11111111-1111-1111-1111-111111111111',
     name: 'missionary',
     description: 'Missionary role',
     users: [],
     created_at: new Date(),
     updated_at: new Date(),
-    canViewReports: false,
-    canManageOwnActivities: true,
-    canManageHierarchyActivities: false,
-    canManageEntities: false,
-    isSystemAdmin: false,
-  };
+    rolePermissions: [],
+    get permissions() {
+      return [];
+    },
+  } as Role;
 
-  const rolePastor: Role = {
+  const rolePastor = {
     id: '22222222-2222-2222-2222-222222222222',
     name: 'pastor',
     description: 'Pastor role',
     users: [],
     created_at: new Date(),
     updated_at: new Date(),
-    canViewReports: false,
-    canManageOwnActivities: false,
-    canManageHierarchyActivities: true,
-    canManageEntities: false,
-    isSystemAdmin: false,
-  };
+    rolePermissions: [],
+    get permissions() {
+      return [];
+    },
+  } as Role;
 
   const atype: ActivityType = {
     id: 'aaaaaaa0-0000-0000-0000-000000000000',

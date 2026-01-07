@@ -21,19 +21,18 @@ describe('RolesService', () => {
   let repo: MockRepo<Role>;
 
   const now = new Date();
-  const role: Role = {
+  const role = {
     id: 'uuid-1',
     name: 'Admin',
     description: 'Admin role',
     created_at: now,
     updated_at: now,
     users: [] as never,
-    canViewReports: false,
-    canManageOwnActivities: false,
-    canManageHierarchyActivities: false,
-    canManageEntities: false,
-    isSystemAdmin: true,
-  };
+    rolePermissions: [],
+    get permissions() {
+      return [];
+    },
+  } as Role;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({

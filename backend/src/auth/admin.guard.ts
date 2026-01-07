@@ -2,14 +2,18 @@ import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from './roles.guard';
 import { Reflector } from '@nestjs/core';
+import { PermissionsService } from './permissions/permissions.service';
 
 @Injectable()
 export class AdminGuard implements CanActivate {
   private authGuard = new (AuthGuard('jwt'))();
   private rolesGuard: RolesGuard;
 
-  constructor(private reflector: Reflector) {
-    this.rolesGuard = new RolesGuard(reflector);
+  constructor(
+    private reflector: Reflector,
+    private permissionsService: PermissionsService,
+  ) {
+    this.rolesGuard = new RolesGuard(reflector, permissionsService);
   }
 
   async canActivate(context: ExecutionContext): Promise<boolean> {

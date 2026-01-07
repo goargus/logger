@@ -10,6 +10,8 @@ import { User } from '../users/user.entity';
 import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
 import { Activity } from '../activity/activity.entity';
 import { ReportQueryDto, RankingsQueryDto } from './dto/report-query.dto';
+import { PermissionsService } from '../auth/permissions/permissions.service';
+import { Permission } from '../auth/permissions/permission.enum';
 import {
   SummaryResponse,
   BreakdownsResponse,
@@ -70,19 +72,27 @@ export class ReportsService {
     private readonly breakdownComparisonCalculator: BreakdownComparisonCalculator,
     private readonly hierarchyBreakdownCalculator: HierarchyBreakdownCalculator,
     private readonly csvExporter: CsvExporter,
+    private readonly permissionsService: PermissionsService,
   ) {}
+
+  /**
+   * Check if user has REPORT_VIEW_HIERARCHY permission at any of their assigned entities.
+   */
+  private async canViewReports(userId: string): Promise<boolean> {
+    return this.permissionsService.userHasPermission(userId, Permission.REPORT_VIEW_HIERARCHY);
+  }
 
   async getSummary(actorUserId: string, query: ReportQueryDto): Promise<SummaryResponse> {
     const actor = await this.userRepo.findOne({
       where: { id: actorUserId },
-      relations: ['role', 'entity'],
+      relations: ['entity'],
     });
 
     if (!actor) {
       throw new NotFoundException('User not found');
     }
 
-    const canViewReports = actor.role.canViewReports;
+    const canViewReports = await this.canViewReports(actorUserId);
 
     const targetEntityId = query.entityId || actor.entity_id;
     if (query.entityId && canViewReports) {
@@ -148,14 +158,14 @@ export class ReportsService {
   async getBreakdowns(actorUserId: string, query: ReportQueryDto): Promise<BreakdownsResponse> {
     const actor = await this.userRepo.findOne({
       where: { id: actorUserId },
-      relations: ['role', 'entity'],
+      relations: ['entity'],
     });
 
     if (!actor) {
       throw new NotFoundException('User not found');
     }
 
-    const canViewReports = actor.role.canViewReports;
+    const canViewReports = await this.canViewReports(actorUserId);
 
     const targetEntityId = query.entityId || actor.entity_id;
     if (query.entityId && canViewReports) {
@@ -203,14 +213,15 @@ export class ReportsService {
   async getCompliance(actorUserId: string, query: ReportQueryDto): Promise<ComplianceResponse> {
     const actor = await this.userRepo.findOne({
       where: { id: actorUserId },
-      relations: ['role', 'entity'],
+      relations: ['entity'],
     });
 
     if (!actor) {
       throw new NotFoundException('User not found');
     }
 
-    if (!actor.role.canViewReports) {
+    const canViewReports = await this.canViewReports(actorUserId);
+    if (!canViewReports) {
       throw new ForbiddenException('You do not have permission to view compliance reports');
     }
 
@@ -237,14 +248,14 @@ export class ReportsService {
   async getTrends(actorUserId: string, query: ReportQueryDto): Promise<TrendsResponse> {
     const actor = await this.userRepo.findOne({
       where: { id: actorUserId },
-      relations: ['role', 'entity'],
+      relations: ['entity'],
     });
 
     if (!actor) {
       throw new NotFoundException('User not found');
     }
 
-    const canViewReports = actor.role.canViewReports;
+    const canViewReports = await this.canViewReports(actorUserId);
     const targetEntityId = query.entityId || actor.entity_id;
 
     if (query.entityId && canViewReports) {
@@ -294,14 +305,14 @@ export class ReportsService {
   async getComparison(actorUserId: string, query: ReportQueryDto): Promise<ComparisonResponse> {
     const actor = await this.userRepo.findOne({
       where: { id: actorUserId },
-      relations: ['role', 'entity'],
+      relations: ['entity'],
     });
 
     if (!actor) {
       throw new NotFoundException('User not found');
     }
 
-    const canViewReports = actor.role.canViewReports;
+    const canViewReports = await this.canViewReports(actorUserId);
     const targetEntityId = query.entityId || actor.entity_id;
 
     if (query.entityId && canViewReports) {
@@ -362,14 +373,15 @@ export class ReportsService {
   async getRankings(actorUserId: string, query: RankingsQueryDto): Promise<RankingsResponse> {
     const actor = await this.userRepo.findOne({
       where: { id: actorUserId },
-      relations: ['role', 'entity'],
+      relations: ['entity'],
     });
 
     if (!actor) {
       throw new NotFoundException('User not found');
     }
 
-    if (!actor.role.canViewReports) {
+    const canViewReports = await this.canViewReports(actorUserId);
+    if (!canViewReports) {
       throw new ForbiddenException('You do not have permission to view rankings');
     }
 
@@ -403,14 +415,14 @@ export class ReportsService {
   async getExpenses(actorUserId: string, query: ReportQueryDto): Promise<ExpensesResponse> {
     const actor = await this.userRepo.findOne({
       where: { id: actorUserId },
-      relations: ['role', 'entity'],
+      relations: ['entity'],
     });
 
     if (!actor) {
       throw new NotFoundException('User not found');
     }
 
-    const canViewReports = actor.role.canViewReports;
+    const canViewReports = await this.canViewReports(actorUserId);
     const targetEntityId = query.entityId || actor.entity_id;
 
     if (query.entityId && canViewReports) {
@@ -465,14 +477,14 @@ export class ReportsService {
 
     const actor = await this.userRepo.findOne({
       where: { id: actorUserId },
-      relations: ['role', 'entity'],
+      relations: ['entity'],
     });
 
     if (!actor) {
       throw new NotFoundException('User not found');
     }
 
-    const canViewReports = actor.role.canViewReports;
+    const canViewReports = await this.canViewReports(actorUserId);
     const targetEntityId = query.entityId || actor.entity_id;
 
     if (query.entityId && canViewReports) {
@@ -569,7 +581,7 @@ export class ReportsService {
     // Load actor to check permissions
     const actor = await this.userRepo.findOne({
       where: { id: actorUserId },
-      relations: ['role', 'entity'],
+      relations: ['entity'],
     });
 
     if (!actor) {
@@ -588,11 +600,11 @@ export class ReportsService {
 
     // Check access: actor can view own data OR actor can view reports AND target is in hierarchy
     const isOwnData = actorUserId === targetUserId;
-    const canViewReports = actor.role.canViewReports;
+    const canViewReports = await this.canViewReports(actorUserId);
 
     if (!isOwnData) {
       if (!canViewReports) {
-        throw new ForbiddenException('You do not have permission to view other users\' activities');
+        throw new ForbiddenException("You do not have permission to view other users' activities");
       }
 
       const isInScope = await this.accessService.validateUserInScope(actorUserId, targetUserId);
@@ -646,7 +658,10 @@ export class ReportsService {
     return {
       user: {
         id: targetUser.id,
-        name: targetUser.full_name || `${targetUser.first_name || ''} ${targetUser.family_name || ''}`.trim() || targetUser.username,
+        name:
+          targetUser.full_name ||
+          `${targetUser.first_name || ''} ${targetUser.family_name || ''}`.trim() ||
+          targetUser.username,
         email: targetUser.email,
         entityName: targetUser.entity?.name || 'Unknown',
         entityType: targetUser.entity?.type || 'Unknown',
@@ -679,14 +694,14 @@ export class ReportsService {
   async exportReport(actorUserId: string, query: ExportReportQueryDto): Promise<ExportResult> {
     const actor = await this.userRepo.findOne({
       where: { id: actorUserId },
-      relations: ['role', 'entity'],
+      relations: ['entity'],
     });
 
     if (!actor) {
       throw new NotFoundException('User not found');
     }
 
-    const canViewReports = actor.role.canViewReports;
+    const canViewReports = await this.canViewReports(actorUserId);
     const targetEntityId = query.entityId || actor.entity_id;
 
     // Validate entity access if specified
@@ -736,7 +751,9 @@ export class ReportsService {
         } else {
           data = activities.map((a) => ({
             date: a.activityDate,
-            userName: a.user?.full_name || `${a.user?.first_name || ''} ${a.user?.family_name || ''}`.trim(),
+            userName:
+              a.user?.full_name ||
+              `${a.user?.first_name || ''} ${a.user?.family_name || ''}`.trim(),
             userEmail: a.user?.email,
             entityName: a.user?.entity?.name,
             activityType: a.activityType?.name,
@@ -812,14 +829,15 @@ export class ReportsService {
   ): Promise<UsersReportResponse> {
     const actor = await this.userRepo.findOne({
       where: { id: actorUserId },
-      relations: ['role', 'entity'],
+      relations: ['entity'],
     });
 
     if (!actor) {
       throw new NotFoundException('User not found');
     }
 
-    if (!actor.role.canViewReports) {
+    const canViewReports = await this.canViewReports(actorUserId);
+    if (!canViewReports) {
       throw new ForbiddenException('You do not have permission to view user reports');
     }
 

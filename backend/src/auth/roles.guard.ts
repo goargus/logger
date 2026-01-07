@@ -1,11 +1,24 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
+import { PermissionsService } from './permissions/permissions.service';
+import { Permission } from './permissions/permission.enum';
+
+/**
+ * Maps role decorator values to database permissions.
+ * Used for @Roles('admin') style decorators.
+ */
+const ROLE_TO_PERMISSION: Record<string, Permission> = {
+  admin: Permission.SYSTEM_ADMIN,
+};
 
 @Injectable()
 export class RolesGuard implements CanActivate {
-  constructor(private readonly reflector: Reflector) {}
+  constructor(
+    private readonly reflector: Reflector,
+    private readonly permissionsService: PermissionsService,
+  ) {}
 
-  canActivate(context: ExecutionContext): boolean {
+  async canActivate(context: ExecutionContext): Promise<boolean> {
     const required = this.reflector.getAllAndOverride<string[]>('roles', [
       context.getHandler(),
       context.getClass(),
@@ -16,29 +29,38 @@ export class RolesGuard implements CanActivate {
     }
 
     const request = context.switchToHttp().getRequest();
-    const user = request.user || {};
+    const user = request.user;
 
-    const userPerms: string[] = Array.isArray(user.permissions) ? user.permissions : [];
-    const userRoles: string[] = Array.isArray(user.roles) ? user.roles : [];
-
-    const roleToPermissions: Record<string, string[]> = {
-      admin: ['read:admin_dashboard', 'create:entities', 'update:entities', 'delete:entities'],
-    };
-
-    const hasAccess = required.some((reqRoleOrPerm) => {
-      if (userPerms.includes(reqRoleOrPerm)) return true;
-
-      if (userRoles.includes(reqRoleOrPerm)) return true;
-
-      const mapped = roleToPermissions[reqRoleOrPerm];
-      if (mapped && mapped.some((p) => userPerms.includes(p))) return true;
-
-      return false;
-    });
-
-    if (!hasAccess) {
-      throw new ForbiddenException('Admin permissions required');
+    if (!user?.id) {
+      throw new ForbiddenException('User not authenticated');
     }
-    return true;
+
+    // Check database-driven permissions
+    for (const reqRoleOrPerm of required) {
+      // First, check if it maps to a known permission
+      const mappedPermission = ROLE_TO_PERMISSION[reqRoleOrPerm];
+      if (mappedPermission) {
+        const hasPermission = await this.permissionsService.userHasPermission(
+          user.id,
+          mappedPermission,
+        );
+        if (hasPermission) {
+          return true;
+        }
+      }
+
+      // Check if it's a Permission enum value directly
+      if (Object.values(Permission).includes(reqRoleOrPerm as Permission)) {
+        const hasPermission = await this.permissionsService.userHasPermission(
+          user.id,
+          reqRoleOrPerm as Permission,
+        );
+        if (hasPermission) {
+          return true;
+        }
+      }
+    }
+
+    throw new ForbiddenException('Insufficient permissions');
   }
 }

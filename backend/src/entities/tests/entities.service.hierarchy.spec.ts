@@ -312,7 +312,9 @@ describe('EntitiesService - Hierarchy Methods', () => {
     it('should throw NotFoundException for invalid entity ID', async () => {
       repo.findOne?.mockResolvedValue(null);
 
-      await expect(service.getHierarchyTree('invalid-id')).rejects.toBeInstanceOf(NotFoundException);
+      await expect(service.getHierarchyTree('invalid-id')).rejects.toBeInstanceOf(
+        NotFoundException,
+      );
     });
 
     it('should build correct tree structure for multi-level hierarchy', async () => {
