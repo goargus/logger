@@ -407,7 +407,8 @@ class _HierarchyReportsContentState
                 ),
                 _StatCard(
                   label: 'Gastos',
-                  value: CurrencyFormatter.format(summary.totalExpenses, ref.watch(currencySymbolProvider)),
+                  value: CurrencyFormatter.format(
+                      summary.totalExpenses, ref.watch(currencySymbolProvider)),
                   icon: Icons.attach_money,
                 ),
                 _StatCard(
