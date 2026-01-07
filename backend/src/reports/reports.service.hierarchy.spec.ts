@@ -247,6 +247,7 @@ describe('ReportsService - Hierarchy Features', () => {
 
     it('should not include hierarchy breakdown when user cannot view reports', async () => {
       userRepo.findOne = jest.fn().mockResolvedValue(actorWithoutReports);
+      jest.spyOn(service as any, 'canViewReports').mockResolvedValue(false);
 
       const result = await service.getSummary('actor-2', {
         includeHierarchyBreakdown: true,

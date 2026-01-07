@@ -135,6 +135,7 @@ describe('ReportsService - getUsersReport', () => {
   describe('access control', () => {
     it('should throw ForbiddenException if user does not have canViewReports permission', async () => {
       userRepo.findOne.mockResolvedValue(mockRegularUser as any);
+      jest.spyOn(service as any, 'canViewReports').mockResolvedValue(false);
 
       await expect(service.getUsersReport('regular-uuid', {})).rejects.toThrow(ForbiddenException);
     });

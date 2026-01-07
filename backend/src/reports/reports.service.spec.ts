@@ -192,6 +192,7 @@ describe('ReportsService', () => {
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
       jest.spyOn(entityRepo, 'findOne').mockResolvedValue(mockUser.entity as any);
+      jest.spyOn(service as any, 'canViewReports').mockResolvedValue(false);
       jest.spyOn(timeScopeService, 'getOrDetermineTimeScope').mockResolvedValue({
         periodIds: [mockPeriod.id],
         period: mockPeriod as any,
@@ -275,6 +276,7 @@ describe('ReportsService', () => {
       };
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
+      jest.spyOn(service as any, 'canViewReports').mockResolvedValue(false);
 
       await expect(service.getSummary('user-1', { entityId: 'entity-2' })).rejects.toThrow(
         ForbiddenException,
@@ -401,6 +403,7 @@ describe('ReportsService', () => {
       ];
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
+      jest.spyOn(service as any, 'canViewReports').mockResolvedValue(false);
       jest.spyOn(periodRepo, 'findOne').mockResolvedValue(mockPeriod as any);
       mockQueryBuilder.getMany.mockResolvedValue(mockActivities);
 
@@ -420,6 +423,7 @@ describe('ReportsService', () => {
       };
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
+      jest.spyOn(service as any, 'canViewReports').mockResolvedValue(false);
 
       await expect(service.getCompliance('user-1', {})).rejects.toThrow(ForbiddenException);
     });
@@ -538,6 +542,7 @@ describe('ReportsService', () => {
       };
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
+      jest.spyOn(service as any, 'canViewReports').mockResolvedValue(false);
 
       await expect(service.getRankings('user-1', {})).rejects.toThrow(ForbiddenException);
     });
