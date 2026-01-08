@@ -125,11 +125,12 @@ export class ReportsService {
         : [targetEntityId];
 
     const timeScope = await this.timeScopeService.getOrDetermineTimeScope(query, actor.entity_id);
+    const filterUserId = query.userId || (!canViewReports ? actorUserId : undefined);
     const qb = this.queryFactory.buildActivityQuery(
       actorUserId,
       entityIds,
       timeScope,
-      query.userId || (!canViewReports ? actorUserId : undefined),
+      filterUserId,
     );
 
     const activities = await qb.getMany();
@@ -198,11 +199,12 @@ export class ReportsService {
         : [targetEntityId];
 
     const timeScope = await this.timeScopeService.getOrDetermineTimeScope(query, actor.entity_id);
+    const filterUserId = query.userId || (!canViewReports ? actorUserId : undefined);
     const qb = this.queryFactory.buildActivityQuery(
       actorUserId,
       entityIds,
       timeScope,
-      query.userId || (!canViewReports ? actorUserId : undefined),
+      filterUserId,
     );
 
     const activities = await qb.getMany();
