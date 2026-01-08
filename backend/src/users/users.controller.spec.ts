@@ -43,6 +43,7 @@ describe('UsersController', () => {
       parent_id: null,
       is_active: true,
       term_length_years: 5,
+      currency_symbol: 'USD',
       children: [],
       created_at: new Date('2023-01-01T00:00:00Z'),
       updated_at: new Date('2023-01-01T00:00:00Z'),
@@ -68,6 +69,7 @@ describe('UsersController', () => {
         parent_id: 'entity-123',
         is_active: true,
         term_length_years: 5,
+        currency_symbol: 'USD',
         children: [],
         created_at: new Date('2023-01-01T00:00:00Z'),
         updated_at: new Date('2023-01-01T00:00:00Z'),
@@ -168,6 +170,7 @@ describe('UsersController', () => {
         status: mockUser.status,
         created_at: mockUser.created_at,
         updated_at: mockUser.updated_at,
+        currency_symbol: '$',
         primary_role: {
           id: mockUser.role.id,
           name: mockUser.role.name,
@@ -179,6 +182,7 @@ describe('UsersController', () => {
           description: mockUser.entity.description,
           type: mockUser.entity.type,
           parent_id: mockUser.entity.parent_id,
+          currency_symbol: mockUser.entity.currency_symbol,
         },
         role_assignments: [
           {
@@ -194,6 +198,7 @@ describe('UsersController', () => {
               description: mockRoleAssignments[0].entity.description,
               type: mockRoleAssignments[0].entity.type,
               parent_id: mockRoleAssignments[0].entity.parent_id,
+              currency_symbol: mockRoleAssignments[0].entity.currency_symbol,
             },
             created_at: mockRoleAssignments[0].created_at,
             updated_at: mockRoleAssignments[0].updated_at,

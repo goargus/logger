@@ -30,6 +30,7 @@ describe('ReportsService - Hierarchy Features', () => {
   let queryFactory: jest.Mocked<ReportsActivityQueryFactory>;
   let summaryCalculator: jest.Mocked<SummaryCalculator>;
   let hierarchyBreakdownCalculator: jest.Mocked<HierarchyBreakdownCalculator>;
+  let permissionsService: jest.Mocked<PermissionsService>;
 
   // Test data
   const actorWithReports = {
@@ -207,6 +208,7 @@ describe('ReportsService - Hierarchy Features', () => {
     queryFactory = module.get(ReportsActivityQueryFactory);
     summaryCalculator = module.get(SummaryCalculator);
     hierarchyBreakdownCalculator = module.get(HierarchyBreakdownCalculator);
+    permissionsService = module.get(PermissionsService);
   });
 
   describe('getSummary with includeHierarchyBreakdown', () => {
@@ -246,6 +248,9 @@ describe('ReportsService - Hierarchy Features', () => {
     });
 
     it('should not include hierarchy breakdown when user cannot view reports', async () => {
+      // Override the global mock to return false for this test
+      permissionsService.userHasPermission = jest.fn().mockResolvedValue(false);
+      
       userRepo.findOne = jest.fn().mockResolvedValue(actorWithoutReports);
 
       const result = await service.getSummary('actor-2', {

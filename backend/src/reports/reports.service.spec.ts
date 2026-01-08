@@ -34,6 +34,7 @@ describe('ReportsService', () => {
   let accessService: ReportsAccessService;
   let timeScopeService: ReportsTimeScopeService;
   let queryFactory: ReportsActivityQueryFactory;
+  let permissionsService: PermissionsService;
 
   const mockQueryBuilder = {
     leftJoinAndSelect: jest.fn().mockReturnThis(),
@@ -150,6 +151,7 @@ describe('ReportsService', () => {
     accessService = module.get<ReportsAccessService>(ReportsAccessService);
     timeScopeService = module.get<ReportsTimeScopeService>(ReportsTimeScopeService);
     queryFactory = module.get<ReportsActivityQueryFactory>(ReportsActivityQueryFactory);
+    permissionsService = module.get<PermissionsService>(PermissionsService);
   });
 
   afterEach(() => {
@@ -189,6 +191,9 @@ describe('ReportsService', () => {
           user: mockUser,
         },
       ];
+
+      // Override the global mock to return false for this test
+      permissionsService.userHasPermission = jest.fn().mockResolvedValue(false);
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
       jest.spyOn(entityRepo, 'findOne').mockResolvedValue(mockUser.entity as any);
@@ -274,7 +279,11 @@ describe('ReportsService', () => {
         entity: { id: 'entity-1' },
       };
 
+      // Override the global mock to return false for this test
+      permissionsService.userHasPermission = jest.fn().mockResolvedValue(false);
+
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
+      jest.spyOn(entityRepo, 'findOne').mockResolvedValue({ id: 'entity-2' } as any);
 
       await expect(service.getSummary('user-1', { entityId: 'entity-2' })).rejects.toThrow(
         ForbiddenException,
@@ -400,6 +409,9 @@ describe('ReportsService', () => {
         },
       ];
 
+      // Override the global mock to return false for this test
+      permissionsService.userHasPermission = jest.fn().mockResolvedValue(false);
+
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
       jest.spyOn(periodRepo, 'findOne').mockResolvedValue(mockPeriod as any);
       mockQueryBuilder.getMany.mockResolvedValue(mockActivities);
@@ -418,6 +430,9 @@ describe('ReportsService', () => {
         entity_id: 'entity-1',
         role: { rolePermissions: [] },
       };
+
+      // Override the global mock to return false for this test
+      permissionsService.userHasPermission = jest.fn().mockResolvedValue(false);
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
 
@@ -536,6 +551,9 @@ describe('ReportsService', () => {
         entity_id: 'entity-1',
         role: { rolePermissions: [] },
       };
+
+      // Override the global mock to return false for this test
+      permissionsService.userHasPermission = jest.fn().mockResolvedValue(false);
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
 
