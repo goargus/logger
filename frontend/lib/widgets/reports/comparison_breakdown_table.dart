@@ -222,7 +222,8 @@ class ComparisonBreakdownTable extends StatelessWidget {
                                 horizontal: 8,
                               ),
                               child: Text(
-                                CurrencyFormatter.format(item.totalExpenses, currencySymbol),
+                                CurrencyFormatter.format(
+                                    item.totalExpenses, currencySymbol),
                                 style: const TextStyle(fontSize: 14),
                                 textAlign: TextAlign.right,
                               ),

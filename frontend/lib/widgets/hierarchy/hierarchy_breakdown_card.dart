@@ -116,7 +116,8 @@ class HierarchyBreakdownCard extends StatelessWidget {
                       ),
                       DataCell(Text(entity.entityType.displayName)),
                       DataCell(Text('${entity.activities}')),
-                      DataCell(Text(CurrencyFormatter.format(entity.expenses, currencySymbol))),
+                      DataCell(Text(CurrencyFormatter.format(
+                          entity.expenses, currencySymbol))),
                       DataCell(_ComplianceBadge(rate: entity.complianceRate)),
                     ],
                   );

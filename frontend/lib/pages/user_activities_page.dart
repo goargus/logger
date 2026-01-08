@@ -457,7 +457,8 @@ class _UserActivitiesPageState extends ConsumerState<UserActivitiesPage> {
               theme,
               icon: Icons.attach_money,
               label: 'Gastos',
-              value: CurrencyFormatter.format(totals.expenses, ref.watch(currencySymbolProvider)),
+              value: CurrencyFormatter.format(
+                  totals.expenses, ref.watch(currencySymbolProvider)),
             ),
           ],
         ),
@@ -562,7 +563,8 @@ class _UserActivitiesPageState extends ConsumerState<UserActivitiesPage> {
           if (activity.hasExpense)
             Chip(
               avatar: const Icon(Icons.attach_money, size: 14),
-              label: Text(CurrencyFormatter.formatString(activity.expenseAmount, ref.watch(currencySymbolProvider))),
+              label: Text(CurrencyFormatter.formatString(
+                  activity.expenseAmount, ref.watch(currencySymbolProvider))),
               visualDensity: VisualDensity.compact,
               backgroundColor: theme.colorScheme.tertiaryContainer,
             ),
