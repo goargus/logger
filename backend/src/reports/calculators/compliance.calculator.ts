@@ -16,7 +16,7 @@ export class ComplianceCalculator {
   async calculate(activities: Activity[], entityIds: string[]): Promise<ComplianceResponse> {
     const usersInScope = await this.userRepo.find({
       where: { entity_id: In(entityIds), status: UserStatus.ACTIVE },
-      relations: ['entity'],
+      relations: ['entity', 'role'],
     });
 
     const userIdsWithActivities = new Set(activities.map((a) => a.userId));
@@ -39,31 +39,10 @@ export class ComplianceCalculator {
 
     const notSubmittedUsersList = usersInScope.filter((u) => !userIdsWithActivities.has(u.id));
 
-    const roleAssignmentsMap = new Map<string, string[]>();
-    if (notSubmittedUsersList.length > 0) {
-      const userIds = notSubmittedUsersList.map((u) => u.id);
-      const allRoleAssignments = await this.userRepo.manager.query(
-        `SELECT ura.user_id, r.name FROM user_role_assignment ura
-         JOIN roles r ON ura.role_id = r.id
-         WHERE ura.user_id = ANY($1)`,
-        [userIds],
-      );
-
-      for (const assignment of allRoleAssignments) {
-        if (!roleAssignmentsMap.has(assignment.user_id)) {
-          roleAssignmentsMap.set(assignment.user_id, []);
-        }
-        const roles = roleAssignmentsMap.get(assignment.user_id);
-        if (roles) {
-          roles.push(assignment.name);
-        }
-      }
-    }
-
     const notSubmittedUsers = notSubmittedUsersList.map((u) => ({
       userId: u.id,
       name: u.full_name || u.username,
-      roles: roleAssignmentsMap.get(u.id) || [],
+      roles: u.role ? [u.role.name] : [],
       entity: u.entity.name,
     }));
 
