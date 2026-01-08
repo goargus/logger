@@ -125,12 +125,8 @@ class AuthNotifier extends StateNotifier<AuthState> {
   Future<Map<String, dynamic>> _fetchBackendUserProfile(
       String accessToken) async {
     try {
-      debugPrint('[AuthNotifier] Fetching backend user profile...');
       final userService = UserService.localhost(() async => accessToken);
       final profile = await userService.getMyProfile();
-
-      debugPrint(
-          '[AuthNotifier] Backend profile fetched: ${profile.firstName} ${profile.familyName}');
 
       final result = <String, dynamic>{
         'id': profile.id,
@@ -163,7 +159,6 @@ class AuthNotifier extends StateNotifier<AuthState> {
 
       return result;
     } catch (e) {
-      debugPrint('[AuthNotifier] Error fetching backend user profile: $e');
       return {};
     }
   }

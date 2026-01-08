@@ -405,6 +405,7 @@ describe('ReportsService', () => {
       ];
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
+      jest.spyOn(service as any, 'canViewReports').mockResolvedValue(false);
       jest.spyOn(periodRepo, 'findOne').mockResolvedValue(mockPeriod as any);
       jest.spyOn(permissionsService, 'userHasPermission').mockResolvedValue(false);
       mockQueryBuilder.getMany.mockResolvedValue(mockActivities);

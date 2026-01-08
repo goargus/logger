@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../../models/users_report.dart';
 import '../../utils/currency_formatter.dart';
 
-/// Paginated table showing users with their activity metrics
 class UsersReportTable extends StatefulWidget {
   const UsersReportTable({
     super.key,
