@@ -197,6 +197,7 @@ describe('ReportsService', () => {
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
       jest.spyOn(entityRepo, 'findOne').mockResolvedValue(mockUser.entity as any);
+      jest.spyOn(permissionsService, 'userHasPermission').mockResolvedValue(false);
       jest.spyOn(timeScopeService, 'getOrDetermineTimeScope').mockResolvedValue({
         periodIds: [mockPeriod.id],
         period: mockPeriod as any,
@@ -283,7 +284,7 @@ describe('ReportsService', () => {
       permissionsService.userHasPermission = jest.fn().mockResolvedValue(false);
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
-      jest.spyOn(entityRepo, 'findOne').mockResolvedValue({ id: 'entity-2' } as any);
+      jest.spyOn(permissionsService, 'userHasPermission').mockResolvedValue(false);
 
       await expect(service.getSummary('user-1', { entityId: 'entity-2' })).rejects.toThrow(
         ForbiddenException,
@@ -413,7 +414,9 @@ describe('ReportsService', () => {
       permissionsService.userHasPermission = jest.fn().mockResolvedValue(false);
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
+      jest.spyOn(service as any, 'canViewReports').mockResolvedValue(false);
       jest.spyOn(periodRepo, 'findOne').mockResolvedValue(mockPeriod as any);
+      jest.spyOn(permissionsService, 'userHasPermission').mockResolvedValue(false);
       mockQueryBuilder.getMany.mockResolvedValue(mockActivities);
 
       const result = await service.getBreakdowns('user-1', {});
@@ -435,6 +438,7 @@ describe('ReportsService', () => {
       permissionsService.userHasPermission = jest.fn().mockResolvedValue(false);
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
+      jest.spyOn(permissionsService, 'userHasPermission').mockResolvedValue(false);
 
       await expect(service.getCompliance('user-1', {})).rejects.toThrow(ForbiddenException);
     });
@@ -470,12 +474,14 @@ describe('ReportsService', () => {
           full_name: 'María García',
           status: 'active',
           entity: { name: 'Campo Seattle' },
+          role: { name: 'Misionero' },
         },
         {
           id: 'user-2',
           full_name: 'Juan Pérez',
           status: 'active',
           entity: { name: 'Campo Seattle' },
+          role: { name: 'Misionero' },
         },
       ];
 
@@ -486,9 +492,6 @@ describe('ReportsService', () => {
         period: mockPeriod as any,
       });
       jest.spyOn(userRepo, 'find').mockResolvedValue(mockUsersInScope as any);
-      jest
-        .spyOn(userRepo.manager, 'query')
-        .mockResolvedValue([{ user_id: 'user-2', name: 'Misionero' }]);
       mockQueryBuilder.getMany.mockResolvedValue(mockActivities);
 
       const result = await service.getCompliance('user-1', {});
@@ -556,6 +559,7 @@ describe('ReportsService', () => {
       permissionsService.userHasPermission = jest.fn().mockResolvedValue(false);
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
+      jest.spyOn(permissionsService, 'userHasPermission').mockResolvedValue(false);
 
       await expect(service.getRankings('user-1', {})).rejects.toThrow(ForbiddenException);
     });

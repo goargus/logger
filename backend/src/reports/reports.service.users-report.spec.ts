@@ -140,6 +140,7 @@ describe('ReportsService - getUsersReport', () => {
       permissionsService.userHasPermission = jest.fn().mockResolvedValue(false);
       
       userRepo.findOne.mockResolvedValue(mockRegularUser as any);
+      permissionsService.userHasPermission.mockResolvedValue(false);
 
       await expect(service.getUsersReport('regular-uuid', {})).rejects.toThrow(ForbiddenException);
     });

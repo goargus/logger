@@ -252,6 +252,7 @@ describe('ReportsService - Hierarchy Features', () => {
       permissionsService.userHasPermission = jest.fn().mockResolvedValue(false);
       
       userRepo.findOne = jest.fn().mockResolvedValue(actorWithoutReports);
+      permissionsService.userHasPermission.mockResolvedValue(false);
 
       const result = await service.getSummary('actor-2', {
         includeHierarchyBreakdown: true,
