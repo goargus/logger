@@ -61,19 +61,19 @@ class UserProfile {
 class UserRole {
   final String id;
   final String name;
-  final String description;
+  final String? description;
 
   UserRole({
     required this.id,
     required this.name,
-    required this.description,
+    this.description,
   });
 
   factory UserRole.fromJson(Map<String, dynamic> json) {
     return UserRole(
       id: json['id'] as String,
       name: json['name'] as String,
-      description: json['description'] as String,
+      description: json['description'] as String?,
     );
   }
 }
@@ -81,7 +81,7 @@ class UserRole {
 class UserEntity {
   final String id;
   final String name;
-  final String description;
+  final String? description;
   final String type;
   final String? parentId;
   final String? currencySymbol;
@@ -89,7 +89,7 @@ class UserEntity {
   UserEntity({
     required this.id,
     required this.name,
-    required this.description,
+    this.description,
     required this.type,
     this.parentId,
     this.currencySymbol,
@@ -99,7 +99,7 @@ class UserEntity {
     return UserEntity(
       id: json['id'] as String,
       name: json['name'] as String,
-      description: json['description'] as String,
+      description: json['description'] as String?,
       type: json['type'] as String,
       parentId: json['parent_id'] as String?,
       currencySymbol: json['currency_symbol'] as String?,
