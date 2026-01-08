@@ -23,7 +23,8 @@
     "admin:bootstrap": "ts-node -r tsconfig-paths/register scripts/bootstrap-admin.ts",
     "seed:roles": "ts-node -r tsconfig-paths/register scripts/seed-roles-and-activities.ts",
     "seed:honduras-structure": "ts-node -r tsconfig-paths/register scripts/honduras-structure.seed.ts",
-    "seed:honduras-users": "ts-node -r tsconfig-paths/register scripts/seed-honduras-users.ts"
+    "seed:honduras-users": "ts-node -r tsconfig-paths/register scripts/seed-honduras-users.ts",
+    "seed:simulation": "ts-node -r tsconfig-paths/register scripts/seed-one-year-simulation.ts"
   },
   "dependencies": {
     "@casl/ability": "^6.7.3",
