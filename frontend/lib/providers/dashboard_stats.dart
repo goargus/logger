@@ -15,13 +15,15 @@ class DashboardStatsNotifier extends StateNotifier<AsyncValue<DashboardStats>> {
 
   final DashboardStatsService service;
 
-  Future<void> fetch({String? periodStart, String? periodEnd}) async {
+  Future<void> fetch(
+      {String? periodStart, String? periodEnd, String? userId}) async {
     state = const AsyncValue.loading();
 
     try {
       final data = await service.getDashboardStats(
         periodStart: periodStart,
         periodEnd: periodEnd,
+        userId: userId,
       );
 
       final stats = DashboardStats.fromApi(data);
@@ -31,7 +33,7 @@ class DashboardStatsNotifier extends StateNotifier<AsyncValue<DashboardStats>> {
     }
   }
 
-  void refresh() {
+  void refresh(String? userId) {
     final now = DateTime.now();
     final firstDay = DateTime(now.year, now.month, 1);
     final lastDay = DateTime(now.year, now.month + 1, 0);
@@ -41,7 +43,7 @@ class DashboardStatsNotifier extends StateNotifier<AsyncValue<DashboardStats>> {
     final periodEnd =
         '${lastDay.year}-${lastDay.month.toString().padLeft(2, '0')}-${lastDay.day.toString().padLeft(2, '0')}';
 
-    fetch(periodStart: periodStart, periodEnd: periodEnd);
+    fetch(periodStart: periodStart, periodEnd: periodEnd, userId: userId);
   }
 }
 

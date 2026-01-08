@@ -19,11 +19,13 @@ class DashboardStatsService {
   Future<Map<String, dynamic>> getDashboardStats({
     String? periodStart,
     String? periodEnd,
+    String? userId,
   }) async {
     try {
       final queryParams = <String, String>{};
       if (periodStart != null) queryParams['dateFrom'] = periodStart;
       if (periodEnd != null) queryParams['dateTo'] = periodEnd;
+      if (userId != null) queryParams['userId'] = userId;
 
       final summaryData = await apiClient.get(
         'reports/summary',

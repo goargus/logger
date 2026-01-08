@@ -192,6 +192,9 @@ describe('ReportsService', () => {
         },
       ];
 
+      // Override the global mock to return false for this test
+      permissionsService.userHasPermission = jest.fn().mockResolvedValue(false);
+
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
       jest.spyOn(entityRepo, 'findOne').mockResolvedValue(mockUser.entity as any);
       jest.spyOn(permissionsService, 'userHasPermission').mockResolvedValue(false);
@@ -276,6 +279,9 @@ describe('ReportsService', () => {
         role: { rolePermissions: [] },
         entity: { id: 'entity-1' },
       };
+
+      // Override the global mock to return false for this test
+      permissionsService.userHasPermission = jest.fn().mockResolvedValue(false);
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
       jest.spyOn(permissionsService, 'userHasPermission').mockResolvedValue(false);
@@ -404,6 +410,9 @@ describe('ReportsService', () => {
         },
       ];
 
+      // Override the global mock to return false for this test
+      permissionsService.userHasPermission = jest.fn().mockResolvedValue(false);
+
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
       jest.spyOn(service as any, 'canViewReports').mockResolvedValue(false);
       jest.spyOn(periodRepo, 'findOne').mockResolvedValue(mockPeriod as any);
@@ -424,6 +433,9 @@ describe('ReportsService', () => {
         entity_id: 'entity-1',
         role: { rolePermissions: [] },
       };
+
+      // Override the global mock to return false for this test
+      permissionsService.userHasPermission = jest.fn().mockResolvedValue(false);
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
       jest.spyOn(permissionsService, 'userHasPermission').mockResolvedValue(false);
@@ -542,6 +554,9 @@ describe('ReportsService', () => {
         entity_id: 'entity-1',
         role: { rolePermissions: [] },
       };
+
+      // Override the global mock to return false for this test
+      permissionsService.userHasPermission = jest.fn().mockResolvedValue(false);
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
       jest.spyOn(permissionsService, 'userHasPermission').mockResolvedValue(false);

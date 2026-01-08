@@ -33,11 +33,16 @@ class DashboardContent extends ConsumerStatefulWidget {
 }
 
 class _DashboardContentState extends ConsumerState<DashboardContent> {
+  String? _getUserId() {
+    final authState = ref.read(authNotifierProvider);
+    return authState.user?['id'] as String?;
+  }
+
   @override
   void initState() {
     super.initState();
     Future.microtask(() {
-      ref.read(dashboardStatsProvider.notifier).refresh();
+      ref.read(dashboardStatsProvider.notifier).refresh(_getUserId());
     });
   }
 
@@ -62,7 +67,7 @@ class _DashboardContentState extends ConsumerState<DashboardContent> {
 
       if (created != null && mounted) {
         ref.read(recentActivitiesProvider.notifier).refresh();
-        ref.read(dashboardStatsProvider.notifier).refresh();
+        ref.read(dashboardStatsProvider.notifier).refresh(_getUserId());
 
         final expense = () {
           final v = created['expenseAmount'] ?? created['expense_amount'];
@@ -122,7 +127,7 @@ class _DashboardContentState extends ConsumerState<DashboardContent> {
       if (result != null && mounted) {
         ref.read(recentActivitiesProvider.notifier).refresh();
         ref.read(monthlyExpensesProvider.notifier).refresh();
-        ref.read(dashboardStatsProvider.notifier).refresh();
+        ref.read(dashboardStatsProvider.notifier).refresh(_getUserId());
         Snackbars.showSuccess(context, 'Actividad actualizada');
       }
     } catch (e) {
@@ -162,7 +167,7 @@ class _DashboardContentState extends ConsumerState<DashboardContent> {
       if (deleted == true && mounted) {
         ref.read(recentActivitiesProvider.notifier).refresh();
         ref.read(monthlyExpensesProvider.notifier).refresh();
-        ref.read(dashboardStatsProvider.notifier).refresh();
+        ref.read(dashboardStatsProvider.notifier).refresh(_getUserId());
         Snackbars.showSuccess(context, 'Actividad eliminada');
       }
     } catch (e) {

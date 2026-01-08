@@ -136,6 +136,9 @@ describe('ReportsService - getUsersReport', () => {
 
   describe('access control', () => {
     it('should throw ForbiddenException if user does not have canViewReports permission', async () => {
+      // Override the global mock to return false for this test
+      permissionsService.userHasPermission = jest.fn().mockResolvedValue(false);
+      
       userRepo.findOne.mockResolvedValue(mockRegularUser as any);
       permissionsService.userHasPermission.mockResolvedValue(false);
 

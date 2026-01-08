@@ -61,19 +61,19 @@ class UserProfile {
 class UserRole {
   final String id;
   final String name;
-  final String description;
+  final String? description;
 
   UserRole({
     required this.id,
     required this.name,
-    required this.description,
+    this.description,
   });
 
   factory UserRole.fromJson(Map<String, dynamic> json) {
     return UserRole(
       id: json['id'] as String,
       name: json['name'] as String,
-      description: json['description'] as String,
+      description: json['description'] as String?,
     );
   }
 }

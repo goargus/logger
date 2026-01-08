@@ -125,11 +125,12 @@ export class ReportsService {
         : [targetEntityId];
 
     const timeScope = await this.timeScopeService.getOrDetermineTimeScope(query, actor.entity_id);
+    const filterUserId = query.userId || (!canViewReports ? actorUserId : undefined);
     const qb = this.queryFactory.buildActivityQuery(
       actorUserId,
       entityIds,
       timeScope,
-      query.userId || (!canViewReports ? actorUserId : undefined),
+      filterUserId,
     );
 
     const activities = await qb.getMany();
@@ -139,12 +140,12 @@ export class ReportsService {
       targetEntityId,
       entityIds,
       canViewReports,
-      !!query.userId,
+      !!filterUserId,
       timeScope,
     );
 
     // Include hierarchy breakdown if requested and user has permission
-    if (query.includeHierarchyBreakdown && canViewReports && !query.userId) {
+    if (query.includeHierarchyBreakdown && canViewReports && !filterUserId) {
       const breakdown = await this.hierarchyBreakdownCalculator.calculate(activities, entityIds);
       return {
         ...summary,
@@ -198,16 +199,17 @@ export class ReportsService {
         : [targetEntityId];
 
     const timeScope = await this.timeScopeService.getOrDetermineTimeScope(query, actor.entity_id);
+    const filterUserId = query.userId || (!canViewReports ? actorUserId : undefined);
     const qb = this.queryFactory.buildActivityQuery(
       actorUserId,
       entityIds,
       timeScope,
-      query.userId || (!canViewReports ? actorUserId : undefined),
+      filterUserId,
     );
 
     const activities = await qb.getMany();
 
-    return this.breakdownsCalculator.calculate(activities, canViewReports, !!query.userId);
+    return this.breakdownsCalculator.calculate(activities, canViewReports, !!filterUserId);
   }
 
   async getCompliance(actorUserId: string, query: ReportQueryDto): Promise<ComplianceResponse> {

@@ -248,6 +248,9 @@ describe('ReportsService - Hierarchy Features', () => {
     });
 
     it('should not include hierarchy breakdown when user cannot view reports', async () => {
+      // Override the global mock to return false for this test
+      permissionsService.userHasPermission = jest.fn().mockResolvedValue(false);
+      
       userRepo.findOne = jest.fn().mockResolvedValue(actorWithoutReports);
       permissionsService.userHasPermission.mockResolvedValue(false);
 
