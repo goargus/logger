@@ -18,12 +18,15 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "migration:generate": "ts-node -r tsconfig-paths/register ./node_modules/typeorm/cli.js migration:generate -d src/database/data-source.ts -n",
-    "migration:run": "ts-node -r tsconfig-paths/register ./node_modules",
+    "migration:create": "typeorm migration:create",
+    "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/data-source.ts",
+    "migration:run": "typeorm-ts-node-commonjs migration:run -d src/data-source.ts",
+    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/data-source.ts",
     "admin:bootstrap": "ts-node -r tsconfig-paths/register scripts/bootstrap-admin.ts",
     "seed:roles": "ts-node -r tsconfig-paths/register scripts/seed-roles-and-activities.ts",
     "seed:honduras-structure": "ts-node -r tsconfig-paths/register scripts/honduras-structure.seed.ts",
-    "seed:honduras-users": "ts-node -r tsconfig-paths/register scripts/seed-honduras-users.ts"
+    "seed:honduras-users": "ts-node -r tsconfig-paths/register scripts/seed-honduras-users.ts",
+    "seed:simulation": "ts-node -r tsconfig-paths/register scripts/seed-one-year-simulation.ts"
   },
   "dependencies": {
     "@casl/ability": "^6.7.3",

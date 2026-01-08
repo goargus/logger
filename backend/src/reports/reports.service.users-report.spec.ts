@@ -28,6 +28,7 @@ describe('ReportsService - getUsersReport', () => {
   let accessService: jest.Mocked<ReportsAccessService>;
   let timeScopeService: jest.Mocked<ReportsTimeScopeService>;
   let queryFactory: jest.Mocked<ReportsActivityQueryFactory>;
+  let permissionsService: jest.Mocked<PermissionsService>;
 
   const mockLeader = {
     id: 'leader-uuid',
@@ -130,12 +131,13 @@ describe('ReportsService - getUsersReport', () => {
     accessService = module.get(ReportsAccessService);
     timeScopeService = module.get(ReportsTimeScopeService);
     queryFactory = module.get(ReportsActivityQueryFactory);
+    permissionsService = module.get(PermissionsService);
   });
 
   describe('access control', () => {
     it('should throw ForbiddenException if user does not have canViewReports permission', async () => {
       userRepo.findOne.mockResolvedValue(mockRegularUser as any);
-      jest.spyOn(service as any, 'canViewReports').mockResolvedValue(false);
+      permissionsService.userHasPermission.mockResolvedValue(false);
 
       await expect(service.getUsersReport('regular-uuid', {})).rejects.toThrow(ForbiddenException);
     });

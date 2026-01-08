@@ -33,6 +33,8 @@ import { ReportsModule } from './reports/reports.module';
       database: process.env.DB_NAME,
       autoLoadEntities: true,
       synchronize: process.env.NODE_ENV !== 'production',
+      migrations: [__dirname + '/../migrations/*{.ts,.js}'],
+      migrationsRun: process.env.NODE_ENV === 'production',
       ssl:
         process.env.DB_HOST?.includes('neon.tech') || process.env.NODE_ENV === 'production'
           ? { rejectUnauthorized: false }
