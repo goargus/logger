@@ -29,7 +29,7 @@ export class SummaryCalculator {
       dateTo?: string;
     },
   ): Promise<SummaryResponse> {
-    const scope: 'personal' | 'entity' = canViewReports ? 'entity' : 'personal';
+    const scope: 'personal' | 'entity' = canViewReports && !isUserFiltered ? 'entity' : 'personal';
 
     const totalActivities = activities.length;
     const totalExpenses = activities.reduce((sum, a) => {
