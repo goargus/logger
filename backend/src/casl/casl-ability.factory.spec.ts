@@ -6,10 +6,23 @@ import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
 import { Entity } from '../entities/entity.entity';
 import { User } from '../users/user.entity';
 import { Role } from '../roles/role.entity';
+import { RolePermission } from '../roles/role-permission.entity';
 import { Action } from './types';
 import { Activity } from '../activity/activity.entity';
 import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
 import { ActivityType } from '../activities-type/activity-type.entity';
+import { Permission } from '../auth/permissions/permission.enum';
+
+// Helper function to create a role with permissions
+function createRoleWithPermissions(id: string, name: string, permissions: Permission[]): Role {
+  const rolePermissions = permissions.map(p => ({ permission: p } as RolePermission));
+  return {
+    id,
+    name,
+    rolePermissions,
+    permissions, // This getter will return the permissions array
+  } as Role;
+}
 
 describe('CaslAbilityFactory', () => {
   let factory: CaslAbilityFactory;
@@ -55,12 +68,7 @@ describe('CaslAbilityFactory', () => {
         roleAssignments: [
           {
             id: 'ra-1',
-            role: {
-              id: 'role-1',
-              name: 'System Admin',
-              rolePermissions: [],
-              get permissions() { return []; },
-            } as unknown as Role,
+            role: createRoleWithPermissions('role-1', 'System Admin', [Permission.SYSTEM_ADMIN]),
             entity: { id: 'entity-1' } as Entity,
             user: { id: 'user-1' } as User,
             start_date: '2024-01-01',
@@ -88,12 +96,16 @@ describe('CaslAbilityFactory', () => {
         roleAssignments: [
           {
             id: 'ra-1',
-            role: {
-              id: 'role-1',
-              name: 'Union President',
-              rolePermissions: [],
-              get permissions() { return []; },
-            } as unknown as Role,
+            role: createRoleWithPermissions('role-1', 'Union President', [
+              Permission.REPORT_VIEW_HIERARCHY,
+              Permission.ACTIVITY_READ_HIERARCHY,
+              Permission.ENTITY_READ_HIERARCHY,
+              Permission.USER_READ_HIERARCHY,
+              Permission.REPORTING_PERIOD_READ_HIERARCHY,
+              Permission.ROLE_READ,
+              Permission.ACTIVITY_TYPE_READ,
+              Permission.ENTITY_UPDATE_OWN,
+            ]),
             entity: { id: 'union-1' } as Entity,
             user: { id: 'user-1' } as User,
             start_date: '2024-01-01',
@@ -123,12 +135,18 @@ describe('CaslAbilityFactory', () => {
         roleAssignments: [
           {
             id: 'ra-1',
-            role: {
-              id: 'role-1',
-              name: 'Association Secretary',
-              rolePermissions: [],
-              get permissions() { return []; },
-            } as unknown as Role,
+            role: createRoleWithPermissions('role-1', 'Association Secretary', [
+              Permission.REPORT_VIEW_HIERARCHY,
+              Permission.ACTIVITY_READ_HIERARCHY,
+              Permission.ENTITY_READ_HIERARCHY,
+              Permission.USER_READ_HIERARCHY,
+              Permission.REPORTING_PERIOD_READ_HIERARCHY,
+              Permission.ROLE_READ,
+              Permission.ACTIVITY_TYPE_READ,
+              Permission.ACTIVITY_MANAGE_HIERARCHY,
+              Permission.ENTITY_UPDATE_OWN,
+              Permission.USER_UPDATE_HIERARCHY,
+            ]),
             entity: { id: 'assoc-1' } as Entity,
             user: { id: 'user-1' } as User,
             start_date: '2024-01-01',
@@ -157,12 +175,16 @@ describe('CaslAbilityFactory', () => {
         roleAssignments: [
           {
             id: 'ra-1',
-            role: {
-              id: 'role-1',
-              name: 'Missionary',
-              rolePermissions: [],
-              get permissions() { return []; },
-            } as unknown as Role,
+            role: createRoleWithPermissions('role-1', 'Missionary', [
+              Permission.ACTIVITY_CREATE_OWN,
+              Permission.ACTIVITY_READ_OWN,
+              Permission.ACTIVITY_UPDATE_OWN,
+              Permission.ACTIVITY_DELETE_OWN,
+              Permission.USER_READ_OWN,
+              Permission.ACTIVITY_TYPE_READ,
+              Permission.ENTITY_READ,
+              Permission.REPORTING_PERIOD_READ,
+            ]),
             entity: { id: 'field-1' } as Entity,
             user: { id: 'user-1' } as User,
             start_date: '2024-01-01',
@@ -193,12 +215,15 @@ describe('CaslAbilityFactory', () => {
         roleAssignments: [
           {
             id: 'ra-1',
-            role: {
-              id: 'role-1',
-              name: 'Union President',
-              rolePermissions: [],
-              get permissions() { return []; },
-            } as unknown as Role,
+            role: createRoleWithPermissions('role-1', 'Union President', [
+              Permission.REPORT_VIEW_HIERARCHY,
+              Permission.ACTIVITY_READ_HIERARCHY,
+              Permission.ENTITY_READ_HIERARCHY,
+              Permission.USER_READ_HIERARCHY,
+              Permission.REPORTING_PERIOD_READ_HIERARCHY,
+              Permission.ROLE_READ,
+              Permission.ACTIVITY_TYPE_READ,
+            ]),
             entity: { id: 'union-1' } as Entity,
             user: { id: 'user-1' } as User,
             start_date: '2024-01-01',
@@ -249,12 +274,18 @@ describe('CaslAbilityFactory', () => {
         roleAssignments: [
           {
             id: 'ra-1',
-            role: {
-              id: 'role-1',
-              name: 'Field Secretary',
-              rolePermissions: [],
-              get permissions() { return []; },
-            } as unknown as Role,
+            role: createRoleWithPermissions('role-1', 'Field Secretary', [
+              Permission.REPORT_VIEW_HIERARCHY,
+              Permission.ACTIVITY_READ_HIERARCHY,
+              Permission.ENTITY_READ_HIERARCHY,
+              Permission.USER_READ_HIERARCHY,
+              Permission.REPORTING_PERIOD_READ_HIERARCHY,
+              Permission.ROLE_READ,
+              Permission.ACTIVITY_TYPE_READ,
+              Permission.ACTIVITY_MANAGE_HIERARCHY,
+              Permission.ENTITY_UPDATE_OWN,
+              Permission.USER_UPDATE_HIERARCHY,
+            ]),
             entity: { id: 'field-1' } as Entity,
             user: { id: 'user-1' } as User,
             start_date: '2024-01-01',
@@ -262,12 +293,16 @@ describe('CaslAbilityFactory', () => {
           } as UserRoleAssignment,
           {
             id: 'ra-2',
-            role: {
-              id: 'role-2',
-              name: 'Missionary',
-              rolePermissions: [],
-              get permissions() { return []; },
-            } as unknown as Role,
+            role: createRoleWithPermissions('role-2', 'Missionary', [
+              Permission.ACTIVITY_CREATE_OWN,
+              Permission.ACTIVITY_READ_OWN,
+              Permission.ACTIVITY_UPDATE_OWN,
+              Permission.ACTIVITY_DELETE_OWN,
+              Permission.USER_READ_OWN,
+              Permission.ACTIVITY_TYPE_READ,
+              Permission.ENTITY_READ,
+              Permission.REPORTING_PERIOD_READ,
+            ]),
             entity: { id: 'field-2' } as Entity,
             user: { id: 'user-1' } as User,
             start_date: '2024-01-01',
@@ -292,12 +327,7 @@ describe('CaslAbilityFactory', () => {
         roleAssignments: [
           {
             id: 'ra-1',
-            role: {
-              id: 'role-1',
-              name: 'System Admin',
-              rolePermissions: [],
-              get permissions() { return []; },
-            } as unknown as Role,
+            role: createRoleWithPermissions('role-1', 'System Admin', [Permission.SYSTEM_ADMIN]),
             entity: { id: 'entity-1' } as Entity,
             user: { id: 'user-1' } as User,
             start_date: '2024-01-01',

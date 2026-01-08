@@ -98,7 +98,8 @@ class ActivityDetailDialog extends StatelessWidget {
                 theme,
                 icon: Icons.attach_money,
                 label: 'Gasto',
-                value: CurrencyFormatter.formatString(activity.expenseAmount, currencySymbol),
+                value: CurrencyFormatter.formatString(
+                    activity.expenseAmount, currencySymbol),
                 valueColor: theme.colorScheme.tertiary,
               ),
               const SizedBox(height: 12),
