@@ -462,12 +462,14 @@ describe('ReportsService', () => {
           full_name: 'María García',
           status: 'active',
           entity: { name: 'Campo Seattle' },
+          role: { name: 'Misionero' },
         },
         {
           id: 'user-2',
           full_name: 'Juan Pérez',
           status: 'active',
           entity: { name: 'Campo Seattle' },
+          role: { name: 'Misionero' },
         },
       ];
 
@@ -478,9 +480,6 @@ describe('ReportsService', () => {
         period: mockPeriod as any,
       });
       jest.spyOn(userRepo, 'find').mockResolvedValue(mockUsersInScope as any);
-      jest
-        .spyOn(userRepo.manager, 'query')
-        .mockResolvedValue([{ user_id: 'user-2', name: 'Misionero' }]);
       mockQueryBuilder.getMany.mockResolvedValue(mockActivities);
 
       const result = await service.getCompliance('user-1', {});
