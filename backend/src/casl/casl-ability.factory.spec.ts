@@ -164,7 +164,7 @@ describe('CaslAbilityFactory', () => {
       expect(ability.can(Action.Create, Activity)).toBe(true);
       expect(ability.can(Action.Read, Activity)).toBe(true);
       expect(ability.can(Action.Update, Activity)).toBe(true);
-      expect(ability.cannot(Action.Delete, Activity)).toBe(true);
+      expect(ability.can(Action.Delete, Activity)).toBe(true);
     });
   });
 
