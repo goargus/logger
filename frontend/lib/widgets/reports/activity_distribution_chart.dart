@@ -323,7 +323,7 @@ class _ActivityDistributionChartState extends State<ActivityDistributionChart> {
 
   Widget _buildLegend(ThemeData theme, double total) {
     final isMobile = MediaQuery.of(context).size.width < 600;
-    
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -355,7 +355,9 @@ class _ActivityDistributionChartState extends State<ActivityDistributionChart> {
                         item.name,
                         style: theme.textTheme.bodySmall,
                         maxLines: isMobile ? 2 : 1,
-                        overflow: isMobile ? TextOverflow.ellipsis : TextOverflow.clip,
+                        overflow: isMobile
+                            ? TextOverflow.ellipsis
+                            : TextOverflow.clip,
                         softWrap: isMobile,
                       ),
                       if (isMobile) const SizedBox(height: 2),

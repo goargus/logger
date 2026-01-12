@@ -14,7 +14,7 @@ class PeriodTypeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 600;
-    
+
     if (isMobile) {
       return SingleChildScrollView(
         scrollDirection: Axis.horizontal,
@@ -28,7 +28,8 @@ class PeriodTypeSelector extends StatelessWidget {
                   type.displayName,
                   style: TextStyle(
                     fontSize: 11,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.bold : FontWeight.normal,
                   ),
                 ),
                 selected: isSelected,
@@ -41,7 +42,7 @@ class PeriodTypeSelector extends StatelessWidget {
         ),
       );
     }
-    
+
     return SegmentedButton<ReportPeriodType>(
       segments: ReportPeriodType.values.map((type) {
         return ButtonSegment<ReportPeriodType>(
