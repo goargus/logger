@@ -322,6 +322,8 @@ class _ActivityDistributionChartState extends State<ActivityDistributionChart> {
   }
 
   Widget _buildLegend(ThemeData theme, double total) {
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -333,10 +335,12 @@ class _ActivityDistributionChartState extends State<ActivityDistributionChart> {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
                   width: 12,
                   height: 12,
+                  margin: const EdgeInsets.only(top: 2),
                   decoration: BoxDecoration(
                     color: item.color,
                     shape: BoxShape.circle,
@@ -344,28 +348,39 @@ class _ActivityDistributionChartState extends State<ActivityDistributionChart> {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
-                    item.name,
-                    style: theme.textTheme.bodySmall,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  widget.showExpenses
-                      ? CurrencyFormatter.format(
-                          item.expenses, widget.currencySymbol,
-                          decimals: 0)
-                      : '${item.count}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  '(${percentage.toStringAsFixed(0)}%)',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.name,
+                        style: theme.textTheme.bodySmall,
+                        maxLines: isMobile ? 2 : 1,
+                        overflow: isMobile ? TextOverflow.ellipsis : TextOverflow.clip,
+                        softWrap: isMobile,
+                      ),
+                      if (isMobile) const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Text(
+                            widget.showExpenses
+                                ? CurrencyFormatter.format(
+                                    item.expenses, widget.currencySymbol,
+                                    decimals: 0)
+                                : '${item.count}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '(${percentage.toStringAsFixed(0)}%)',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ],
