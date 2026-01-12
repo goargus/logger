@@ -352,8 +352,8 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 12, vertical: 14),
                             decoration: BoxDecoration(
-                              border: Border.all(
-                                  color: theme.colorScheme.outline),
+                              border:
+                                  Border.all(color: theme.colorScheme.outline),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
