@@ -273,6 +273,32 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                               style: theme.textTheme.bodyMedium);
                         }
 
+                        if (activeRoles.length == 1 && _selectedRole == null) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            setState(() {
+                              _selectedRole = activeRoles.first;
+                              _typesFuture = _typeService
+                                  .fetchByRole(activeRoles.first.role.id);
+                            });
+                          });
+                        }
+
+                        if (activeRoles.length == 1) {
+                          return Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 14),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                  color: theme.colorScheme.outline),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              activeRoles.first.role.name,
+                              style: theme.textTheme.bodyMedium,
+                            ),
+                          );
+                        }
+
                         return DropdownButtonFormField<UserRoleAssignment>(
                           initialValue: _selectedRole,
                           isExpanded: true,
