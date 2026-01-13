@@ -7,6 +7,7 @@ import '../dialogs/calendar_dialog.dart';
 import '../../models/activity_type.dart';
 import '../../models/user_role_assignment.dart';
 import '../../services/activity_type.dart';
+import '../../services/reporting_periods.dart';
 import '../../core/validators.dart';
 import '../../core/api_client.dart';
 
@@ -16,7 +17,6 @@ class ActivityFormDialog extends StatefulWidget {
   final VoidCallback? onRequireLogin;
   final String typesPath;
 
-  /// If provided, the dialog will be in edit mode
   final Map<String, dynamic>? existingActivity;
 
   const ActivityFormDialog({
@@ -36,6 +36,7 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
   final _formKey = GlobalKey<FormState>();
 
   late final ActivityTypeService _typeService;
+  late final ReportingPeriodsService _reportingPeriodsService;
   late Future<List<UserRoleAssignment>> _rolesFuture;
   late Future<List<ActivityType>> _typesFuture;
 
@@ -71,24 +72,23 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
       apiClient: apiClient,
       path: widget.typesPath,
     );
+    _reportingPeriodsService = ReportingPeriodsService(
+      apiClient: apiClient,
+    );
 
     _rolesFuture = _typeService.fetchUserRoles();
     _typesFuture = _typeService.fetchAll();
 
-    // Pre-populate fields if editing
     if (isEditMode) {
       final activity = widget.existingActivity!;
 
-      // Parse date
       final dateStr = activity['activityDate'] as String?;
       if (dateStr != null) {
         _selectedDate = DateTime.tryParse(dateStr) ?? DateTime.now();
       }
 
-      // Description
       _descCtrl.text = activity['description'] as String? ?? '';
 
-      // Expense fields
       _hasExpense = activity['hasExpense'] as bool? ?? false;
       final amount = activity['expenseAmount'];
       if (amount != null) {
@@ -98,7 +98,6 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
 
     _dateCtrl.text = DateFormat.yMMMMd('es').format(_selectedDate);
     _typesFuture = _typeService.fetchAll().then((types) {
-      // If editing, pre-select the activity type
       if (isEditMode && types.isNotEmpty) {
         final typeId = widget.existingActivity?['activityTypeId'] as String?;
         if (typeId != null) {
@@ -127,6 +126,7 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
         initialDate: _selectedDate,
         firstDate: DateTime(2000),
         lastDate: DateTime(2100),
+        reportingPeriodsService: _reportingPeriodsService,
       ),
     );
     if (picked != null) {
