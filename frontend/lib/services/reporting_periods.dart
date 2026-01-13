@@ -17,17 +17,13 @@ class ReportingPeriodsService {
   }
 
   Future<List<LockedDateRange>> getLockedDateRanges() async {
-    print('[ReportingPeriodsService] Fetching locked date ranges...');
     try {
       final data = await apiClient.get('reporting-periods/locked-dates/ranges');
-      print('[ReportingPeriodsService] API response: $data');
       final ranges = data['lockedRanges'] as List<dynamic>;
-      print('[ReportingPeriodsService] Parsed ${ranges.length} locked ranges');
       return ranges
           .map((range) => LockedDateRange.fromJson(range as Map<String, dynamic>))
           .toList();
     } catch (e) {
-      print('[ReportingPeriodsService] Error fetching locked ranges: $e');
       rethrow;
     }
   }
