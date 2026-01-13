@@ -405,6 +405,53 @@ export class ReportingPeriodsService {
     return activityDate >= exception.startDate && activityDate <= exception.endDate;
   }
 
+  async getLockedDateRangesForUser(
+    userId: string,
+  ): Promise<Array<{ startDate: string; endDate: string; periodName: string }>> {
+    const lockedPeriods = await this.repo.find({
+      where: { status: ReportingPeriodStatus.LOCKED },
+      order: { startDate: 'ASC' },
+    });
+
+    const userExceptions = await this.exceptionsRepo.find({
+      where: { userId },
+    });
+
+    const lockedRanges: Array<{ startDate: string; endDate: string; periodName: string }> = [];
+
+    for (const period of lockedPeriods) {
+      const exception = userExceptions.find((ex) => ex.reportingPeriodId === period.id);
+
+      if (exception) {
+        if (period.startDate < exception.startDate) {
+          const dayBefore = this.subtractDays(new Date(exception.startDate), 1);
+          lockedRanges.push({
+            startDate: period.startDate,
+            endDate: this.formatDate(dayBefore),
+            periodName: period.name,
+          });
+        }
+
+        if (exception.endDate < period.endDate) {
+          const dayAfter = this.addDays(new Date(exception.endDate), 1);
+          lockedRanges.push({
+            startDate: this.formatDate(dayAfter),
+            endDate: period.endDate,
+            periodName: period.name,
+          });
+        }
+      } else {
+        lockedRanges.push({
+          startDate: period.startDate,
+          endDate: period.endDate,
+          periodName: period.name,
+        });
+      }
+    }
+
+    return lockedRanges;
+  }
+
   private formatDate(date: Date): string {
     return date.toISOString().split('T')[0];
   }
@@ -412,6 +459,12 @@ export class ReportingPeriodsService {
   private addDays(date: Date, days: number): Date {
     const result = new Date(date);
     result.setDate(result.getDate() + days);
+    return result;
+  }
+
+  private subtractDays(date: Date, days: number): Date {
+    const result = new Date(date);
+    result.setDate(result.getDate() - days);
     return result;
   }
 }
