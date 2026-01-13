@@ -8,7 +8,8 @@ class ReportingPeriodsService {
 
   final ApiClient apiClient;
 
-  factory ReportingPeriodsService.localhost(AccessTokenProvider getAccessToken) {
+  factory ReportingPeriodsService.localhost(
+      AccessTokenProvider getAccessToken) {
     final apiClient = ApiClient(
       baseUrl: ApiConfig.baseUrl,
       getAccessToken: getAccessToken,
@@ -21,7 +22,8 @@ class ReportingPeriodsService {
       final data = await apiClient.get('reporting-periods/locked-dates/ranges');
       final ranges = data['lockedRanges'] as List<dynamic>;
       return ranges
-          .map((range) => LockedDateRange.fromJson(range as Map<String, dynamic>))
+          .map((range) =>
+              LockedDateRange.fromJson(range as Map<String, dynamic>))
           .toList();
     } catch (e) {
       rethrow;

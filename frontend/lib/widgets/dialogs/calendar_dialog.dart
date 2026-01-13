@@ -59,11 +59,11 @@ class _CalendarDialogState extends State<CalendarDialog> {
     if (_isLoading) {
       return false;
     }
-    
+
     if (_errorMessage != null) {
       return true;
     }
-    
+
     for (final range in _lockedRanges) {
       if (range.containsDateTime(date)) {
         return false;
@@ -157,7 +157,7 @@ class _CalendarDialogState extends State<CalendarDialog> {
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                     alignment: Alignment.centerLeft,
                     child: Text(
-                      _isLoading 
+                      _isLoading
                           ? 'Cargando restricciones...'
                           : _errorMessage != null
                               ? 'Sin restricciones'
@@ -187,7 +187,9 @@ class _CalendarDialogState extends State<CalendarDialog> {
                     border: Border.all(color: Theme.of(context).dividerColor),
                   ),
                   child: Icon(
-                    _lockedRanges.isNotEmpty ? Icons.lock_outline : Icons.filter_list,
+                    _lockedRanges.isNotEmpty
+                        ? Icons.lock_outline
+                        : Icons.filter_list,
                     color: _lockedRanges.isNotEmpty
                         ? Theme.of(context).colorScheme.error
                         : Theme.of(context).colorScheme.primary,
@@ -211,8 +213,7 @@ class _CalendarDialogState extends State<CalendarDialog> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(Icons.error_outline,
-                        size: 48,
-                        color: Theme.of(context).colorScheme.error),
+                        size: 48, color: Theme.of(context).colorScheme.error),
                     const SizedBox(height: 16),
                     Text(
                       _errorMessage!,
@@ -250,7 +251,10 @@ class _CalendarDialogState extends State<CalendarDialog> {
                   color: Theme.of(context).colorScheme.errorContainer,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .error
+                        .withValues(alpha: 0.3),
                   ),
                 ),
                 padding: const EdgeInsets.all(12),
@@ -277,15 +281,18 @@ class _CalendarDialogState extends State<CalendarDialog> {
                     ),
                     const SizedBox(height: 8),
                     ..._lockedRanges.map((range) {
-                      final start = DateFormat('d MMM', 'es_ES').format(DateTime.parse(range.startDate));
-                      final end = DateFormat('d MMM yyyy', 'es_ES').format(DateTime.parse(range.endDate));
+                      final start = DateFormat('d MMM', 'es_ES')
+                          .format(DateTime.parse(range.startDate));
+                      final end = DateFormat('d MMM yyyy', 'es_ES')
+                          .format(DateTime.parse(range.endDate));
                       return Padding(
                         padding: const EdgeInsets.only(bottom: 4),
                         child: Text(
                           '• $start - $end: ${range.periodName}',
                           style: TextStyle(
                             fontSize: 11,
-                            color: Theme.of(context).colorScheme.onErrorContainer,
+                            color:
+                                Theme.of(context).colorScheme.onErrorContainer,
                           ),
                         ),
                       );
