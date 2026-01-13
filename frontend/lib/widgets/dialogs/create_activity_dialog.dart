@@ -7,6 +7,7 @@ import '../dialogs/calendar_dialog.dart';
 import '../../models/activity_type.dart';
 import '../../models/user_role_assignment.dart';
 import '../../services/activity_type.dart';
+import '../../services/reporting_periods.dart';
 import '../../core/validators.dart';
 import '../../core/api_client.dart';
 
@@ -33,6 +34,7 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
   final _formKey = GlobalKey<FormState>();
 
   late final ActivityTypeService _typeService;
+  late final ReportingPeriodsService _reportingPeriodsService;
   late Future<List<UserRoleAssignment>> _rolesFuture;
   late Future<List<ActivityType>> _typesFuture;
 
@@ -64,6 +66,9 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
       apiClient: apiClient,
       path: widget.typesPath,
     );
+    _reportingPeriodsService = ReportingPeriodsService(
+      apiClient: apiClient,
+    );
     _dateCtrl.text = DateFormat.yMMMMd('es').format(_selectedDate);
     _rolesFuture = _typeService.fetchUserRoles();
     _typesFuture = _typeService.fetchAll();
@@ -84,6 +89,7 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
         initialDate: _selectedDate,
         firstDate: DateTime(2000),
         lastDate: DateTime(2100),
+        reportingPeriodsService: _reportingPeriodsService,
       ),
     );
     if (picked != null) {
