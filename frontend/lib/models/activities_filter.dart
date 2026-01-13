@@ -77,36 +77,41 @@ extension TimePresetExtension on TimePreset {
     }
   }
 
-  DateTimeRange getRange() {
-    final now = DateTime.now();
+  DateTimeRange getRange({DateTime? now}) {
+    final current = now ?? DateTime.now();
+    final today = DateTime(current.year, current.month, current.day);
     switch (this) {
       case TimePreset.last7Days:
+        final end = today;
+        final start = end.subtract(const Duration(days: 6));
         return DateTimeRange(
-          start: now.subtract(const Duration(days: 7)),
-          end: now,
+          start: start,
+          end: end,
         );
       case TimePreset.thisMonth:
         return DateTimeRange(
-          start: DateTime(now.year, now.month, 1),
-          end: DateTime(now.year, now.month + 1, 0),
+          start: DateTime(current.year, current.month, 1),
+          end: today,
         );
       case TimePreset.lastMonth:
         return DateTimeRange(
-          start: DateTime(now.year, now.month - 1, 1),
-          end: DateTime(now.year, now.month, 0),
+          start: DateTime(current.year, current.month - 1, 1),
+          end: DateTime(current.year, current.month, 0),
         );
       case TimePreset.last3Months:
+        final end = today;
+        final start = DateTime(current.year, current.month - 2, 1);
         return DateTimeRange(
-          start: DateTime(now.year, now.month - 2, 1),
-          end: now,
+          start: start,
+          end: end,
         );
       case TimePreset.thisYear:
         return DateTimeRange(
-          start: DateTime(now.year, 1, 1),
-          end: DateTime(now.year, 12, 31),
+          start: DateTime(current.year, 1, 1),
+          end: today,
         );
       case TimePreset.custom:
-        return DateTimeRange(start: now, end: now);
+        return DateTimeRange(start: today, end: today);
     }
   }
 }
