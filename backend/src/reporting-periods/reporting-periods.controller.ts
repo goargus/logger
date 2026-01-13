@@ -42,7 +42,11 @@ export class ReportingPeriodsController {
   @Post('admin')
   @Roles('admin')
   @ApiOperation({ summary: 'Create a new reporting period (Admin only)' })
-  @ApiResponse({ status: 201, description: 'Reporting period created', type: ReportingPeriodResponseDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Reporting period created',
+    type: ReportingPeriodResponseDto,
+  })
   async create(
     @Req() req: Request,
     @Body() dto: CreateReportingPeriodDto,
@@ -56,7 +60,11 @@ export class ReportingPeriodsController {
 
   @Get()
   @ApiOperation({ summary: 'List all reporting periods' })
-  @ApiResponse({ status: 200, description: 'List of reporting periods', type: [ReportingPeriodResponseDto] })
+  @ApiResponse({
+    status: 200,
+    description: 'List of reporting periods',
+    type: [ReportingPeriodResponseDto],
+  })
   @ApiQuery({ name: 'entityId', required: false, description: 'Filter by entity UUID' })
   async findAll(@Query('entityId') entityId?: string): Promise<ReportingPeriodResponseDto[]> {
     const periods = await this.reportingPeriodsService.findAll(entityId);
@@ -65,7 +73,11 @@ export class ReportingPeriodsController {
 
   @Get(':id')
   @ApiOperation({ summary: 'Get a single reporting period by ID' })
-  @ApiResponse({ status: 200, description: 'Reporting period details', type: ReportingPeriodResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Reporting period details',
+    type: ReportingPeriodResponseDto,
+  })
   async findOne(@Param('id', new ParseUUIDPipe()) id: string): Promise<ReportingPeriodResponseDto> {
     const period = await this.reportingPeriodsService.findOne(id);
     return ReportingPeriodResponseDto.fromEntity(period);
@@ -74,7 +86,11 @@ export class ReportingPeriodsController {
   @Patch(':id')
   @Roles('admin')
   @ApiOperation({ summary: 'Update a reporting period (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Reporting period updated', type: ReportingPeriodResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Reporting period updated',
+    type: ReportingPeriodResponseDto,
+  })
   async update(
     @Req() req: Request,
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -90,7 +106,11 @@ export class ReportingPeriodsController {
   @Patch(':id/lock')
   @Roles('admin')
   @ApiOperation({ summary: 'Lock a reporting period (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Reporting period locked', type: ReportingPeriodResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Reporting period locked',
+    type: ReportingPeriodResponseDto,
+  })
   async lock(
     @Req() req: Request,
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -105,7 +125,11 @@ export class ReportingPeriodsController {
   @Patch(':id/unlock')
   @Roles('admin')
   @ApiOperation({ summary: 'Unlock a reporting period (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Reporting period unlocked', type: ReportingPeriodResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Reporting period unlocked',
+    type: ReportingPeriodResponseDto,
+  })
   async unlock(
     @Req() req: Request,
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -120,7 +144,11 @@ export class ReportingPeriodsController {
   @Patch(':id/close')
   @Roles('admin')
   @ApiOperation({ summary: 'Close a reporting period (Admin only)' })
-  @ApiResponse({ status: 200, description: 'Reporting period closed', type: ReportingPeriodResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Reporting period closed',
+    type: ReportingPeriodResponseDto,
+  })
   async close(
     @Req() req: Request,
     @Param('id', new ParseUUIDPipe()) id: string,
@@ -135,7 +163,11 @@ export class ReportingPeriodsController {
   @Post(':periodId/exceptions')
   @Roles('admin')
   @ApiOperation({ summary: 'Create or update an exception for a user (Admin only)' })
-  @ApiResponse({ status: 201, description: 'Exception created/updated', type: ExceptionResponseDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Exception created/updated',
+    type: ExceptionResponseDto,
+  })
   async createException(
     @Req() req: Request,
     @Param('periodId', new ParseUUIDPipe()) periodId: string,
@@ -177,6 +209,38 @@ export class ReportingPeriodsController {
     return exceptions.map((ex) =>
       ExceptionResponseDto.fromEntity(ex, ex.user.username, ex.user.email),
     );
+  }
+
+  @Get('locked-dates/ranges')
+  @ApiOperation({ summary: 'Get locked date ranges for the current user' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'List of locked date ranges (dates where user cannot create activities)',
+    schema: {
+      type: 'object',
+      properties: {
+        lockedRanges: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              startDate: { type: 'string', format: 'date', example: '2024-01-01' },
+              endDate: { type: 'string', format: 'date', example: '2024-01-31' },
+              periodName: { type: 'string', example: 'January 2024' },
+            },
+          },
+        },
+      },
+    },
+  })
+  async getLockedDateRanges(@Req() req: Request): Promise<{
+    lockedRanges: Array<{ startDate: string; endDate: string; periodName: string }>;
+  }> {
+    const { sub, iss } = (req.user as any) ?? {};
+    const user = await this.identity.resolveUserBySubAndIssuer(sub, iss);
+
+    const lockedRanges = await this.reportingPeriodsService.getLockedDateRangesForUser(user.id);
+    return { lockedRanges };
   }
 
   @Delete(':id')
