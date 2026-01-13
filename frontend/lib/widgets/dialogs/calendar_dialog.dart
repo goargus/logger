@@ -250,6 +250,58 @@ class _CalendarDialogState extends State<CalendarDialog> {
                 ),
               ),
             const SizedBox(height: 12),
+            if (_lockedRanges.isNotEmpty) ...[
+              Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.errorContainer,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.error.withValues(alpha: 0.3),
+                  ),
+                ),
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.lock_outline,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Períodos bloqueados:',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    ..._lockedRanges.map((range) {
+                      final start = DateFormat('d MMM', 'es_ES').format(DateTime.parse(range.startDate));
+                      final end = DateFormat('d MMM yyyy', 'es_ES').format(DateTime.parse(range.endDate));
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Text(
+                          '• $start - $end: ${range.periodName}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Theme.of(context).colorScheme.onErrorContainer,
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+            ],
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
