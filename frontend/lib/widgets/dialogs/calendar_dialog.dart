@@ -43,13 +43,8 @@ class _CalendarDialogState extends State<CalendarDialog> {
           _lockedRanges = ranges;
           _isLoading = false;
         });
-        print('Loaded ${ranges.length} locked date ranges:');
-        for (final range in ranges) {
-          print('  - ${range.startDate} to ${range.endDate}: ${range.periodName}');
-        }
       }
     } catch (e) {
-      print('Error loading locked date ranges: $e');
       if (mounted) {
         setState(() {
           _errorMessage = 'Error al cargar restricciones de fechas';
@@ -71,8 +66,6 @@ class _CalendarDialogState extends State<CalendarDialog> {
     
     for (final range in _lockedRanges) {
       if (range.containsDateTime(date)) {
-        final dateStr = '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-        print('Date $dateStr is locked by range: ${range.startDate} to ${range.endDate}');
         return false;
       }
     }
@@ -296,7 +289,7 @@ class _CalendarDialogState extends State<CalendarDialog> {
                           ),
                         ),
                       );
-                    }).toList(),
+                    }),
                   ],
                 ),
               ),
