@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/activities_filter.dart';
@@ -20,15 +21,25 @@ class _ActivityFiltersState extends ConsumerState<ActivityFilters> {
   String? _selectedActivityTypeId;
   bool? _hasExpenseFilter;
   DateTimeRange? _customDateRange;
+  String? _searchQuery;
 
   List<ActivityType> _activityTypes = [];
   bool _loadingTypes = true;
+  final TextEditingController _searchController = TextEditingController();
+  Timer? _searchDebounce;
 
   @override
   void initState() {
     super.initState();
     // Delay loading to ensure widget is fully mounted
     Future.microtask(() => _loadActivityTypes());
+  }
+
+  @override
+  void dispose() {
+    _searchDebounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadActivityTypes() async {
@@ -66,6 +77,7 @@ class _ActivityFiltersState extends ConsumerState<ActivityFilters> {
   void _applyFilters() {
     DateTime? startDate;
     DateTime? endDate;
+    final search = _searchQuery?.trim();
 
     if (_selectedPreset != null && _selectedPreset != TimePreset.custom) {
       final range = _selectedPreset!.getRange();
@@ -81,6 +93,7 @@ class _ActivityFiltersState extends ConsumerState<ActivityFilters> {
       endDate: endDate,
       activityTypeId: _selectedActivityTypeId,
       hasExpense: _hasExpenseFilter,
+      search: (search == null || search.isEmpty) ? null : search,
     );
 
     ref
@@ -139,17 +152,27 @@ class _ActivityFiltersState extends ConsumerState<ActivityFilters> {
       _selectedActivityTypeId = null;
       _hasExpenseFilter = null;
       _customDateRange = null;
+      _searchQuery = null;
     });
+    _searchDebounce?.cancel();
+    _searchController.clear();
     ref
         .read(activitiesListProvider.notifier)
         .setFilter(const ActivitiesFilter());
+  }
+
+  void _onSearchChanged(String value) {
+    setState(() => _searchQuery = value);
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 400), _applyFilters);
   }
 
   @override
   Widget build(BuildContext context) {
     final hasActiveFilters = _selectedPreset != null ||
         _selectedActivityTypeId != null ||
-        _hasExpenseFilter != null;
+        _hasExpenseFilter != null ||
+        (_searchQuery != null && _searchQuery!.trim().isNotEmpty);
 
     return Card(
       elevation: 0,
@@ -183,6 +206,32 @@ class _ActivityFiltersState extends ConsumerState<ActivityFilters> {
               ],
             ),
             const SizedBox(height: 12),
+
+            TextField(
+              controller: _searchController,
+              textInputAction: TextInputAction.search,
+              decoration: InputDecoration(
+                labelText: 'Buscar',
+                hintText: 'Descripcion o tipo de actividad',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: (_searchQuery != null && _searchQuery!.isNotEmpty)
+                    ? IconButton(
+                        icon: const Icon(Icons.close),
+                        tooltip: 'Limpiar busqueda',
+                        onPressed: () {
+                          _searchDebounce?.cancel();
+                          _searchController.clear();
+                          setState(() => _searchQuery = null);
+                          _applyFilters();
+                        },
+                      )
+                    : null,
+                border: const OutlineInputBorder(),
+                isDense: true,
+              ),
+              onChanged: _onSearchChanged,
+            ),
+            const SizedBox(height: 16),
 
             // Time presets row
             Wrap(
