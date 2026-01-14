@@ -12,6 +12,8 @@ class Activity {
   final String status;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final String? ownerUserId;
+  final String? ownerUsername;
 
   const Activity({
     this.id,
@@ -27,6 +29,8 @@ class Activity {
     this.status = 'active',
     this.createdAt,
     this.updatedAt,
+    this.ownerUserId,
+    this.ownerUsername,
   });
 
   factory Activity.fromApi(Map<String, dynamic> data) {
@@ -56,6 +60,8 @@ class Activity {
           data['createdAt'] != null ? DateTime.parse(data['createdAt']) : null,
       updatedAt:
           data['updatedAt'] != null ? DateTime.parse(data['updatedAt']) : null,
+      ownerUserId: data['ownerUserId'] as String?,
+      ownerUsername: data['ownerUsername'] as String?,
     );
   }
 }
