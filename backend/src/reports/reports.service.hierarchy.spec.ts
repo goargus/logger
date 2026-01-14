@@ -216,6 +216,7 @@ describe('ReportsService - Hierarchy Features', () => {
       userRepo.findOne = jest.fn().mockResolvedValue(actorWithReports);
 
       const result = await service.getSummary('actor-1', {
+        entityId: 'entity-1',
         includeHierarchyBreakdown: true,
       });
 
