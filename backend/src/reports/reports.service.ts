@@ -123,7 +123,7 @@ export class ReportsService {
       if (!isInScope) {
         throw new ForbiddenException('Entity is not in your scope');
       }
-    } else if (query.entityId && !canViewReports) {
+    } else if (query.entityId && !canViewReports && query.entityId !== actor.entity_id) {
       throw new ForbiddenException('You do not have permission to view entity reports');
     }
 
