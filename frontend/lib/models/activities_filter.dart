@@ -5,12 +5,14 @@ class ActivitiesFilter {
   final DateTime? endDate;
   final String? activityTypeId;
   final bool? hasExpense;
+  final String? search;
 
   const ActivitiesFilter({
     this.startDate,
     this.endDate,
     this.activityTypeId,
     this.hasExpense,
+    this.search,
   });
 
   ActivitiesFilter copyWith({
@@ -18,10 +20,12 @@ class ActivitiesFilter {
     DateTime? endDate,
     String? activityTypeId,
     bool? hasExpense,
+    String? search,
     bool clearStartDate = false,
     bool clearEndDate = false,
     bool clearActivityType = false,
     bool clearHasExpense = false,
+    bool clearSearch = false,
   }) {
     return ActivitiesFilter(
       startDate: clearStartDate ? null : (startDate ?? this.startDate),
@@ -29,6 +33,7 @@ class ActivitiesFilter {
       activityTypeId:
           clearActivityType ? null : (activityTypeId ?? this.activityTypeId),
       hasExpense: clearHasExpense ? null : (hasExpense ?? this.hasExpense),
+      search: clearSearch ? null : (search ?? this.search),
     );
   }
 
@@ -45,6 +50,9 @@ class ActivitiesFilter {
     }
     if (hasExpense != null) {
       params['hasExpense'] = hasExpense.toString();
+    }
+    if (search != null && search!.trim().isNotEmpty) {
+      params['search'] = search!.trim();
     }
     return params;
   }
