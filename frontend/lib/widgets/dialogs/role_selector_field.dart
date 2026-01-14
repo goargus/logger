@@ -77,16 +77,41 @@ class RoleSelectorField extends StatelessWidget {
     }
 
     if (activeRoles.length == 1) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-        decoration: BoxDecoration(
-          border: Border.all(color: theme.colorScheme.outline),
-          borderRadius: BorderRadius.circular(4),
+      final role = activeRoles.first;
+      return FormField<UserRoleAssignment>(
+        initialValue: selectedRole ?? role,
+        validator: (v) => Validators.requiredField(
+          v,
+          fieldName: 'El rol',
         ),
-        child: Text(
-          activeRoles.first.role.name,
-          style: theme.textTheme.bodyMedium,
-        ),
+        builder: (field) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                decoration: BoxDecoration(
+                  border: Border.all(color: theme.colorScheme.outline),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  role.role.name,
+                  style: theme.textTheme.bodyMedium,
+                ),
+              ),
+              if (field.hasError)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    field.errorText ?? '',
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: theme.colorScheme.error),
+                  ),
+                ),
+            ],
+          );
+        },
       );
     }
 
