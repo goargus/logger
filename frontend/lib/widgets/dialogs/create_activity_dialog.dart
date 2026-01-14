@@ -9,6 +9,7 @@ import '../../models/user_role_assignment.dart';
 import '../../services/activity_type.dart';
 import '../../core/validators.dart';
 import '../../core/api_client.dart';
+import 'role_selector_field.dart';
 
 class CreateActivityDialog extends StatefulWidget {
   final String baseUrl;
@@ -219,116 +220,32 @@ class _CreateActivityDialogState extends State<CreateActivityDialog> {
                     FutureBuilder<List<UserRoleAssignment>>(
                       future: _rolesFuture,
                       builder: (context, snapshot) {
-                        if (snapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 12),
-                            child: Row(
-                              children: [
-                                SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2),
-                                ),
-                                SizedBox(width: 10),
-                                Text('Cargando roles...'),
-                              ],
-                            ),
-                          );
-                        }
-
-                        if (snapshot.hasError) {
-                          final err = snapshot.error?.toString() ?? 'Error';
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Error al cargar los roles: $err',
-                                style: theme.textTheme.bodyMedium
-                                    ?.copyWith(color: theme.colorScheme.error),
-                              ),
-                              const SizedBox(height: 8),
-                              OutlinedButton.icon(
-                                onPressed: _submitting
-                                    ? null
-                                    : () {
-                                        setState(() => _rolesFuture =
-                                            _typeService.fetchUserRoles());
-                                      },
-                                icon: const Icon(Icons.refresh),
-                                label: const Text('Reintentar'),
-                              ),
-                            ],
-                          );
-                        }
-
-                        final roles =
-                            snapshot.data ?? const <UserRoleAssignment>[];
-                        final activeRoles =
-                            roles.where((r) => r.isActive).toList();
-
-                        if (activeRoles.isEmpty) {
-                          return Text('No tienes roles asignados.',
-                              style: theme.textTheme.bodyMedium);
-                        }
-
-                        if (activeRoles.length == 1 && _selectedRole == null) {
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                        return RoleSelectorField(
+                          snapshot: snapshot,
+                          theme: theme,
+                          submitting: _submitting,
+                          selectedRole: _selectedRole,
+                          onRetry: () {
+                            setState(() => _rolesFuture =
+                                _typeService.fetchUserRoles());
+                          },
+                          onAutoSelect: (role) {
                             setState(() {
-                              _selectedRole = activeRoles.first;
-                              _typesFuture = _typeService
-                                  .fetchByRole(activeRoles.first.role.id);
+                              _selectedRole = role;
+                              _typesFuture =
+                                  _typeService.fetchByRole(role.role.id);
                             });
-                          });
-                        }
-
-                        if (activeRoles.length == 1) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 14),
-                            decoration: BoxDecoration(
-                              border:
-                                  Border.all(color: theme.colorScheme.outline),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              activeRoles.first.role.name,
-                              style: theme.textTheme.bodyMedium,
-                            ),
-                          );
-                        }
-
-                        return DropdownButtonFormField<UserRoleAssignment>(
-                          initialValue: _selectedRole,
-                          isExpanded: true,
-                          items: activeRoles
-                              .map((r) => DropdownMenuItem<UserRoleAssignment>(
-                                    value: r,
-                                    child: Text(r.role.name),
-                                  ))
-                              .toList(),
-                          onChanged: _submitting
-                              ? null
-                              : (v) {
-                                  setState(() {
-                                    _selectedRole = v;
-                                    _selectedType = null;
-                                    if (v != null) {
-                                      _typesFuture =
-                                          _typeService.fetchByRole(v.role.id);
-                                    }
-                                  });
-                                },
-                          validator: (v) => Validators.requiredField(
-                            v,
-                            fieldName: 'El rol',
-                          ),
-                          decoration: const InputDecoration(
-                            border: OutlineInputBorder(),
-                            hintText: 'Selecciona un rol',
-                            isDense: true,
-                          ),
+                          },
+                          onRoleChanged: (v) {
+                            setState(() {
+                              _selectedRole = v;
+                              _selectedType = null;
+                              if (v != null) {
+                                _typesFuture =
+                                    _typeService.fetchByRole(v.role.id);
+                              }
+                            });
+                          },
                         );
                       },
                     ),
