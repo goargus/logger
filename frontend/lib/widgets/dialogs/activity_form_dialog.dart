@@ -290,8 +290,8 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
                           submitting: _submitting,
                           selectedRole: _selectedRole,
                           onRetry: () {
-                            setState(() => _rolesFuture =
-                                _typeService.fetchUserRoles());
+                            setState(() =>
+                                _rolesFuture = _typeService.fetchUserRoles());
                           },
                           onAutoSelect: (role) {
                             setState(() {
