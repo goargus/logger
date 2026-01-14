@@ -374,6 +374,74 @@ class _UsersReportTableState extends State<UsersReportTable> {
 
   Widget _buildPagination(ThemeData theme) {
     final pagination = widget.response.pagination;
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
+    if (isMobile) {
+      return Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            Text(
+              'Pag. ${pagination.page}/${pagination.totalPages}',
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.first_page, size: 20),
+                  onPressed: pagination.hasPreviousPage
+                      ? () => widget.onPageChange(1)
+                      : null,
+                  tooltip: 'Primera',
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.chevron_left, size: 20),
+                  onPressed: pagination.hasPreviousPage
+                      ? () => widget.onPageChange(pagination.page - 1)
+                      : null,
+                  tooltip: 'Anterior',
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(
+                    '${((pagination.page - 1) * pagination.limit) + 1}-'
+                    '${_min(pagination.page * pagination.limit, pagination.total)} '
+                    'de ${pagination.total}',
+                    style: theme.textTheme.bodySmall,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right, size: 20),
+                  onPressed: pagination.hasNextPage
+                      ? () => widget.onPageChange(pagination.page + 1)
+                      : null,
+                  tooltip: 'Siguiente',
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.last_page, size: 20),
+                  onPressed: pagination.hasNextPage
+                      ? () => widget.onPageChange(pagination.totalPages)
+                      : null,
+                  tooltip: 'Última',
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+    }
 
     return Padding(
       padding: const EdgeInsets.all(16),

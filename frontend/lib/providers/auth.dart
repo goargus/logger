@@ -380,13 +380,20 @@ final canViewReportsProvider = Provider<bool>((ref) {
   const leadershipRoles = [
     'admin',
     'System Admin',
+    'Administrador del Sistema',
     'president',
     'Union President',
+    'Presidente de Unión',
     'Association President',
+    'Presidente de Asociación',
     'Field Director',
+    'Director de Campo',
     'Union Secretary',
+    'Secretario de Unión',
     'Association Secretary',
+    'Secretario de Asociación',
     'Field Secretary',
+    'Secretario de Campo',
   ];
 
   return roleName != null && leadershipRoles.contains(roleName);
