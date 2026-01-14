@@ -75,11 +75,31 @@ export class ReportsService {
     private readonly permissionsService: PermissionsService,
   ) {}
 
-  /**
-   * Check if user has REPORT_VIEW_HIERARCHY permission at any of their assigned entities.
-   */
   private async canViewReports(userId: string): Promise<boolean> {
     return this.permissionsService.userHasPermission(userId, Permission.REPORT_VIEW_HIERARCHY);
+  }
+
+  private async resolveReportScope(
+    actorUserId: string,
+    query: ReportQueryDto,
+    canViewReports: boolean,
+    targetEntityId: string,
+  ): Promise<{
+    entityIds: string[];
+    filterUserId?: string;
+    isUserFiltered: boolean;
+  }> {
+    const isEntityReport = canViewReports && !!query.entityId && !query.userId;
+    const filterUserId = query.userId || (isEntityReport ? undefined : actorUserId);
+    const entityIds = isEntityReport
+      ? await this.accessService.getEntityHierarchy(targetEntityId)
+      : [targetEntityId];
+
+    return {
+      entityIds,
+      filterUserId,
+      isUserFiltered: !!filterUserId,
+    };
   }
 
   async getSummary(actorUserId: string, query: ReportQueryDto): Promise<SummaryResponse> {
@@ -119,13 +139,13 @@ export class ReportsService {
       }
     }
 
-    const entityIds =
-      canViewReports && !query.userId
-        ? await this.accessService.getEntityHierarchy(targetEntityId)
-        : [targetEntityId];
-
     const timeScope = await this.timeScopeService.getOrDetermineTimeScope(query, actor.entity_id);
-    const filterUserId = query.userId || (!canViewReports ? actorUserId : undefined);
+    const { entityIds, filterUserId, isUserFiltered } = await this.resolveReportScope(
+      actorUserId,
+      query,
+      canViewReports,
+      targetEntityId,
+    );
     const qb = this.queryFactory.buildActivityQuery(
       actorUserId,
       entityIds,
@@ -140,7 +160,7 @@ export class ReportsService {
       targetEntityId,
       entityIds,
       canViewReports,
-      !!filterUserId,
+      isUserFiltered,
       timeScope,
     );
 
@@ -193,13 +213,13 @@ export class ReportsService {
       }
     }
 
-    const entityIds =
-      canViewReports && !query.userId
-        ? await this.accessService.getEntityHierarchy(targetEntityId)
-        : [targetEntityId];
-
     const timeScope = await this.timeScopeService.getOrDetermineTimeScope(query, actor.entity_id);
-    const filterUserId = query.userId || (!canViewReports ? actorUserId : undefined);
+    const { entityIds, filterUserId, isUserFiltered } = await this.resolveReportScope(
+      actorUserId,
+      query,
+      canViewReports,
+      targetEntityId,
+    );
     const qb = this.queryFactory.buildActivityQuery(
       actorUserId,
       entityIds,
@@ -209,7 +229,7 @@ export class ReportsService {
 
     const activities = await qb.getMany();
 
-    return this.breakdownsCalculator.calculate(activities, canViewReports, !!filterUserId);
+    return this.breakdownsCalculator.calculate(activities, canViewReports, isUserFiltered);
   }
 
   async getCompliance(actorUserId: string, query: ReportQueryDto): Promise<ComplianceResponse> {
@@ -282,10 +302,12 @@ export class ReportsService {
       throw new NotFoundException('No reporting periods found');
     }
 
-    const entityIds =
-      canViewReports && !query.userId
-        ? await this.accessService.getEntityHierarchy(targetEntityId)
-        : [targetEntityId];
+    const { entityIds, filterUserId, isUserFiltered } = await this.resolveReportScope(
+      actorUserId,
+      query,
+      canViewReports,
+      targetEntityId,
+    );
 
     const periodsData = await Promise.all(
       periods.map(async (period) => {
@@ -293,7 +315,7 @@ export class ReportsService {
           actorUserId,
           entityIds,
           { periodIds: [period.id] },
-          query.userId || (!canViewReports ? actorUserId : undefined),
+          filterUserId,
         );
         const activities = await qb.getMany();
 
@@ -301,7 +323,7 @@ export class ReportsService {
       }),
     );
 
-    return this.trendsCalculator.calculate(periodsData, entityIds, canViewReports, !!query.userId);
+    return this.trendsCalculator.calculate(periodsData, entityIds, canViewReports, isUserFiltered);
   }
 
   async getComparison(actorUserId: string, query: ReportQueryDto): Promise<ComparisonResponse> {
@@ -340,16 +362,18 @@ export class ReportsService {
     }
 
     const [currentPeriod, previousPeriod] = periods;
-    const entityIds =
-      canViewReports && !query.userId
-        ? await this.accessService.getEntityHierarchy(targetEntityId)
-        : [targetEntityId];
+    const { entityIds, filterUserId, isUserFiltered } = await this.resolveReportScope(
+      actorUserId,
+      query,
+      canViewReports,
+      targetEntityId,
+    );
 
     const currentQb = this.queryFactory.buildActivityQuery(
       actorUserId,
       entityIds,
       { periodIds: [currentPeriod.id] },
-      query.userId || (!canViewReports ? actorUserId : undefined),
+      filterUserId,
     );
     const currentActivities = await currentQb.getMany();
 
@@ -357,7 +381,7 @@ export class ReportsService {
       actorUserId,
       entityIds,
       { periodIds: [previousPeriod.id] },
-      query.userId || (!canViewReports ? actorUserId : undefined),
+      filterUserId,
     );
     const previousActivities = await previousQb.getMany();
 
@@ -368,7 +392,7 @@ export class ReportsService {
       previousActivities,
       entityIds,
       canViewReports,
-      !!query.userId,
+      isUserFiltered,
     );
   }
 
@@ -451,22 +475,23 @@ export class ReportsService {
       }
     }
 
-    const entityIds =
-      canViewReports && !query.userId
-        ? await this.accessService.getEntityHierarchy(targetEntityId)
-        : [targetEntityId];
-
     const timeScope = await this.timeScopeService.getOrDetermineTimeScope(query, actor.entity_id);
+    const { entityIds, filterUserId, isUserFiltered } = await this.resolveReportScope(
+      actorUserId,
+      query,
+      canViewReports,
+      targetEntityId,
+    );
     const qb = this.queryFactory.buildActivityQuery(
       actorUserId,
       entityIds,
       timeScope,
-      query.userId || (!canViewReports ? actorUserId : undefined),
+      filterUserId,
     );
 
     const activities = await qb.getMany();
 
-    return this.expensesCalculator.calculate(activities, canViewReports, !!query.userId);
+    return this.expensesCalculator.calculate(activities, canViewReports, isUserFiltered);
   }
 
   async getBreakdownsWithComparison(
@@ -513,10 +538,12 @@ export class ReportsService {
       }
     }
 
-    const entityIds =
-      canViewReports && !query.userId
-        ? await this.accessService.getEntityHierarchy(targetEntityId)
-        : [targetEntityId];
+    const { entityIds, filterUserId, isUserFiltered } = await this.resolveReportScope(
+      actorUserId,
+      query,
+      canViewReports,
+      targetEntityId,
+    );
 
     const periodIndex = this.periodBoundaryCalculator.getPeriodIndexFromQuery(
       query.periodType,
@@ -550,7 +577,7 @@ export class ReportsService {
         dateFrom: currentPeriod.dateFrom.toISOString(),
         dateTo: currentPeriod.dateTo.toISOString(),
       },
-      query.userId || (!canViewReports ? actorUserId : undefined),
+      filterUserId,
     );
     const currentActivities = await currentQb.getMany();
 
@@ -561,7 +588,7 @@ export class ReportsService {
         dateFrom: previousPeriod.dateFrom.toISOString(),
         dateTo: previousPeriod.dateTo.toISOString(),
       },
-      query.userId || (!canViewReports ? actorUserId : undefined),
+      filterUserId,
     );
     const previousActivities = await previousQb.getMany();
 
@@ -571,7 +598,7 @@ export class ReportsService {
       currentPeriod,
       previousPeriod,
       canViewReports,
-      !!query.userId,
+      isUserFiltered,
     );
   }
 
@@ -720,9 +747,11 @@ export class ReportsService {
     }
 
     // Get entity IDs based on permission
-    const entityIds = canViewReports
+    const isEntityReport = canViewReports && !!query.entityId;
+    const entityIds = isEntityReport
       ? await this.accessService.getEntityHierarchy(targetEntityId)
       : [targetEntityId];
+    const filterUserId = isEntityReport ? undefined : actorUserId;
 
     // Determine time scope
     const timeScope = query.periodId
@@ -742,7 +771,7 @@ export class ReportsService {
           actorUserId,
           entityIds,
           timeScope,
-          !canViewReports ? actorUserId : undefined,
+          filterUserId,
         );
         const activities = await qb.getMany();
 
