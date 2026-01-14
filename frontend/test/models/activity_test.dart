@@ -11,6 +11,8 @@ void main() {
           'activityTypeName': 'Meeting',
           'description': 'Team standup',
           'expenseAmount': '150.50',
+          'ownerUserId': 'user-987',
+          'ownerUsername': 'maria.gomez',
         };
 
         final activity = Activity.fromApi(apiData);
@@ -20,6 +22,8 @@ void main() {
         expect(activity.category, 'Meeting');
         expect(activity.description, 'Team standup');
         expect(activity.expense, 150.50);
+        expect(activity.ownerUserId, 'user-987');
+        expect(activity.ownerUsername, 'maria.gomez');
       });
 
       test('should handle null id', () {
