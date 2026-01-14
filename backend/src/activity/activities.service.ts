@@ -187,10 +187,30 @@ export class ActivitiesService {
       qb.andWhere('activity.hasExpense = :hasExpense', { hasExpense: filters.hasExpense });
     }
     if (filters?.search) {
-      qb.leftJoin('activity.activityType', 'activityType');
-      qb.andWhere('(activity.description ILIKE :search OR activityType.name ILIKE :search)', {
-        search: `%${filters.search}%`,
-      });
+      const search = filters.search.trim();
+      if (search) {
+        qb.leftJoin('activity.activityType', 'activityType');
+        const like = `%${search}%`;
+        if (search.length < 3) {
+          qb.andWhere('(activity.description ILIKE :like OR activityType.name ILIKE :like)', {
+            like,
+          });
+        } else {
+          qb.andWhere(
+            `(${[
+              'activity.description ILIKE :like',
+              'activityType.name ILIKE :like',
+              'similarity(activity.description, :search) > :threshold',
+              'similarity(activityType.name, :search) > :threshold',
+            ].join(' OR ')})`,
+            {
+              like,
+              search,
+              threshold: 0.2,
+            },
+          );
+        }
+      }
     }
 
     qb.orderBy('activity.activityDate', 'DESC').addOrderBy('activity.createdAt', 'DESC');
