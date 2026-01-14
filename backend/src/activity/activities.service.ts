@@ -161,6 +161,7 @@ export class ActivitiesService {
       endDate?: string;
       activityTypeId?: string;
       hasExpense?: boolean;
+      search?: string;
     },
   ): Promise<[Activity[], number]> {
     const take = Math.min(Math.max(limit, 1), 100);
@@ -184,6 +185,12 @@ export class ActivitiesService {
     }
     if (filters?.hasExpense !== undefined) {
       qb.andWhere('activity.hasExpense = :hasExpense', { hasExpense: filters.hasExpense });
+    }
+    if (filters?.search) {
+      qb.leftJoin('activity.activityType', 'activityType');
+      qb.andWhere('(activity.description ILIKE :search OR activityType.name ILIKE :search)', {
+        search: `%${filters.search}%`,
+      });
     }
 
     qb.orderBy('activity.activityDate', 'DESC').addOrderBy('activity.createdAt', 'DESC');
