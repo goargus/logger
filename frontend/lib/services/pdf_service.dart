@@ -8,6 +8,7 @@ class PdfService {
   Future<Uint8List> generateActivitiesReport({
     required List<Activity> activities,
     required ActivitiesFilter filter,
+    String? requestorName,
   }) async {
     final pdf = pw.Document();
 
@@ -23,7 +24,7 @@ class PdfService {
       pw.MultiPage(
         pageFormat: PdfPageFormat.letter,
         margin: const pw.EdgeInsets.all(40),
-        header: (context) => _buildHeader(context, filter),
+        header: (context) => _buildHeader(context, filter, requestorName),
         footer: (context) => _buildFooter(context),
         build: (context) => [
           pw.SizedBox(height: 20),
@@ -56,7 +57,11 @@ class PdfService {
     return pdf.save();
   }
 
-  pw.Widget _buildHeader(pw.Context context, ActivitiesFilter filter) {
+  pw.Widget _buildHeader(
+    pw.Context context,
+    ActivitiesFilter filter,
+    String? requestorName,
+  ) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
@@ -85,6 +90,14 @@ class PdfService {
             'Periodo: ${_formatDate(filter.startDate)} - ${_formatDate(filter.endDate)}',
             style: const pw.TextStyle(
               fontSize: 12,
+              color: PdfColors.grey700,
+            ),
+          ),
+        if (requestorName != null && requestorName.isNotEmpty)
+          pw.Text(
+            'Solicitado por: $requestorName',
+            style: const pw.TextStyle(
+              fontSize: 11,
               color: PdfColors.grey700,
             ),
           ),
@@ -174,10 +187,11 @@ class PdfService {
     return pw.Table(
       border: pw.TableBorder.all(color: PdfColors.grey400),
       columnWidths: {
-        0: const pw.FlexColumnWidth(1.5),
-        1: const pw.FlexColumnWidth(2),
-        2: const pw.FlexColumnWidth(3),
-        3: const pw.FlexColumnWidth(1.5),
+        0: const pw.FlexColumnWidth(1.3),
+        1: const pw.FlexColumnWidth(1.8),
+        2: const pw.FlexColumnWidth(2),
+        3: const pw.FlexColumnWidth(3),
+        4: const pw.FlexColumnWidth(1.5),
       },
       children: [
         // Header row
@@ -188,6 +202,7 @@ class PdfService {
           children: [
             _buildTableCell('Fecha', isHeader: true),
             _buildTableCell('Tipo', isHeader: true),
+            _buildTableCell('Propietario', isHeader: true),
             _buildTableCell('Descripcion', isHeader: true),
             _buildTableCell('Gasto', isHeader: true),
           ],
@@ -197,6 +212,9 @@ class PdfService {
               children: [
                 _buildTableCell(_formatDate(a.date)),
                 _buildTableCell(a.category),
+                _buildTableCell(a.ownerUsername?.isNotEmpty == true
+                    ? a.ownerUsername!
+                    : '-'),
                 _buildTableCell(
                   a.description.length > 60
                       ? '${a.description.substring(0, 60)}...'
