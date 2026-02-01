@@ -204,7 +204,7 @@ describe('ReportsService', () => {
       });
       mockQueryBuilder.getMany.mockResolvedValue(mockActivities);
 
-      const result = await service.getSummary('user-1', {});
+      const result = await service.getSummary('user-1', { entityId: 'entity-1' });
 
       expect(result.scope).toBe('personal');
       expect(result.totals.activities).toBe(2);
@@ -262,7 +262,7 @@ describe('ReportsService', () => {
       jest.spyOn(userRepo, 'find').mockResolvedValue(mockUsersInScope as any);
       mockQueryBuilder.getMany.mockResolvedValue(mockActivities);
 
-      const result = await service.getSummary('user-1', {});
+      const result = await service.getSummary('user-1', { entityId: 'entity-1' });
 
       expect(result.scope).toBe('entity');
       expect(result.totals.activities).toBe(2);
@@ -270,6 +270,57 @@ describe('ReportsService', () => {
       expect(result.totals.usersExpected).toBe(3);
       expect(result.totals.usersSubmitted).toBe(2);
       expect(result.totals.complianceRate).toBe(0.67);
+    });
+
+    it('should default to personal summary when canViewReports has no entityId filter', async () => {
+      const mockUser = {
+        id: 'user-1',
+        entity_id: 'entity-1',
+        role: { rolePermissions: [] },
+        entity: { id: 'entity-1', name: 'Campo Seattle', type: 'FIELD' },
+      };
+
+      const mockPeriod = {
+        id: 'period-1',
+        startDate: '2024-12-01',
+        endDate: '2024-12-14',
+        status: 'active',
+        entityId: 'entity-1',
+      };
+
+      const mockActivities = [
+        {
+          id: 'activity-1',
+          userId: 'user-1',
+          expenseAmount: '50.00',
+          activityTypeId: 'type-1',
+          user: { id: 'user-1', entity_id: 'entity-1' },
+        },
+        {
+          id: 'activity-2',
+          userId: 'user-1',
+          expenseAmount: '30.00',
+          activityTypeId: 'type-1',
+          user: { id: 'user-1', entity_id: 'entity-1' },
+        },
+      ];
+
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
+      jest.spyOn(entityRepo, 'findOne').mockResolvedValue(mockUser.entity as any);
+      jest.spyOn(timeScopeService, 'getOrDetermineTimeScope').mockResolvedValue({
+        periodIds: [mockPeriod.id],
+        period: mockPeriod as any,
+      });
+      mockQueryBuilder.getMany.mockResolvedValue(mockActivities);
+
+      const result = await service.getSummary('user-1', {});
+
+      expect(result.scope).toBe('personal');
+      expect(result.totals.activities).toBe(2);
+      expect(result.totals.expenses).toBe(80);
+      expect(result.totals.usersExpected).toBe(1);
+      expect(result.totals.usersSubmitted).toBe(1);
+      expect(result.totals.complianceRate).toBe(1);
     });
 
     it('should throw ForbiddenException when regular user tries to view entity report', async () => {
@@ -364,7 +415,7 @@ describe('ReportsService', () => {
       ] as any);
       mockQueryBuilder.getMany.mockResolvedValue(mockActivities);
 
-      const result = await service.getBreakdowns('user-1', {});
+      const result = await service.getBreakdowns('user-1', { entityId: 'entity-1' });
 
       expect(result.byType).toHaveLength(1);
       expect(result.byType[0].name).toBe('Visitas');
