@@ -74,7 +74,11 @@ export class ActivitiesController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new activity' })
-  @ApiResponse({ status: 201, description: 'Activity created successfully', type: ActivityResponseDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Activity created successfully',
+    type: ActivityResponseDto,
+  })
   @ApiResponse({ status: 400, description: 'Invalid input data' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async create(@Req() req: Request, @Body() dto: CreateActivityDto): Promise<ActivityResponseDto> {
@@ -103,12 +107,36 @@ export class ActivitiesController {
   @Get()
   @ApiOperation({ summary: 'List my activities with pagination and filters' })
   @ApiResponse({ status: 200, description: 'Paginated list of activities' })
-  @ApiQuery({ name: 'page', required: false, type: Number, description: 'Page number (default: 1)' })
-  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Items per page (default: 20)' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page (default: 20)',
+  })
   @ApiQuery({ name: 'startDate', required: false, description: 'Filter from date (YYYY-MM-DD)' })
   @ApiQuery({ name: 'endDate', required: false, description: 'Filter until date (YYYY-MM-DD)' })
-  @ApiQuery({ name: 'activityTypeId', required: false, description: 'Filter by activity type UUID' })
-  @ApiQuery({ name: 'hasExpense', required: false, enum: ['true', 'false'], description: 'Filter by expense status' })
+  @ApiQuery({
+    name: 'activityTypeId',
+    required: false,
+    description: 'Filter by activity type UUID',
+  })
+  @ApiQuery({
+    name: 'hasExpense',
+    required: false,
+    enum: ['true', 'false'],
+    description: 'Filter by expense status',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search by description or activity type name',
+  })
   async findMine(
     @Req() req: Request,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page = 1,
@@ -117,6 +145,7 @@ export class ActivitiesController {
     @Query('endDate') endDate?: string,
     @Query('activityTypeId') activityTypeId?: string,
     @Query('hasExpense') hasExpense?: string,
+    @Query('search') search?: string,
   ) {
     const { sub, iss } = (req.user as any) ?? {};
     const user = await this.identity.resolveUserBySubAndIssuer(sub, iss);
@@ -126,6 +155,7 @@ export class ActivitiesController {
       endDate: endDate || undefined,
       activityTypeId: activityTypeId || undefined,
       hasExpense: hasExpense === 'true' ? true : hasExpense === 'false' ? false : undefined,
+      search: search?.trim() || undefined,
     };
 
     const [items, total] = await this.activities.findMine(user.id, page, limit, filters);
@@ -196,7 +226,11 @@ export class ActivitiesController {
 
   @Patch(':id')
   @ApiOperation({ summary: 'Update an activity' })
-  @ApiResponse({ status: 200, description: 'Activity updated successfully', type: ActivityResponseDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Activity updated successfully',
+    type: ActivityResponseDto,
+  })
   @ApiResponse({ status: 404, description: 'Activity not found' })
   @ApiResponse({ status: 403, description: 'Activity is locked and cannot be modified' })
   async update(
@@ -249,8 +283,18 @@ export class ActivitiesController {
   @Get('stats/monthly-expenses')
   @ApiOperation({ summary: 'Get monthly expense total for the current user' })
   @ApiResponse({ status: 200, description: 'Monthly expense total' })
-  @ApiQuery({ name: 'year', required: false, type: Number, description: 'Year (default: current year)' })
-  @ApiQuery({ name: 'month', required: false, type: Number, description: 'Month 1-12 (default: current month)' })
+  @ApiQuery({
+    name: 'year',
+    required: false,
+    type: Number,
+    description: 'Year (default: current year)',
+  })
+  @ApiQuery({
+    name: 'month',
+    required: false,
+    type: Number,
+    description: 'Month 1-12 (default: current month)',
+  })
   async getMonthlyExpenses(
     @Req() req: Request,
     @Query('year', new DefaultValuePipe(new Date().getFullYear()), ParseIntPipe) year: number,

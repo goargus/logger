@@ -74,6 +74,7 @@ class ActivitiesListNotifier extends AsyncNotifier<ActivitiesListState> {
       endDate: filterParams.endDate?.toIso8601String().split('T').first,
       activityTypeId: filterParams.activityTypeId,
       hasExpense: filterParams.hasExpense,
+      search: filterParams.search,
     );
 
     final items = (data['items'] as List)

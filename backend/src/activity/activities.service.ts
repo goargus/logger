@@ -161,6 +161,7 @@ export class ActivitiesService {
       endDate?: string;
       activityTypeId?: string;
       hasExpense?: boolean;
+      search?: string;
     },
   ): Promise<[Activity[], number]> {
     const take = Math.min(Math.max(limit, 1), 100);
@@ -184,6 +185,32 @@ export class ActivitiesService {
     }
     if (filters?.hasExpense !== undefined) {
       qb.andWhere('activity.hasExpense = :hasExpense', { hasExpense: filters.hasExpense });
+    }
+    if (filters?.search) {
+      const search = filters.search.trim();
+      if (search) {
+        qb.leftJoin('activity.activityType', 'activityType');
+        const like = `%${search}%`;
+        if (search.length < 3) {
+          qb.andWhere('(activity.description ILIKE :like OR activityType.name ILIKE :like)', {
+            like,
+          });
+        } else {
+          qb.andWhere(
+            `(${[
+              'activity.description ILIKE :like',
+              'activityType.name ILIKE :like',
+              'similarity(activity.description, :search) > :threshold',
+              'similarity(activityType.name, :search) > :threshold',
+            ].join(' OR ')})`,
+            {
+              like,
+              search,
+              threshold: 0.2,
+            },
+          );
+        }
+      }
     }
 
     qb.orderBy('activity.activityDate', 'DESC').addOrderBy('activity.createdAt', 'DESC');

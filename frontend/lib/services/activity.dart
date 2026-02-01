@@ -74,6 +74,7 @@ class ActivityService {
     String? endDate,
     String? activityTypeId,
     bool? hasExpense,
+    String? search,
   }) async {
     final params = <String, String>{
       'page': page.toString(),
@@ -84,6 +85,9 @@ class ActivityService {
     if (endDate != null) params['endDate'] = endDate;
     if (activityTypeId != null) params['activityTypeId'] = activityTypeId;
     if (hasExpense != null) params['hasExpense'] = hasExpense.toString();
+    if (search != null && search.trim().isNotEmpty) {
+      params['search'] = search.trim();
+    }
 
     final data = await apiClient.get('activities', queryParameters: params);
     return data as Map<String, dynamic>;

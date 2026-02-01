@@ -1,4 +1,4 @@
-import { IsOptional, IsUUID, IsDateString, IsIn } from 'class-validator';
+import { IsOptional, IsUUID, IsDateString, IsIn, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -37,4 +37,13 @@ export class FilterActivitiesDto {
   @IsIn(['true', 'false'])
   @Transform(({ value }) => value || undefined)
   hasExpense?: string;
+
+  @ApiPropertyOptional({
+    description: 'Search by activity description or activity type name',
+    example: 'discipulado',
+  })
+  @IsOptional()
+  @IsString()
+  @Transform(({ value }) => value?.trim() || undefined)
+  search?: string;
 }
