@@ -1,0 +1,25 @@
+#cloud-config
+runcmd:
+  - [bash, -c, "curl -fsSL https://get.docker.com -o /tmp/get-docker.sh"]
+  - [bash, -c, "sh /tmp/get-docker.sh"]
+  - [bash, -c, "mkdir -p /opt/app"]
+  - |
+      cat > /opt/app/nginx.conf <<'NGINX'
+      server {
+        listen 80;
+        # listen 443 ssl; # Optional if you terminate TLS on the VM
+        server_name ${server_name};
+
+        location /api/ {
+          proxy_pass http://nestjs:3000/;
+          proxy_http_version 1.1;
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+        }
+      }
+      NGINX
+  - [bash, -c, "echo '${docker_compose_b64}' | base64 -d > /opt/app/docker-compose.yml"]
+  - [bash, -c, "echo '${env_file_b64}' | base64 -d > /opt/app/.env"]
+  - [bash, -c, "docker compose -f /opt/app/docker-compose.yml --env-file /opt/app/.env up -d"]
