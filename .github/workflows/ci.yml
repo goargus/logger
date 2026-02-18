@@ -34,6 +34,9 @@ jobs:
     - name: Run tests
       run: npm test
 
+    - name: Build Docker image (verify)
+      run: docker build --target prod -t logger-api:ci -f dockerfile .
+
   frontend:
     runs-on: ubuntu-latest
     defaults:
