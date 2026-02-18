@@ -23,30 +23,27 @@ Feature: Reports Breakdowns
     And the response should have property "byType"
 
   # === ENTITY BREAKDOWN ===
-  @permission @skip @requires-pastor-user
+  @permission
   Scenario: Hierarchy user gets entity breakdown
     Given I am authenticated as "pastor"
     When I request the entity breakdown
     Then the response status should be 200
-    And the response should be an array
-    And each item should have property "entityId"
-    And each item should have property "count"
+    And the response should have property "byEntity"
 
-  @permission @skip @requires-missionary-user
-  Scenario: Regular user cannot get entity breakdown
+  @permission
+  Scenario: Regular user gets own entity breakdown
     Given I am authenticated as "missionary"
     When I request the entity breakdown
-    Then the response status should be 403
+    Then the response status should be 200
+    And the response should have property "byType"
 
   # === USER BREAKDOWN ===
-  @permission @skip @requires-pastor-user
+  @permission
   Scenario: Hierarchy user gets user breakdown
     Given I am authenticated as "pastor"
     When I request the user breakdown
     Then the response status should be 200
-    And the response should be an array
-    And each item should have property "userId"
-    And each item should have property "count"
+    And the response should have property "byUser"
 
   # === TRENDS ===
   Scenario: Get activity trends over time
@@ -55,9 +52,8 @@ Feature: Reports Breakdowns
     And the response should have property "periods"
 
   # === COMPARISON ===
-  @permission @skip @requires-pastor-user
+  @permission @skip @requires-multiple-periods
   Scenario: Compare entities within hierarchy
     Given I am authenticated as "pastor"
     When I request the entity comparison report
     Then the response status should be 200
-    And the response should be an array

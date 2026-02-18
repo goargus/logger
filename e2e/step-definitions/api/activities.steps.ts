@@ -182,6 +182,26 @@ When(
   },
 );
 
+When(
+  'I try to update the other users activity with:',
+  async function (this: CustomWorld, table: DataTable) {
+    const data = parseDataTable(table);
+    const id = this.context.otherUserActivityId;
+    expect(id).toBeDefined();
+    this.context.lastResponse = await this.apiClient.patch(`${ENDPOINTS.ACTIVITIES}/${id}`, data);
+  },
+);
+
+When(
+  'I try to update the subordinate users activity with:',
+  async function (this: CustomWorld, table: DataTable) {
+    const data = parseDataTable(table);
+    const id = this.context.subordinateActivityId;
+    expect(id).toBeDefined();
+    this.context.lastResponse = await this.apiClient.patch(`${ENDPOINTS.ACTIVITIES}/${id}`, data);
+  },
+);
+
 // === DELETE STEPS ===
 
 When('I delete the current activity', async function (this: CustomWorld) {

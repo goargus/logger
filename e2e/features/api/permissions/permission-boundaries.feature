@@ -119,7 +119,7 @@ Feature: Permission Boundaries
     When I try to access the unrelated entity data
     Then the response status should be 403
 
-  @skip @requires-multiple-users
+  @permission
   Scenario: User cannot modify another users data
     Given I am authenticated as "admin"
     And another user has created an activity

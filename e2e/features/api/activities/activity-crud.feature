@@ -96,33 +96,33 @@ Feature: Activity CRUD Operations
     Then the response status should be 404
 
   # === PERMISSION BOUNDARY TESTS ===
-  @permission @skip @requires-multiple-users
+  @permission
   Scenario: Missionary cannot see other users activities
     Given I am authenticated as "missionary"
     And another user has created an activity
     When I request my activities
     Then the response should only contain my activities
 
-  @permission @skip @requires-multiple-users
+  @permission
   Scenario: Missionary cannot edit another users activity
     Given I am authenticated as "missionary"
-    And another user has an activity with id "other-user-activity-id"
-    When I try to update activity "other-user-activity-id" with:
+    And another user has created an activity
+    When I try to update the other users activity with:
       | description | Should fail |
     Then the response status should be 403
 
-  @permission @skip @requires-multiple-users
+  @permission
   Scenario: Pastor can see subordinate activities
     Given I am authenticated as "pastor"
     And a subordinate user has created an activity
     When I request activities with hierarchy
     Then the response should include subordinate activities
 
-  @permission @skip @requires-multiple-users
+  @permission
   Scenario: Pastor cannot modify subordinate activities
     Given I am authenticated as "pastor"
-    And a subordinate user has an activity with id "subordinate-activity-id"
-    When I try to update activity "subordinate-activity-id" with:
+    And a subordinate user has created an activity
+    When I try to update the subordinate users activity with:
       | description | Should fail |
     Then the response status should be 403
 
