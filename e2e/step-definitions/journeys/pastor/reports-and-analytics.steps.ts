@@ -155,7 +155,7 @@ Given('team members have logged activities with expenses', async function (this:
 
 // --- Action Steps ---
 
-When('I request the summary report for the current period', async function (this: CustomWorld) {
+When('I request the summary report for my entity', async function (this: CustomWorld) {
   const entityId = this.context.entityId;
   this.context.lastResponse = await this.apiClient.get(
     `${ENDPOINTS.REPORTS_SUMMARY}?entityId=${entityId}`,
