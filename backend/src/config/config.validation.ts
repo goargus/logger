@@ -1,6 +1,9 @@
 import * as Joi from 'joi';
 
 export const configValidationSchema = Joi.object({
+  PORT: Joi.number().port().default(3000),
+  NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
+
   AUTH0_DOMAIN: Joi.string().required(),
 
   AUTH0_ISSUER: Joi.string()
