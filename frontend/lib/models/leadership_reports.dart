@@ -1,8 +1,8 @@
-/// Models for leadership dashboard endpoints:
-/// - Trends
-/// - Comparison
-/// - Rankings
-/// - Expenses
+// Models for leadership dashboard endpoints:
+// - Trends
+// - Comparison
+// - Rankings
+// - Expenses
 
 /// Trends Response Models
 class TrendPeriod {

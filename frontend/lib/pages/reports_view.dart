@@ -87,7 +87,7 @@ class _ReportsViewContentState extends ConsumerState<ReportsViewContent> {
 
       if (comparisonError != null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(comparisonError!)),
+          SnackBar(content: Text(comparisonError)),
         );
       }
     }

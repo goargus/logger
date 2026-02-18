@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/leadership_reports.dart';
 import '../models/report_period_type.dart';
@@ -92,7 +93,7 @@ final leadershipDashboardProvider =
     StateNotifierProvider<LeadershipDashboardNotifier, LeadershipDashboardState>(
   (ref) {
     final authState = ref.watch(authNotifierProvider);
-    final getAccessToken = () async => authState.accessToken ?? '';
+    Future<String> getAccessToken() async => authState.accessToken ?? '';
 
     return LeadershipDashboardNotifier(
       reportsService: ReportsService.localhost(getAccessToken),
@@ -197,7 +198,7 @@ class LeadershipDashboardNotifier extends StateNotifier<LeadershipDashboardState
       );
     } catch (e) {
       // Trends failure is not critical - skip it silently
-      print('Trends load failed: $e');
+      debugPrint('Trends load failed: $e');
     }
 
     // Load comparison
@@ -214,7 +215,7 @@ class LeadershipDashboardNotifier extends StateNotifier<LeadershipDashboardState
       );
     } catch (e) {
       // Comparison failure is not critical - skip it silently
-      print('Comparison load failed: $e');
+      debugPrint('Comparison load failed: $e');
     }
 
     // Load rankings
@@ -229,7 +230,7 @@ class LeadershipDashboardNotifier extends StateNotifier<LeadershipDashboardState
           e.technicalMessage?.contains('Forbidden') == true)) {
         errors.add('Rankings requiere el permiso REPORT_VIEW_HIERARCHY');
       }
-      print('Rankings load failed: $e');
+      debugPrint('Rankings load failed: $e');
     }
 
     // Load expenses
@@ -241,7 +242,7 @@ class LeadershipDashboardNotifier extends StateNotifier<LeadershipDashboardState
       );
     } catch (e) {
       errors.add('No se pudieron cargar los gastos');
-      print('Expenses load failed: $e');
+      debugPrint('Expenses load failed: $e');
     }
 
     // Update state with whatever data we could load
