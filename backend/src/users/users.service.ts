@@ -67,15 +67,19 @@ export class UsersService {
       archived_at: null,
     });
 
-    return this.usersRepo.save(user);
+    const saved = await this.usersRepo.save(user);
+    return this.findOne(saved.id);
   }
 
   async findAll(): Promise<User[]> {
-    return this.usersRepo.find();
+    return this.usersRepo.find({ relations: ['role', 'entity'] });
   }
 
   async findOne(id: string): Promise<User> {
-    const user = await this.usersRepo.findOne({ where: { id } });
+    const user = await this.usersRepo.findOne({
+      where: { id },
+      relations: ['role', 'entity'],
+    });
     if (!user) throw new NotFoundException('User not found.');
     return user;
   }
@@ -120,14 +124,20 @@ export class UsersService {
       }
     }
 
-    return this.usersRepo.save(user);
+    const saved = await this.usersRepo.save(user);
+    return this.findOne(saved.id);
   }
 
   async findUserProfile(userId: string): Promise<{
     user: User;
     roleAssignments: UserRoleAssignment[];
   }> {
-    const user = await this.findOne(userId);
+    const user = await this.usersRepo.findOne({
+      where: { id: userId },
+      relations: ['role', 'entity'],
+    });
+    if (!user) throw new NotFoundException('User not found.');
+
     const roleAssignments = await this.userRoleAssignmentRepo.find({
       where: { user: { id: userId } },
       relations: ['role', 'entity', 'user'],
