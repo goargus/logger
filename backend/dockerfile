@@ -1,18 +1,21 @@
-FROM node:20 AS base
-
+FROM node:20-alpine AS base
 WORKDIR /app
+COPY package*.json ./
+RUN npm ci
 COPY . .
-RUN npm install
-RUN npm run build || (echo "Build failed" && exit 1)
+RUN npm run build
 
 ############################
 FROM base AS dev
-COPY --from=base /app/dist ./dist
-COPY --from=base /app/node_modules ./node_modules
 CMD ["npm", "run", "start:dev"]
 
 ############################
-FROM base AS prod
-USER node
+FROM node:20-alpine AS prod
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --omit=dev
 COPY --from=base /app/dist ./dist
+COPY --from=base /app/migrations ./migrations
+ENV NODE_ENV=production
+USER node
 CMD ["node", "dist/main.js"]
