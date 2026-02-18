@@ -20,83 +20,31 @@ function parseDataTable(table: DataTable): Record<string, any> {
 // === SETUP STEPS ===
 
 /**
- * Valid role names that can be assigned via the API
- * These must match the RoleEnum in the backend
- */
-const VALID_ROLE_NAMES = ['missionary', 'pastor', 'admin'];
-
-/**
- * Helper to ensure current user can submit activities
- * Assigns a role if needed (admin users don't have role assignments by default)
+ * Helper to ensure current user can submit activities.
+ * Returns an activity type ID the user is authorized to use.
+ *
+ * NOTE: The admin user needs a role assignment (e.g., Misionero) seeded
+ * in the DB to access activity types. The RoleEnum in the assignment API
+ * uses English names that don't match the Spanish DB role names, so role
+ * assignment must be done via DB seeding, not the API.
  */
 async function ensureUserCanSubmitActivities(world: CustomWorld): Promise<string> {
-  // Check if user already has authorized activity types
+  // Check if user has authorized activity types
   const authorizedResponse = await world.apiClient.get(ENDPOINTS.ACTIVITY_TYPES_AUTHORIZED);
   if (authorizedResponse.status === 200 && authorizedResponse.data.length > 0) {
     return authorizedResponse.data[0].id;
   }
 
-  // Get all activity types
+  // Fallback: get all activity types (admin may be able to use any)
   const typesResponse = await world.apiClient.get(ENDPOINTS.ACTIVITY_TYPES);
-  if (typesResponse.data.length === 0) {
-    throw new Error('No activity types found in database');
-  }
-
-  // Find an activity type that requires a role we can assign via the API
-  // (roles like 'president' are not in the RoleEnum and will fail validation)
-  const validActivityType = typesResponse.data.find((at: any) => {
-    if (!at.allowed_roles || at.allowed_roles.length === 0) {
-      return true; // No restrictions
-    }
-    // Check if any required role is in our valid roles list
-    return at.allowed_roles.some((role: any) =>
-      VALID_ROLE_NAMES.includes(role.name.toLowerCase()),
+  if (typesResponse.status !== 200 || typesResponse.data.length === 0) {
+    throw new Error(
+      'No authorized activity types found. Ensure the admin user has a role assignment ' +
+        '(e.g., Misionero) in the user_role_assignments table.',
     );
-  });
-
-  if (!validActivityType) {
-    throw new Error('No activity types found with assignable roles');
   }
 
-  // If activity type has no restrictions, use it directly
-  if (!validActivityType.allowed_roles || validActivityType.allowed_roles.length === 0) {
-    return validActivityType.id;
-  }
-
-  // Find a valid role to assign
-  const roleToAssign = validActivityType.allowed_roles.find((role: any) =>
-    VALID_ROLE_NAMES.includes(role.name.toLowerCase()),
-  );
-
-  if (!roleToAssign) {
-    throw new Error('Could not find a valid role to assign');
-  }
-
-  // Get current user info
-  const meResponse = await world.apiClient.get(ENDPOINTS.ME);
-  const userId = meResponse.data.id;
-
-  // Get user's entity
-  const entityId = meResponse.data.primary_entity?.id;
-  if (!entityId) {
-    throw new Error('User has no entity assigned');
-  }
-
-  // Assign the role (API expects uppercase enum value)
-  const assignResponse = await world.apiClient.post('/roles/assign', {
-    userId,
-    role: roleToAssign.name.toUpperCase(),
-    entityId,
-  });
-
-  if (assignResponse.status !== 201 && assignResponse.status !== 200) {
-    // Role might already be assigned, that's ok
-    if (assignResponse.status !== 409) {
-      console.log('Warning: Could not assign role:', assignResponse.status, assignResponse.data);
-    }
-  }
-
-  return validActivityType.id;
+  return typesResponse.data[0].id;
 }
 
 Given('I have an authorized activity type', async function (this: CustomWorld) {
