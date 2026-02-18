@@ -198,7 +198,10 @@ describe('RoleAssignmentService - Historical Tracking', () => {
       const result = await service.listAssignments();
 
       expect(result).toHaveLength(2);
-      expect(uraRepo.find).toHaveBeenCalledWith({ where: {} });
+      expect(uraRepo.find).toHaveBeenCalledWith({
+        where: {},
+        relations: ['user', 'role', 'entity'],
+      });
     });
 
     it('should filter by entityId', async () => {
@@ -210,6 +213,7 @@ describe('RoleAssignmentService - Historical Tracking', () => {
 
       expect(uraRepo.find).toHaveBeenCalledWith({
         where: { entity: { id: 'entity-id' } },
+        relations: ['user', 'role', 'entity'],
       });
     });
 
@@ -222,6 +226,7 @@ describe('RoleAssignmentService - Historical Tracking', () => {
 
       expect(uraRepo.find).toHaveBeenCalledWith({
         where: { user: { id: 'user-id' } },
+        relations: ['user', 'role', 'entity'],
       });
     });
 
@@ -279,7 +284,10 @@ describe('RoleAssignmentService - Historical Tracking', () => {
       const result = await service.getAssignment('assign-1');
 
       expect(result).toEqual(assignment);
-      expect(uraRepo.findOne).toHaveBeenCalledWith({ where: { id: 'assign-1' } });
+      expect(uraRepo.findOne).toHaveBeenCalledWith({
+        where: { id: 'assign-1' },
+        relations: ['user', 'role', 'entity'],
+      });
     });
 
     it('should throw NotFoundException when assignment not found', async () => {

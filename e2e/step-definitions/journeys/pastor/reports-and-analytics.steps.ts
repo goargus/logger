@@ -176,13 +176,6 @@ When('I request the compliance report', async function (this: CustomWorld) {
   );
 });
 
-When('I request the trends report', async function (this: CustomWorld) {
-  const entityId = this.context.entityId;
-  this.context.lastResponse = await this.apiClient.get(
-    `${ENDPOINTS.REPORTS_TRENDS}?entityId=${entityId}`,
-  );
-});
-
 When('I request the comparison report', async function (this: CustomWorld) {
   const entityId = this.context.entityId;
   this.context.lastResponse = await this.apiClient.get(
