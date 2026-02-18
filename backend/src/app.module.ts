@@ -15,12 +15,14 @@ import { ActivitiesModule } from './activity/activities.module';
 import { ReportingPeriodsModule } from './reporting-periods/reporting-periods.module';
 import { CaslModule } from './casl/casl.module';
 import { ReportsModule } from './reports/reports.module';
+import { configValidationSchema } from './config/config.validation';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       load: [authConfig],
+      validationSchema: configValidationSchema,
     }),
     AuthModule,
     CaslModule,
