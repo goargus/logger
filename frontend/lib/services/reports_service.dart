@@ -7,6 +7,7 @@ import '../models/hierarchy_breakdown.dart';
 import '../models/user_activities.dart';
 import '../models/compliance_report.dart';
 import '../models/users_report.dart';
+import '../models/leadership_reports.dart';
 
 class ReportsService {
   ReportsService({
@@ -301,6 +302,116 @@ class ReportsService {
       contentType:
           response.headers['content-type'] ?? 'application/octet-stream',
     );
+  }
+
+  /// Get activity trends over multiple periods (last 5 periods)
+  Future<TrendsResponse> getTrends({
+    String? entityId,
+    String? dateFrom,
+    String? dateTo,
+  }) async {
+    try {
+      final queryParams = <String, String>{};
+
+      if (entityId != null) queryParams['entityId'] = entityId;
+      if (dateFrom != null) queryParams['dateFrom'] = dateFrom;
+      if (dateTo != null) queryParams['dateTo'] = dateTo;
+
+      final data = await apiClient.get(
+        'reports/trends',
+        queryParameters: queryParams,
+      );
+
+      return TrendsResponse.fromApi(data as Map<String, dynamic>);
+    } catch (e) {
+      return TrendsResponse.empty();
+    }
+  }
+
+  /// Compare current period with previous period
+  Future<ComparisonResponse> getComparison({
+    String? entityId,
+    String? dateFrom,
+    String? dateTo,
+    ReportPeriodType? periodType,
+    int? year,
+    int? month,
+    int? quarter,
+    int? half,
+  }) async {
+    try {
+      final queryParams = <String, String>{};
+
+      if (entityId != null) queryParams['entityId'] = entityId;
+      if (dateFrom != null) queryParams['dateFrom'] = dateFrom;
+      if (dateTo != null) queryParams['dateTo'] = dateTo;
+      if (periodType != null) queryParams['periodType'] = periodType.apiValue;
+      if (year != null) queryParams['year'] = year.toString();
+      if (month != null) queryParams['month'] = month.toString();
+      if (quarter != null) queryParams['quarter'] = quarter.toString();
+      if (half != null) queryParams['half'] = half.toString();
+
+      final data = await apiClient.get(
+        'reports/comparison',
+        queryParameters: queryParams,
+      );
+
+      return ComparisonResponse.fromApi(data as Map<String, dynamic>);
+    } catch (e) {
+      return ComparisonResponse.empty();
+    }
+  }
+
+  /// Get rankings: top performers, lowest compliance, inactive users
+  /// Requires REPORT_VIEW_HIERARCHY permission
+  Future<RankingsResponse> getRankings({
+    String? entityId,
+    String? dateFrom,
+    String? dateTo,
+    int topN = 10,
+  }) async {
+    try {
+      final queryParams = <String, String>{
+        'limit': topN.toString(),
+      };
+
+      if (entityId != null) queryParams['entityId'] = entityId;
+      if (dateFrom != null) queryParams['dateFrom'] = dateFrom;
+      if (dateTo != null) queryParams['dateTo'] = dateTo;
+
+      final data = await apiClient.get(
+        'reports/rankings',
+        queryParameters: queryParams,
+      );
+
+      return RankingsResponse.fromApi(data as Map<String, dynamic>);
+    } catch (e) {
+      return RankingsResponse.empty();
+    }
+  }
+
+  /// Get expense breakdown by type, entity, and user
+  Future<ExpensesResponse> getExpenses({
+    String? entityId,
+    String? dateFrom,
+    String? dateTo,
+  }) async {
+    try {
+      final queryParams = <String, String>{};
+
+      if (entityId != null) queryParams['entityId'] = entityId;
+      if (dateFrom != null) queryParams['dateFrom'] = dateFrom;
+      if (dateTo != null) queryParams['dateTo'] = dateTo;
+
+      final data = await apiClient.get(
+        'reports/expenses',
+        queryParameters: queryParams,
+      );
+
+      return ExpensesResponse.fromApi(data as Map<String, dynamic>);
+    } catch (e) {
+      return ExpensesResponse.empty();
+    }
   }
 }
 
