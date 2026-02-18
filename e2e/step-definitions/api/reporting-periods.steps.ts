@@ -97,7 +97,7 @@ Given('the current period is locked', async function (this: CustomWorld) {
   if (response.status === 200 && response.data.status === 'active') {
     // Lock the current period
     const lockResponse = await this.apiClient.patch(
-      `${ENDPOINTS.REPORTING_PERIODS_ADMIN}/${response.data.id}/lock`,
+      `${ENDPOINTS.REPORTING_PERIODS}/${response.data.id}/lock`,
       {},
     );
     expect(lockResponse.status).toBe(200);
@@ -148,7 +148,7 @@ When('I lock the current reporting period', async function (this: CustomWorld) {
   const id = this.context.reportingPeriodId;
   expect(id).toBeDefined();
   this.context.lastResponse = await this.apiClient.patch(
-    `${ENDPOINTS.REPORTING_PERIODS_ADMIN}/${id}/lock`,
+    `${ENDPOINTS.REPORTING_PERIODS}/${id}/lock`,
     {},
   );
 });

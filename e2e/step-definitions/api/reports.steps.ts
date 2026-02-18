@@ -129,6 +129,48 @@ When('I request the entity comparison report', async function (this: CustomWorld
   this.context.lastResponse = await this.apiClient.get(ENDPOINTS.REPORTS_COMPARISON);
 });
 
+// === COMPLIANCE REPORT STEPS ===
+
+When('I request the compliance report', async function (this: CustomWorld) {
+  this.context.lastResponse = await this.apiClient.get(ENDPOINTS.REPORTS_COMPLIANCE);
+});
+
+// === RANKINGS REPORT STEPS ===
+
+When('I request the rankings report', async function (this: CustomWorld) {
+  this.context.lastResponse = await this.apiClient.get(ENDPOINTS.REPORTS_RANKINGS);
+});
+
+// === EXPENSES REPORT STEPS ===
+
+When('I request the expenses report', async function (this: CustomWorld) {
+  this.context.lastResponse = await this.apiClient.get(ENDPOINTS.REPORTS_EXPENSES);
+});
+
+// === USERS REPORT STEPS ===
+
+When('I request the users report', async function (this: CustomWorld) {
+  this.context.lastResponse = await this.apiClient.get(ENDPOINTS.REPORTS_USERS);
+});
+
+// === EXPORT REPORT STEPS ===
+
+When('I request the report export', async function (this: CustomWorld) {
+  this.context.lastResponse = await this.apiClient.get(ENDPOINTS.REPORTS_EXPORT);
+});
+
+// === MONTHLY EXPENSES STEPS ===
+
+When('I request the monthly expenses', async function (this: CustomWorld) {
+  this.context.lastResponse = await this.apiClient.get(ENDPOINTS.MONTHLY_EXPENSES);
+});
+
+// === ADMIN DASHBOARD STEPS ===
+
+When('I request the admin dashboard', async function (this: CustomWorld) {
+  this.context.lastResponse = await this.apiClient.get(ENDPOINTS.ADMIN_DASHBOARD);
+});
+
 // === VERIFICATION STEPS ===
 
 Then('the response should include subordinate data', function (this: CustomWorld) {
