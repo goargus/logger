@@ -58,7 +58,7 @@ services:
         npm install &&
         npx nest build &&
         npm run admin:bootstrap &&
-        npm run db:init &&
+        npm run seed:roles &&
         npx nest start
       "
     healthcheck:
