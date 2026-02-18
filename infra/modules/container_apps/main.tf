@@ -76,7 +76,7 @@ resource "azurerm_container_app" "api" {
         value = var.db_username
       }
       env {
-        name       = "DB_PASSWORD"
+        name        = "DB_PASSWORD"
         secret_name = "db-password"
       }
       env {
