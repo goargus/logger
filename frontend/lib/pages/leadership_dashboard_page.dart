@@ -54,9 +54,9 @@ class _LeadershipDashboardContentState
     }
 
     if (state.error != null && !state.hasData) {
-      final isPermissionError = state.error!.contains('permisos') || 
-                                 state.error!.contains('REPORT_VIEW_HIERARCHY');
-      
+      final isPermissionError = state.error!.contains('permisos') ||
+          state.error!.contains('REPORT_VIEW_HIERARCHY');
+
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -66,7 +66,7 @@ class _LeadershipDashboardContentState
               Icon(
                 isPermissionError ? Icons.lock_outline : Icons.error_outline,
                 size: 64,
-                color: isPermissionError 
+                color: isPermissionError
                     ? theme.colorScheme.primary.withValues(alpha: 0.7)
                     : theme.colorScheme.error,
               ),
@@ -147,11 +147,9 @@ class _LeadershipDashboardContentState
               const SizedBox(height: 24),
             if (state.comparison != null)
               _buildComparisonSection(state.comparison!, theme),
-            if (state.comparison != null)
-              const SizedBox(height: 24),
+            if (state.comparison != null) const SizedBox(height: 24),
             if (state.trends != null) _buildTrendsSection(state.trends!, theme),
-            if (state.trends != null)
-              const SizedBox(height: 24),
+            if (state.trends != null) const SizedBox(height: 24),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -177,18 +175,19 @@ class _LeadershipDashboardContentState
 
   Widget _buildHeader(ThemeData theme) {
     final state = ref.watch(leadershipDashboardProvider);
-    
+
     String dateRangeText = 'Período actual';
     if (state.dateFrom != null && state.dateTo != null) {
       try {
         final from = DateTime.parse(state.dateFrom!);
         final to = DateTime.parse(state.dateTo!);
-        dateRangeText = '${from.day}/${from.month}/${from.year} - ${to.day}/${to.month}/${to.year}';
+        dateRangeText =
+            '${from.day}/${from.month}/${from.year} - ${to.day}/${to.month}/${to.year}';
       } catch (e) {
         // Keep default text if parsing fails
       }
     }
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -288,8 +287,7 @@ class _LeadershipDashboardContentState
 
   Widget _buildComparisonSection(
       ComparisonResponse comparison, ThemeData theme) {
-    final hasNoComparisonData =
-        comparison.current.activities == 0 &&
+    final hasNoComparisonData = comparison.current.activities == 0 &&
         comparison.current.expenses == 0 &&
         comparison.current.usersActive == 0 &&
         comparison.current.complianceRate == 0 &&
@@ -322,24 +320,67 @@ class _LeadershipDashboardContentState
             ),
           )
         else
-        LayoutBuilder(
-          builder: (context, constraints) {
-            final isWide = constraints.maxWidth > 800;
-            if (isWide) {
-              return Row(
-                children: [
-                  Expanded(
-                    child: _buildComparisonCard(
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isWide = constraints.maxWidth > 800;
+              if (isWide) {
+                return Row(
+                  children: [
+                    Expanded(
+                      child: _buildComparisonCard(
+                        'Actividades',
+                        comparison.current.activities,
+                        comparison.changes.activities,
+                        Icons.assignment,
+                        theme,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildComparisonCard(
+                        'Gastos',
+                        comparison.current.expenses,
+                        comparison.changes.expenses,
+                        Icons.attach_money,
+                        theme,
+                        isCurrency: true,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildComparisonCard(
+                        'Cumplimiento',
+                        comparison.current.complianceRate,
+                        comparison.changes.complianceRate,
+                        Icons.check_circle,
+                        theme,
+                        isPercentage: true,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildComparisonCard(
+                        'Usuarios Activos',
+                        comparison.current.usersActive,
+                        comparison.changes.usersActive,
+                        Icons.people,
+                        theme,
+                      ),
+                    ),
+                  ],
+                );
+              } else {
+                return Column(
+                  children: [
+                    _buildComparisonCard(
                       'Actividades',
                       comparison.current.activities,
                       comparison.changes.activities,
                       Icons.assignment,
                       theme,
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildComparisonCard(
+                    const SizedBox(height: 12),
+                    _buildComparisonCard(
                       'Gastos',
                       comparison.current.expenses,
                       comparison.changes.expenses,
@@ -347,10 +388,8 @@ class _LeadershipDashboardContentState
                       theme,
                       isCurrency: true,
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildComparisonCard(
+                    const SizedBox(height: 12),
+                    _buildComparisonCard(
                       'Cumplimiento',
                       comparison.current.complianceRate,
                       comparison.changes.complianceRate,
@@ -358,60 +397,19 @@ class _LeadershipDashboardContentState
                       theme,
                       isPercentage: true,
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildComparisonCard(
+                    const SizedBox(height: 12),
+                    _buildComparisonCard(
                       'Usuarios Activos',
                       comparison.current.usersActive,
                       comparison.changes.usersActive,
                       Icons.people,
                       theme,
                     ),
-                  ),
-                ],
-              );
-            } else {
-              return Column(
-                children: [
-                  _buildComparisonCard(
-                    'Actividades',
-                    comparison.current.activities,
-                    comparison.changes.activities,
-                    Icons.assignment,
-                    theme,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildComparisonCard(
-                    'Gastos',
-                    comparison.current.expenses,
-                    comparison.changes.expenses,
-                    Icons.attach_money,
-                    theme,
-                    isCurrency: true,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildComparisonCard(
-                    'Cumplimiento',
-                    comparison.current.complianceRate,
-                    comparison.changes.complianceRate,
-                    Icons.check_circle,
-                    theme,
-                    isPercentage: true,
-                  ),
-                  const SizedBox(height: 12),
-                  _buildComparisonCard(
-                    'Usuarios Activos',
-                    comparison.current.usersActive,
-                    comparison.changes.usersActive,
-                    Icons.people,
-                    theme,
-                  ),
-                ],
-              );
-            }
-          },
-        ),
+                  ],
+                );
+              }
+            },
+          ),
       ],
     );
   }
@@ -527,8 +525,10 @@ class _LeadershipDashboardContentState
                     DataCell(Text(
                       CurrencyFormatter.format(period.expenses, 'L'),
                     )),
-                    DataCell(Text('${period.complianceRate.toStringAsFixed(1)}%')),
-                    DataCell(Text('${period.usersSubmitted}/${period.usersExpected}')),
+                    DataCell(
+                        Text('${period.complianceRate.toStringAsFixed(1)}%')),
+                    DataCell(Text(
+                        '${period.usersSubmitted}/${period.usersExpected}')),
                   ]);
                 }).toList(),
               ),
@@ -643,8 +643,8 @@ class _LeadershipDashboardContentState
                                     .withValues(alpha: 0.6),
                               ),
                             ),
-                            onTap: () =>
-                                context.go(AppRoutes.userActivitiesPath(user.userId)),
+                            onTap: () => context
+                                .go(AppRoutes.userActivitiesPath(user.userId)),
                           ))
                       .toList(),
               theme,

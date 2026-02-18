@@ -94,7 +94,8 @@ class MobileDrawer extends StatelessWidget {
                           icon: Icons.analytics,
                           label: 'Rendimiento',
                           path: AppRoutes.leadershipDashboard,
-                          isActive: currentPath == AppRoutes.leadershipDashboard,
+                          isActive:
+                              currentPath == AppRoutes.leadershipDashboard,
                         ),
                         const SizedBox(height: LayoutConstants.spacing12),
                       ],

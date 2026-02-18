@@ -146,10 +146,8 @@ class ComparisonResponse {
 
   factory ComparisonResponse.fromApi(Map<String, dynamic> data) {
     return ComparisonResponse(
-      current:
-          PeriodSummary.fromApi(data['current'] as Map<String, dynamic>),
-      previous:
-          PeriodSummary.fromApi(data['previous'] as Map<String, dynamic>),
+      current: PeriodSummary.fromApi(data['current'] as Map<String, dynamic>),
+      previous: PeriodSummary.fromApi(data['previous'] as Map<String, dynamic>),
       changes:
           ComparisonChanges.fromApi(data['changes'] as Map<String, dynamic>),
     );

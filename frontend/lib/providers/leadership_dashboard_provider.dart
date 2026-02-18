@@ -85,12 +85,15 @@ class LeadershipDashboardState {
   }
 
   bool get hasData =>
-      trends != null || comparison != null || rankings != null || expenses != null;
+      trends != null ||
+      comparison != null ||
+      rankings != null ||
+      expenses != null;
 }
 
 /// Provider for leadership dashboard
-final leadershipDashboardProvider =
-    StateNotifierProvider<LeadershipDashboardNotifier, LeadershipDashboardState>(
+final leadershipDashboardProvider = StateNotifierProvider<
+    LeadershipDashboardNotifier, LeadershipDashboardState>(
   (ref) {
     final authState = ref.watch(authNotifierProvider);
     Future<String> getAccessToken() async => authState.accessToken ?? '';
@@ -102,7 +105,8 @@ final leadershipDashboardProvider =
   },
 );
 
-class LeadershipDashboardNotifier extends StateNotifier<LeadershipDashboardState> {
+class LeadershipDashboardNotifier
+    extends StateNotifier<LeadershipDashboardState> {
   LeadershipDashboardNotifier({
     required this.reportsService,
     required this.ref,
@@ -209,9 +213,15 @@ class LeadershipDashboardNotifier extends StateNotifier<LeadershipDashboardState
         dateTo: effectiveDateTo,
         periodType: effectiveType,
         year: effectiveYear,
-        month: effectiveType == ReportPeriodType.monthly ? effectivePeriodIndex : null,
-        quarter: effectiveType == ReportPeriodType.quarterly ? effectivePeriodIndex : null,
-        half: effectiveType == ReportPeriodType.biannual ? effectivePeriodIndex : null,
+        month: effectiveType == ReportPeriodType.monthly
+            ? effectivePeriodIndex
+            : null,
+        quarter: effectiveType == ReportPeriodType.quarterly
+            ? effectivePeriodIndex
+            : null,
+        half: effectiveType == ReportPeriodType.biannual
+            ? effectivePeriodIndex
+            : null,
       );
     } catch (e) {
       // Comparison failure is not critical - skip it silently
@@ -226,8 +236,9 @@ class LeadershipDashboardNotifier extends StateNotifier<LeadershipDashboardState
         dateTo: effectiveDateTo,
       );
     } catch (e) {
-      if (e is AuthException && (e.technicalMessage?.contains('403') == true || 
-          e.technicalMessage?.contains('Forbidden') == true)) {
+      if (e is AuthException &&
+          (e.technicalMessage?.contains('403') == true ||
+              e.technicalMessage?.contains('Forbidden') == true)) {
         errors.add('Rankings requiere el permiso REPORT_VIEW_HIERARCHY');
       }
       debugPrint('Rankings load failed: $e');
@@ -257,7 +268,7 @@ class LeadershipDashboardNotifier extends StateNotifier<LeadershipDashboardState
         error: errorMessage,
       );
     }
-    
+
     // If we have at least some data, consider it a partial success
     return;
   }
@@ -265,7 +276,7 @@ class LeadershipDashboardNotifier extends StateNotifier<LeadershipDashboardState
   /// Reload trends only
   Future<void> reloadTrends() async {
     if (state.dateFrom == null || state.dateTo == null) return;
-    
+
     try {
       final trends = await reportsService.getTrends(
         entityId: state.entityId,
@@ -287,7 +298,7 @@ class LeadershipDashboardNotifier extends StateNotifier<LeadershipDashboardState
   /// Reload comparison only
   Future<void> reloadComparison() async {
     if (state.dateFrom == null || state.dateTo == null) return;
-    
+
     try {
       final comparison = await reportsService.getComparison(
         entityId: state.entityId,
@@ -295,12 +306,15 @@ class LeadershipDashboardNotifier extends StateNotifier<LeadershipDashboardState
         dateTo: state.dateTo!,
         periodType: state.periodType,
         year: state.year,
-        month:
-            state.periodType == ReportPeriodType.monthly ? state.periodIndex : null,
-        quarter:
-            state.periodType == ReportPeriodType.quarterly ? state.periodIndex : null,
-        half:
-            state.periodType == ReportPeriodType.biannual ? state.periodIndex : null,
+        month: state.periodType == ReportPeriodType.monthly
+            ? state.periodIndex
+            : null,
+        quarter: state.periodType == ReportPeriodType.quarterly
+            ? state.periodIndex
+            : null,
+        half: state.periodType == ReportPeriodType.biannual
+            ? state.periodIndex
+            : null,
       );
       if (mounted) {
         state = state.copyWith(comparison: comparison);
@@ -317,7 +331,7 @@ class LeadershipDashboardNotifier extends StateNotifier<LeadershipDashboardState
   /// Reload rankings only
   Future<void> reloadRankings() async {
     if (state.dateFrom == null || state.dateTo == null) return;
-    
+
     try {
       final rankings = await reportsService.getRankings(
         entityId: state.entityId,
@@ -339,7 +353,7 @@ class LeadershipDashboardNotifier extends StateNotifier<LeadershipDashboardState
   /// Reload expenses only
   Future<void> reloadExpenses() async {
     if (state.dateFrom == null || state.dateTo == null) return;
-    
+
     try {
       final expenses = await reportsService.getExpenses(
         entityId: state.entityId,
