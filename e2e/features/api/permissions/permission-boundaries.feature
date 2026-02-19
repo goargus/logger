@@ -56,12 +56,14 @@ Feature: Permission Boundaries
 
   # === PASTOR (HIERARCHY USER) PERMISSION TESTS ===
   Scenario: Pastor can view subordinate entity data
+    Given user "pastor" has an active reporting period
     Given I am authenticated as "pastor"
     And I have subordinate entities
     When I request the summary report with hierarchy
     Then the response status should be 200
 
   Scenario: Pastor can view entity breakdown
+    Given user "pastor" has an active reporting period
     Given I am authenticated as "pastor"
     When I request the entity breakdown
     Then the response status should be 200
@@ -79,6 +81,7 @@ Feature: Permission Boundaries
 
   # === PRESIDENT (ENTITY ADMIN) PERMISSION TESTS ===
   Scenario: President can view entity-wide reports
+    Given user "president" has an active reporting period
     Given I am authenticated as "president"
     When I request the summary report with hierarchy
     Then the response status should be 200

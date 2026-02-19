@@ -34,6 +34,67 @@ When('I request the reporting period by id', async function (this: CustomWorld) 
 
 // === SETUP STEPS ===
 
+Given('user {string} has an active reporting period', async function (this: CustomWorld, userName: string) {
+  const { getTestUser } = await import('../../support/auth/test-users');
+  const { createApiClient } = await import('../../support/api/api-client');
+
+  const baseUrl = this.parameters.baseApiUrl || 'http://localhost:3001';
+
+  // Get admin client for period management
+  const admin = getTestUser('admin');
+  const adminToken = await this.auth0Provider.getToken({ email: admin.email, password: admin.password });
+  const adminClient = createApiClient(baseUrl, adminToken);
+
+  // Get target user's entity
+  const user = getTestUser(userName);
+  const userToken = await this.auth0Provider.getToken({ email: user.email, password: user.password });
+  const userClient = createApiClient(baseUrl, userToken);
+
+  const meResponse = await userClient.get(ENDPOINTS.ME);
+  const entityId = meResponse.data?.primary_entity?.id;
+  if (!entityId) throw new Error(`User "${userName}" has no primary entity`);
+
+  // Check for active period specifically for this entity
+  const periodsResponse = await adminClient.get(
+    `${ENDPOINTS.REPORTING_PERIODS}?entityId=${entityId}`,
+  );
+  const periods = periodsResponse.data || [];
+  const activePeriod = periods.find((p: any) => p.status === 'active');
+  if (activePeriod) return;
+
+  // Find the latest end date to avoid overlaps
+  let startDate: string;
+  const latestEnd = periods
+    .filter((p: any) => p.endDate)
+    .map((p: any) => new Date(p.endDate))
+    .sort((a: Date, b: Date) => b.getTime() - a.getTime())[0];
+
+  if (latestEnd && latestEnd >= new Date()) {
+    // Start after the latest existing period
+    const nextDay = new Date(latestEnd.getTime() + 24 * 60 * 60 * 1000);
+    startDate = nextDay.toISOString().split('T')[0];
+  } else {
+    startDate = new Date().toISOString().split('T')[0];
+  }
+
+  const endDate = new Date(new Date(startDate).getTime() + 14 * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .split('T')[0];
+
+  const createResponse = await adminClient.post(ENDPOINTS.REPORTING_PERIODS_ADMIN, {
+    name: `E2E Period for ${userName} ${Date.now()}`,
+    startDate,
+    endDate,
+    entityId,
+  });
+
+  if (createResponse.status !== 201) {
+    throw new Error(
+      `Failed to create reporting period for ${userName}: ${createResponse.status} - ${JSON.stringify(createResponse.data)}`,
+    );
+  }
+});
+
 Given('I have an active reporting period', async function (this: CustomWorld) {
   // First check if there's already an active period
   const periodsResponse = await this.apiClient.get(ENDPOINTS.REPORTING_PERIODS);

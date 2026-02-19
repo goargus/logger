@@ -25,6 +25,7 @@ Feature: Reports Breakdowns
   # === ENTITY BREAKDOWN ===
   @permission
   Scenario: Hierarchy user gets entity breakdown
+    Given user "pastor" has an active reporting period
     Given I am authenticated as "pastor"
     When I request the entity breakdown
     Then the response status should be 200
@@ -40,6 +41,7 @@ Feature: Reports Breakdowns
   # === USER BREAKDOWN ===
   @permission
   Scenario: Hierarchy user gets user breakdown
+    Given user "pastor" has an active reporting period
     Given I am authenticated as "pastor"
     When I request the user breakdown
     Then the response status should be 200

@@ -35,6 +35,7 @@ Feature: Reports Summary
   # not loaded when role relation is eager). For now, verify access works.
   @permission
   Scenario: Pastor user can access reports
+    Given user "pastor" has an active reporting period
     Given I am authenticated as "pastor"
     When I request the summary report
     Then the response status should be 200
