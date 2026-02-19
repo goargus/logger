@@ -110,13 +110,17 @@ describe('ActivityTypesController', () => {
 
   describe('list', () => {
     it('should return all activity types', async () => {
-      service.findAll.mockResolvedValue(mockActivityTypes as ActivityType[]);
+      const payload = {
+        data: mockActivityTypes,
+        pagination: { page: 1, limit: 20, total: 2, totalPages: 1 },
+      };
+      service.findAll.mockResolvedValue(payload as any);
 
       const result = await controller.list();
 
       expect(service.findAll).toHaveBeenCalled();
       expect(service.findAllByUserRole).not.toHaveBeenCalled();
-      expect(result).toEqual(mockActivityTypes);
+      expect(result).toEqual(payload);
     });
   });
 

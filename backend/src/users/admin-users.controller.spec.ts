@@ -87,12 +87,15 @@ describe('AdminUsersController', () => {
 
   describe('list', () => {
     it('returns all users', async () => {
-      const users = [userMock];
-      service.findAll.mockResolvedValue(users as User[]);
+      const payload = {
+        data: [userMock],
+        pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+      };
+      service.findAll.mockResolvedValue(payload as any);
 
       const result = await controller.list();
       expect(service.findAll).toHaveBeenCalled();
-      expect(result).toEqual(users);
+      expect(result).toEqual(payload);
     });
   });
 

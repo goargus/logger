@@ -18,6 +18,7 @@ import { UpdateReportingPeriodDto } from './dto/update-reporting-period.dto';
 import { CreateExceptionDto } from './dto/create-exception.dto';
 import { ReportingPeriodResponseDto } from './dto/reporting-period-response.dto';
 import { ExceptionResponseDto } from './dto/exception-response.dto';
+import { ListReportingPeriodsQueryDto } from './dto/list-reporting-periods.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -63,12 +64,19 @@ export class ReportingPeriodsController {
   @ApiResponse({
     status: 200,
     description: 'List of reporting periods',
-    type: [ReportingPeriodResponseDto],
   })
   @ApiQuery({ name: 'entityId', required: false, description: 'Filter by entity UUID' })
-  async findAll(@Query('entityId') entityId?: string): Promise<ReportingPeriodResponseDto[]> {
-    const periods = await this.reportingPeriodsService.findAll(entityId);
-    return periods.map((period) => ReportingPeriodResponseDto.fromEntity(period));
+  async findAll(
+    @Query() query: ListReportingPeriodsQueryDto = new ListReportingPeriodsQueryDto(),
+  ): Promise<{
+    data: ReportingPeriodResponseDto[];
+    pagination: { page: number; limit: number; total: number; totalPages: number };
+  }> {
+    const result = await this.reportingPeriodsService.findAll(query);
+    return {
+      data: result.data.map((period) => ReportingPeriodResponseDto.fromEntity(period)),
+      pagination: result.pagination,
+    };
   }
 
   @Get(':id')

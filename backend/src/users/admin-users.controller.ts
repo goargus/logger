@@ -1,4 +1,14 @@
-import { Controller, Post, Get, Patch, Param, Body, UseGuards, ParseUUIDPipe } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Patch,
+  Param,
+  Body,
+  UseGuards,
+  ParseUUIDPipe,
+  Query,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -6,6 +16,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 
 @ApiTags('Admin Users')
 @ApiBearerAuth('JWT-auth')
@@ -30,8 +41,8 @@ export class AdminUsersController {
   @ApiResponse({ status: 200, description: 'List of all users' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - requires admin role' })
-  async list() {
-    return this.usersService.findAll();
+  async list(@Query() query: PaginationQueryDto = new PaginationQueryDto()) {
+    return this.usersService.findAll(query);
   }
 
   @Get(':id')

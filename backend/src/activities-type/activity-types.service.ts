@@ -10,6 +10,8 @@ import {
   ACTIVITY_TYPE_USAGE_POLICY,
   ActivityTypeUsagePolicy,
 } from './usage/activity-type-usage.policy';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
+import { buildPagination, normalizePagination } from '../common/pagination';
 
 @Injectable()
 export class ActivityTypesService {
@@ -52,8 +54,19 @@ export class ActivityTypesService {
     return this.repo.save(entity);
   }
 
-  async findAll(): Promise<ActivityType[]> {
-    return this.repo.find();
+  async findAll(
+    query?: PaginationQueryDto,
+  ): Promise<{
+    data: ActivityType[];
+    pagination: { page: number; limit: number; total: number; totalPages: number };
+  }> {
+    const { page, limit, skip, take } = normalizePagination(query);
+    const [data, total] = await this.repo.findAndCount({
+      order: { name: 'ASC' },
+      skip,
+      take,
+    });
+    return { data, pagination: buildPagination(page, limit, total) };
   }
 
   async findAllByUserRole(userRoleId: string): Promise<ActivityType[]> {
