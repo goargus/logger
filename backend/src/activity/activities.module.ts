@@ -8,6 +8,7 @@ import { IdpIdentity } from '../idp-identities/idp-identity.entity';
 import { User } from '../users/user.entity';
 import { ActivityType } from '../activities-type/activity-type.entity';
 import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
+import { ReportingPeriodException } from '../reporting-periods/reporting-period-exception.entity';
 import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
 import { ReportingPeriodsModule } from '../reporting-periods/reporting-periods.module';
 
@@ -19,6 +20,7 @@ import { ReportingPeriodsModule } from '../reporting-periods/reporting-periods.m
       IdpIdentity,
       User,
       ReportingPeriod,
+      ReportingPeriodException,
       UserRoleAssignment,
     ]),
     ReportingPeriodsModule,
