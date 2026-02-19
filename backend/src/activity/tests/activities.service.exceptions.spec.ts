@@ -63,16 +63,19 @@ describe('ActivitiesService - Exception Handling', () => {
     updatedBy: 'admin-id',
   } as ReportingPeriod;
 
-  const mockException = {
+  const mockException: ReportingPeriodException = {
     id: 'exception-id',
     userId: 'user-id',
+    user: {} as any,
     reportingPeriodId: 'locked-period-id',
+    reportingPeriod: {} as any,
     startDate: '2024-01-01',
     endDate: '2024-01-05',
     reason: 'Late submission approved',
     grantedBy: 'admin-id',
+    grantedByUser: {} as any,
     grantedAt: new Date(),
-  };
+  } as ReportingPeriodException;
 
   beforeEach(async () => {
     const mockActivityRepo = {
