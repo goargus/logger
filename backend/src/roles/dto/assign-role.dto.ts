@@ -1,15 +1,5 @@
-import { IsUUID, IsEnum, IsOptional, IsDateString } from 'class-validator';
-import { Transform } from 'class-transformer';
+import { IsUUID, IsOptional, IsDateString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-
-export enum RoleEnum {
-  ADMIN = 'ADMIN',
-  MISSIONARY = 'MISSIONARY',
-  PASTOR = 'PASTOR',
-  MINISTER = 'MINISTER',
-  EXECUTIVE = 'EXECUTIVE',
-  DEPARTMENTAL = 'DEPARTMENTAL',
-}
 
 export class AssignRoleDto {
   @ApiProperty({
@@ -20,15 +10,11 @@ export class AssignRoleDto {
   userId!: string;
 
   @ApiProperty({
-    description: 'Role to assign',
-    enum: RoleEnum,
-    example: 'MISSIONARY',
+    description: 'UUID of the role to assign',
+    example: '123e4567-e89b-12d3-a456-426614174000',
   })
-  @Transform(({ value }) => String(value).trim().toUpperCase())
-  @IsEnum(RoleEnum, {
-    message: 'Invalid role enum value. Allowed: ADMIN, MISSIONARY, PASTOR, MINISTER, EXECUTIVE, DEPARTMENTAL',
-  })
-  role!: RoleEnum;
+  @IsUUID()
+  roleId!: string;
 
   @ApiProperty({
     description: 'UUID of the entity where the role applies',
