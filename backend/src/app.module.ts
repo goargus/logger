@@ -15,6 +15,7 @@ import { ActivitiesModule } from './activity/activities.module';
 import { ReportingPeriodsModule } from './reporting-periods/reporting-periods.module';
 import { CaslModule } from './casl/casl.module';
 import { ReportsModule } from './reports/reports.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { ReportsModule } from './reports/reports.module';
     ActivitiesModule,
     ReportingPeriodsModule,
     ReportsModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
