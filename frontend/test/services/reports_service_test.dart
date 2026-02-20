@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:logger/services/reports_service.dart';
 import 'package:logger/core/api_client.dart';
 import 'package:logger/core/errors/app_exception.dart';
-import 'package:logger/models/leadership_reports.dart';
 
 class ThrowingApiClient extends ApiClient {
   final Exception exception;
