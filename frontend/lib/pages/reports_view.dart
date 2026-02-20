@@ -50,7 +50,6 @@ class _ReportsViewContentState extends ConsumerState<ReportsViewContent> {
 
     ReportSummary? summary;
     BreakdownsComparisonResponse? comparisonBreakdown;
-    String? comparisonError;
 
     try {
       summary = await _reportsService.getPersonalSummary(
@@ -58,11 +57,7 @@ class _ReportsViewContentState extends ConsumerState<ReportsViewContent> {
         periodEnd: periodEnd,
       );
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al cargar resumen: $e')),
-        );
-      }
+      // Summary failed — continue, we'll show what we can
     }
 
     try {
@@ -75,19 +70,22 @@ class _ReportsViewContentState extends ConsumerState<ReportsViewContent> {
         half: _periodType == ReportPeriodType.biannual ? _periodIndex : null,
       );
     } catch (e) {
-      comparisonError = 'No se pudo cargar el desglose de datos';
+      // Breakdown failed — continue, we'll show what we can
     }
 
     if (mounted) {
       setState(() {
-        _summary = summary;
-        _comparisonBreakdown = comparisonBreakdown;
+        if (summary != null) _summary = summary;
+        if (comparisonBreakdown != null) {
+          _comparisonBreakdown = comparisonBreakdown;
+        }
         _isLoading = false;
       });
 
-      if (comparisonError != null) {
+      if (summary == null && comparisonBreakdown == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(comparisonError)),
+          const SnackBar(
+              content: Text('Error al cargar reportes. Intente de nuevo.')),
         );
       }
     }
