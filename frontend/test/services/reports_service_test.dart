@@ -45,8 +45,7 @@ void main() {
         late ReportsService service;
 
         setUp(() {
-          service =
-              ReportsService(apiClient: ThrowingApiClient(exception));
+          service = ReportsService(apiClient: ThrowingApiClient(exception));
         });
 
         test('getPersonalSummary throws $name', () async {
@@ -129,8 +128,8 @@ void main() {
           final service = ReportsService(
               apiClient: ThrowingApiClient(AuthException.forbidden()));
           expect(
-            () => service.getTrends(
-                dateFrom: '2026-01-01', dateTo: '2026-01-31'),
+            () =>
+                service.getTrends(dateFrom: '2026-01-01', dateTo: '2026-01-31'),
             throwsA(isA<AuthException>()),
           );
         });
@@ -142,8 +141,7 @@ void main() {
             onGet: (path, params) => capturedPath = path,
           );
           final service = ReportsService(apiClient: mockClient);
-          await service.getTrends(
-              dateFrom: '2026-01-01', dateTo: '2026-01-31');
+          await service.getTrends(dateFrom: '2026-01-01', dateTo: '2026-01-31');
           expect(capturedPath, 'reports/trends');
         });
       });

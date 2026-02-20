@@ -82,12 +82,10 @@ class LeadershipDashboardNotifier
           dateTo: dateTo,
           periodType: _periodType,
           year: _year,
-          month:
-              _periodType == ReportPeriodType.monthly ? _periodIndex : null,
+          month: _periodType == ReportPeriodType.monthly ? _periodIndex : null,
           quarter:
               _periodType == ReportPeriodType.quarterly ? _periodIndex : null,
-          half:
-              _periodType == ReportPeriodType.biannual ? _periodIndex : null,
+          half: _periodType == ReportPeriodType.biannual ? _periodIndex : null,
         ),
         reportsService.getRankings(
           entityId: entityId,

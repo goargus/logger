@@ -172,8 +172,18 @@ class _LeadershipDashboardContentState
     switch (periodType) {
       case ReportPeriodType.monthly:
         const months = [
-          'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-          'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
+          'Ene',
+          'Feb',
+          'Mar',
+          'Abr',
+          'May',
+          'Jun',
+          'Jul',
+          'Ago',
+          'Sep',
+          'Oct',
+          'Nov',
+          'Dic',
         ];
         dateRangeText = '${months[periodIndex - 1]} $year';
         break;
