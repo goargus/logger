@@ -10,6 +10,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Not, Repository } from 'typeorm';
 import { Entity, EntityType } from './entity.entity';
+import { fetchActiveDescendants } from './entity-hierarchy.query';
 
 const DEFAULT_CURRENCY_SYMBOL = '$';
 import { CreateEntityDto } from './dto/create-entity.dto';
@@ -220,32 +221,19 @@ export class EntitiesService {
   }
 
   /**
-   * Find all descendant entities recursively using BFS.
+   * Find all descendant entities recursively.
    * Only returns active entities.
    * @param id - The root entity ID
    * @returns Array of all descendant entities (not including root)
    */
   async findDescendants(id: string): Promise<Entity[]> {
-    // Verify the entity exists
-    await this.findOne(id);
+    const rows = await fetchActiveDescendants(this.repo, id);
 
-    const descendants: Entity[] = [];
-    const queue: string[] = [id];
-
-    while (queue.length > 0) {
-      const currentId = queue.shift()!;
-      const children = await this.repo.find({
-        where: { parent_id: currentId, is_active: true },
-        order: { name: 'ASC' },
-      });
-
-      for (const child of children) {
-        descendants.push(child);
-        queue.push(child.id);
-      }
+    if (rows.length === 0) {
+      throw new NotFoundException('Entity not found');
     }
 
-    return descendants;
+    return rows.filter((entity) => entity.id !== id);
   }
 
   /**
