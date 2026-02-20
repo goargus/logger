@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../core/errors/app_exception.dart';
+import '../models/leadership_dashboard_data.dart';
+import '../models/report_period_type.dart';
 import '../providers/leadership_dashboard_provider.dart';
 import '../providers/auth.dart';
 import '../router.dart';
@@ -29,80 +32,102 @@ class _LeadershipDashboardContentState
     });
   }
 
-  Future<void> _loadDashboard() async {
+  void _loadDashboard() {
     final authState = ref.read(authNotifierProvider);
     final primaryEntity =
         authState.user?['primary_entity'] as Map<String, dynamic>?;
     final entityId = primaryEntity?['id'] as String?;
-    final currentState = ref.read(leadershipDashboardProvider);
-
-    await ref.read(leadershipDashboardProvider.notifier).loadDashboard(
+    ref.read(leadershipDashboardProvider.notifier).loadDashboard(
           entityId: entityId,
-          periodType: currentState.periodType,
-          year: currentState.year,
-          periodIndex: currentState.periodIndex,
         );
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = ref.watch(leadershipDashboardProvider);
-    final theme = Theme.of(context);
-
-    if (state.isLoading && !state.hasData) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (state.error != null && !state.hasData) {
-      final isPermissionError = state.error!.contains('permisos') ||
-          state.error!.contains('REPORT_VIEW_HIERARCHY');
-
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                isPermissionError ? Icons.lock_outline : Icons.error_outline,
-                size: 64,
-                color: isPermissionError
-                    ? theme.colorScheme.primary.withValues(alpha: 0.7)
-                    : theme.colorScheme.error,
-              ),
-              const SizedBox(height: 24),
-              Text(
-                isPermissionError ? 'Acceso Restringido' : 'Error',
-                style: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                state.error!,
-                style: theme.textTheme.bodyLarge,
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 24),
-              if (!isPermissionError)
-                ElevatedButton(
-                  onPressed: _loadDashboard,
-                  child: const Text('Reintentar'),
-                )
-              else
-                OutlinedButton.icon(
-                  onPressed: () => context.go(AppRoutes.reports),
-                  icon: const Icon(Icons.arrow_back),
-                  label: const Text('Volver a Reportes'),
-                ),
-            ],
-          ),
-        ),
+    final canView = ref.watch(canViewReportsProvider);
+    if (!canView) {
+      return const Center(
+        child: Text('No tienes acceso a esta secci\u00f3n.'),
       );
     }
 
+    final dashboardAsync = ref.watch(leadershipDashboardProvider);
+    final theme = Theme.of(context);
+
+    return dashboardAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, _) => _buildErrorState(error, theme),
+      data: (data) => _buildDashboard(data, theme),
+    );
+  }
+
+  Widget _buildErrorState(Object error, ThemeData theme) {
+    String message;
+    bool canRetry = false;
+
+    if (error is AuthException) {
+      message = error.userMessage;
+    } else if (error is NetworkException) {
+      message = error.userMessage;
+      canRetry = true;
+    } else if (error is ServerException) {
+      message = error.userMessage;
+      canRetry = true;
+    } else if (error is AppException) {
+      message = error.userMessage;
+      canRetry = error.shouldRetry;
+    } else {
+      message = 'Error inesperado. Intente de nuevo.';
+      canRetry = true;
+    }
+
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              error is AuthException ? Icons.lock_outline : Icons.error_outline,
+              size: 64,
+              color: error is AuthException
+                  ? theme.colorScheme.primary.withValues(alpha: 0.7)
+                  : theme.colorScheme.error,
+            ),
+            const SizedBox(height: 24),
+            Text(
+              error is AuthException ? 'Acceso Restringido' : 'Error',
+              style: theme.textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: theme.textTheme.bodyLarge,
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            if (canRetry)
+              ElevatedButton(
+                onPressed: _loadDashboard,
+                child: const Text('Reintentar'),
+              )
+            else if (error is AuthException)
+              OutlinedButton.icon(
+                onPressed: () => context.go(AppRoutes.reports),
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('Volver a Reportes'),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDashboard(LeadershipDashboardData data, ThemeData theme) {
     return RefreshIndicator(
-      onRefresh: _loadDashboard,
+      onRefresh: () async => _loadDashboard(),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(16),
@@ -113,58 +138,22 @@ class _LeadershipDashboardContentState
             const SizedBox(height: 16),
             _buildPeriodControls(theme),
             const SizedBox(height: 16),
-            // Show warning banner if there's an error but we have some data
-            if (state.error != null && state.hasData)
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primary.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.3),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: theme.colorScheme.primary,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        state.error!,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.primary,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            if (state.error != null && state.hasData)
-              const SizedBox(height: 24),
-            if (state.comparison != null)
-              _buildComparisonSection(state.comparison!, theme),
-            if (state.comparison != null) const SizedBox(height: 24),
-            if (state.trends != null) _buildTrendsSection(state.trends!, theme),
-            if (state.trends != null) const SizedBox(height: 24),
+            _buildComparisonSection(data.comparison, theme),
+            const SizedBox(height: 24),
+            _buildTrendsSection(data.trends, theme),
+            const SizedBox(height: 24),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (state.rankings != null)
-                  Expanded(
-                    flex: 2,
-                    child: _buildRankingsSection(state.rankings!, theme),
-                  ),
-                if (state.rankings != null && state.expenses != null)
-                  const SizedBox(width: 16),
-                if (state.expenses != null)
-                  Expanded(
-                    flex: 1,
-                    child: _buildExpensesSection(state.expenses!, theme),
-                  ),
+                Expanded(
+                  flex: 2,
+                  child: _buildRankingsSection(data.rankings, theme),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  flex: 1,
+                  child: _buildExpensesSection(data.expenses, theme),
+                ),
               ],
             ),
           ],
@@ -174,18 +163,29 @@ class _LeadershipDashboardContentState
   }
 
   Widget _buildHeader(ThemeData theme) {
-    final state = ref.watch(leadershipDashboardProvider);
+    final notifier = ref.read(leadershipDashboardProvider.notifier);
+    final periodType = notifier.periodType;
+    final year = notifier.year;
+    final periodIndex = notifier.periodIndex;
 
-    String dateRangeText = 'Período actual';
-    if (state.dateFrom != null && state.dateTo != null) {
-      try {
-        final from = DateTime.parse(state.dateFrom!);
-        final to = DateTime.parse(state.dateTo!);
-        dateRangeText =
-            '${from.day}/${from.month}/${from.year} - ${to.day}/${to.month}/${to.year}';
-      } catch (e) {
-        // Keep default text if parsing fails
-      }
+    String dateRangeText;
+    switch (periodType) {
+      case ReportPeriodType.monthly:
+        const months = [
+          'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+          'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
+        ];
+        dateRangeText = '${months[periodIndex - 1]} $year';
+        break;
+      case ReportPeriodType.quarterly:
+        dateRangeText = 'Q$periodIndex $year';
+        break;
+      case ReportPeriodType.biannual:
+        dateRangeText = 'Semestre $periodIndex $year';
+        break;
+      case ReportPeriodType.annual:
+        dateRangeText = 'A\u00f1o $year';
+        break;
     }
 
     return Column(
@@ -206,7 +206,7 @@ class _LeadershipDashboardContentState
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Métricas de alto nivel para toma de decisiones',
+                    'M\u00e9tricas de alto nivel para toma de decisiones',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                     ),
@@ -244,7 +244,6 @@ class _LeadershipDashboardContentState
   }
 
   Widget _buildPeriodControls(ThemeData theme) {
-    final state = ref.watch(leadershipDashboardProvider);
     final notifier = ref.read(leadershipDashboardProvider.notifier);
 
     return Card(
@@ -257,13 +256,13 @@ class _LeadershipDashboardContentState
             Row(
               children: [
                 const Text(
-                  'Tipo de comparación:',
+                  'Tipo de comparaci\u00f3n:',
                   style: TextStyle(fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: PeriodTypeSelector(
-                    selectedType: state.periodType,
+                    selectedType: notifier.periodType,
                     onTypeChanged: (type) {
                       notifier.updatePeriodType(type);
                     },
@@ -273,9 +272,9 @@ class _LeadershipDashboardContentState
             ),
             const SizedBox(height: 12),
             EnhancedTimeSelector(
-              periodType: state.periodType,
-              year: state.year,
-              periodIndex: state.periodIndex,
+              periodType: notifier.periodType,
+              year: notifier.year,
+              periodIndex: notifier.periodIndex,
               onPrevious: () => notifier.previousPeriod(),
               onNext: () => notifier.nextPeriod(),
             ),
@@ -300,7 +299,7 @@ class _LeadershipDashboardContentState
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Comparación de Períodos',
+          'Comparaci\u00f3n de Per\u00edodos',
           style: theme.textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
           ),
@@ -312,7 +311,7 @@ class _LeadershipDashboardContentState
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Text(
-                'No hay datos de actividades para comparar en este período.',
+                'No hay datos de actividades para comparar en este per\u00edodo.',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                 ),
@@ -432,9 +431,18 @@ class _LeadershipDashboardContentState
       formattedValue = currentValue.toString();
     }
 
-    final isPositive = change.isPositive;
-    final changeColor = isPositive ? Colors.green : Colors.red;
-    final changeIcon = isPositive ? Icons.arrow_upward : Icons.arrow_downward;
+    Color changeColor;
+    IconData changeIcon;
+    if (change.isNeutral) {
+      changeColor = Colors.grey;
+      changeIcon = Icons.remove;
+    } else if (change.isPositive) {
+      changeColor = Colors.green;
+      changeIcon = Icons.arrow_upward;
+    } else {
+      changeColor = Colors.red;
+      changeIcon = Icons.arrow_downward;
+    }
 
     return Card(
       elevation: 2,
@@ -474,7 +482,7 @@ class _LeadershipDashboardContentState
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'vs período anterior',
+                  'vs per\u00edodo anterior',
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
@@ -500,7 +508,7 @@ class _LeadershipDashboardContentState
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Tendencias (Últimos 5 Períodos)',
+              'Tendencias (\u00daltimos 5 Per\u00edodos)',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -510,7 +518,7 @@ class _LeadershipDashboardContentState
               scrollDirection: Axis.horizontal,
               child: DataTable(
                 columns: const [
-                  DataColumn(label: Text('Período')),
+                  DataColumn(label: Text('Per\u00edodo')),
                   DataColumn(label: Text('Actividades')),
                   DataColumn(label: Text('Gastos')),
                   DataColumn(label: Text('Cumplimiento')),
@@ -637,7 +645,7 @@ class _LeadershipDashboardContentState
                             title: Text(user.name),
                             subtitle: Text(user.entity),
                             trailing: Text(
-                              '${user.periodsInactive}+ períodos',
+                              '${user.periodsInactive}+ per\u00edodos',
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: theme.colorScheme.onSurface
                                     .withValues(alpha: 0.6),
