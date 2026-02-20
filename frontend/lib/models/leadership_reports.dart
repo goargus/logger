@@ -105,8 +105,9 @@ class Change {
     );
   }
 
-  bool get isPositive => value >= 0;
+  bool get isPositive => value > 0;
   bool get isNegative => value < 0;
+  bool get isNeutral => value == 0;
 }
 
 class ComparisonChanges {
