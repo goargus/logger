@@ -1,443 +1,159 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/leadership_dashboard_data.dart';
 import '../models/leadership_reports.dart';
 import '../models/report_period_type.dart';
 import '../services/reports_service.dart';
-import '../core/errors/app_exception.dart';
 import 'auth.dart';
 
-/// State for leadership dashboard
-class LeadershipDashboardState {
-  final bool isLoading;
-  final TrendsResponse? trends;
-  final ComparisonResponse? comparison;
-  final RankingsResponse? rankings;
-  final ExpensesResponse? expenses;
-  final String? error;
-  final String? entityId;
-  final String? dateFrom;
-  final String? dateTo;
-  final ReportPeriodType periodType;
-  final int year;
-  final int periodIndex;
-
-  const LeadershipDashboardState({
-    required this.isLoading,
-    this.trends,
-    this.comparison,
-    this.rankings,
-    this.expenses,
-    this.error,
-    this.entityId,
-    this.dateFrom,
-    this.dateTo,
-    required this.periodType,
-    required this.year,
-    required this.periodIndex,
-  });
-
-  factory LeadershipDashboardState.initial() {
-    final now = DateTime.now();
-    return LeadershipDashboardState(
-      isLoading: false,
-      trends: null,
-      comparison: null,
-      rankings: null,
-      expenses: null,
-      error: null,
-      entityId: null,
-      dateFrom: null,
-      dateTo: null,
-      periodType: ReportPeriodType.monthly,
-      year: now.year,
-      periodIndex: now.month,
-    );
-  }
-
-  LeadershipDashboardState copyWith({
-    bool? isLoading,
-    TrendsResponse? trends,
-    ComparisonResponse? comparison,
-    RankingsResponse? rankings,
-    ExpensesResponse? expenses,
-    String? error,
-    String? entityId,
-    String? dateFrom,
-    String? dateTo,
-    ReportPeriodType? periodType,
-    int? year,
-    int? periodIndex,
-  }) {
-    return LeadershipDashboardState(
-      isLoading: isLoading ?? this.isLoading,
-      trends: trends ?? this.trends,
-      comparison: comparison ?? this.comparison,
-      rankings: rankings ?? this.rankings,
-      expenses: expenses ?? this.expenses,
-      error: error,
-      entityId: entityId ?? this.entityId,
-      dateFrom: dateFrom ?? this.dateFrom,
-      dateTo: dateTo ?? this.dateTo,
-      periodType: periodType ?? this.periodType,
-      year: year ?? this.year,
-      periodIndex: periodIndex ?? this.periodIndex,
-    );
-  }
-
-  bool get hasData =>
-      trends != null ||
-      comparison != null ||
-      rankings != null ||
-      expenses != null;
-}
-
-/// Provider for leadership dashboard
 final leadershipDashboardProvider = StateNotifierProvider<
-    LeadershipDashboardNotifier, LeadershipDashboardState>(
+    LeadershipDashboardNotifier, AsyncValue<LeadershipDashboardData>>(
   (ref) {
     final authState = ref.watch(authNotifierProvider);
     Future<String> getAccessToken() async => authState.accessToken ?? '';
 
     return LeadershipDashboardNotifier(
       reportsService: ReportsService.localhost(getAccessToken),
-      ref: ref,
     );
   },
 );
 
 class LeadershipDashboardNotifier
-    extends StateNotifier<LeadershipDashboardState> {
-  LeadershipDashboardNotifier({
-    required this.reportsService,
-    required this.ref,
-  }) : super(LeadershipDashboardState.initial());
+    extends StateNotifier<AsyncValue<LeadershipDashboardData>> {
+  LeadershipDashboardNotifier({required this.reportsService})
+      : super(const AsyncValue.loading());
 
   final ReportsService reportsService;
-  final Ref ref;
 
-  Map<String, String> _calculatePeriodBounds(
-    ReportPeriodType periodType,
-    int year,
-    int periodIndex,
-  ) {
+  ReportPeriodType _periodType = ReportPeriodType.monthly;
+  int _year = DateTime.now().year;
+  int _periodIndex = DateTime.now().month;
+
+  ReportPeriodType get periodType => _periodType;
+  int get year => _year;
+  int get periodIndex => _periodIndex;
+
+  Map<String, String> _calculatePeriodBounds() {
     DateTime start;
     DateTime end;
 
-    switch (periodType) {
+    switch (_periodType) {
       case ReportPeriodType.monthly:
-        start = DateTime(year, periodIndex, 1);
-        end = DateTime(year, periodIndex + 1, 0, 23, 59, 59);
+        start = DateTime(_year, _periodIndex, 1);
+        end = DateTime(_year, _periodIndex + 1, 0, 23, 59, 59);
         break;
       case ReportPeriodType.quarterly:
-        final startMonth = (periodIndex - 1) * 3 + 1;
-        start = DateTime(year, startMonth, 1);
-        end = DateTime(year, startMonth + 3, 0, 23, 59, 59);
+        final startMonth = (_periodIndex - 1) * 3 + 1;
+        start = DateTime(_year, startMonth, 1);
+        end = DateTime(_year, startMonth + 3, 0, 23, 59, 59);
         break;
       case ReportPeriodType.biannual:
-        final startMonth = (periodIndex - 1) * 6 + 1;
-        start = DateTime(year, startMonth, 1);
-        end = DateTime(year, startMonth + 6, 0, 23, 59, 59);
+        final startMonth = (_periodIndex - 1) * 6 + 1;
+        start = DateTime(_year, startMonth, 1);
+        end = DateTime(_year, startMonth + 6, 0, 23, 59, 59);
         break;
       case ReportPeriodType.annual:
-        start = DateTime(year, 1, 1);
-        end = DateTime(year, 12, 31, 23, 59, 59);
+        start = DateTime(_year, 1, 1);
+        end = DateTime(_year, 12, 31, 23, 59, 59);
         break;
     }
 
     String format(DateTime d) =>
         '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
-    return {
-      'dateFrom': format(start),
-      'dateTo': format(end),
-    };
+    return {'dateFrom': format(start), 'dateTo': format(end)};
   }
 
-  /// Load all dashboard data
-  Future<void> loadDashboard({
-    String? entityId,
-    String? dateFrom,
-    String? dateTo,
-    ReportPeriodType? periodType,
-    int? year,
-    int? periodIndex,
-  }) async {
-    final effectiveEntityId = entityId ?? state.entityId;
-    final effectiveType = periodType ?? state.periodType;
-    final effectiveYear = year ?? state.year;
-    final effectivePeriodIndex = periodIndex ?? state.periodIndex;
-
-    final bounds = _calculatePeriodBounds(
-      effectiveType,
-      effectiveYear,
-      effectivePeriodIndex,
-    );
-    final effectiveDateFrom = dateFrom ?? bounds['dateFrom']!;
-    final effectiveDateTo = dateTo ?? bounds['dateTo']!;
-
-    state = state.copyWith(
-      isLoading: true,
-      error: null,
-      entityId: effectiveEntityId,
-      dateFrom: effectiveDateFrom,
-      dateTo: effectiveDateTo,
-      periodType: effectiveType,
-      year: effectiveYear,
-      periodIndex: effectivePeriodIndex,
-    );
-
-    // Load each section independently to handle partial failures gracefully
-    TrendsResponse? trends;
-    ComparisonResponse? comparison;
-    RankingsResponse? rankings;
-    ExpensesResponse? expenses;
-    final List<String> errors = [];
-
-    // Load trends
-    try {
-      trends = await reportsService.getTrends(
-        entityId: effectiveEntityId,
-        dateFrom: effectiveDateFrom,
-        dateTo: effectiveDateTo,
-      );
-    } catch (e) {
-      // Trends failure is not critical - skip it silently
-      debugPrint('Trends load failed: $e');
-    }
-
-    // Load comparison
-    try {
-      comparison = await reportsService.getComparison(
-        entityId: effectiveEntityId,
-        dateFrom: effectiveDateFrom,
-        dateTo: effectiveDateTo,
-        periodType: effectiveType,
-        year: effectiveYear,
-        month: effectiveType == ReportPeriodType.monthly
-            ? effectivePeriodIndex
-            : null,
-        quarter: effectiveType == ReportPeriodType.quarterly
-            ? effectivePeriodIndex
-            : null,
-        half: effectiveType == ReportPeriodType.biannual
-            ? effectivePeriodIndex
-            : null,
-      );
-    } catch (e) {
-      // Comparison failure is not critical - skip it silently
-      debugPrint('Comparison load failed: $e');
-    }
-
-    // Load rankings
-    try {
-      rankings = await reportsService.getRankings(
-        entityId: effectiveEntityId,
-        dateFrom: effectiveDateFrom,
-        dateTo: effectiveDateTo,
-      );
-    } catch (e) {
-      if (e is AuthException &&
-          (e.technicalMessage?.contains('403') == true ||
-              e.technicalMessage?.contains('Forbidden') == true)) {
-        errors.add('Rankings requiere el permiso REPORT_VIEW_HIERARCHY');
-      }
-      debugPrint('Rankings load failed: $e');
-    }
-
-    // Load expenses
-    try {
-      expenses = await reportsService.getExpenses(
-        entityId: effectiveEntityId,
-        dateFrom: effectiveDateFrom,
-        dateTo: effectiveDateTo,
-      );
-    } catch (e) {
-      errors.add('No se pudieron cargar los gastos');
-      debugPrint('Expenses load failed: $e');
-    }
-
-    // Update state with whatever data we could load
-    if (mounted) {
-      final errorMessage = errors.isEmpty ? null : errors.join('\n');
-      state = state.copyWith(
-        isLoading: false,
-        trends: trends,
-        comparison: comparison,
-        rankings: rankings,
-        expenses: expenses,
-        error: errorMessage,
-      );
-    }
-
-    // If we have at least some data, consider it a partial success
-    return;
-  }
-
-  /// Reload trends only
-  Future<void> reloadTrends() async {
-    if (state.dateFrom == null || state.dateTo == null) return;
+  Future<void> loadDashboard({String? entityId}) async {
+    state = const AsyncValue.loading();
+    final bounds = _calculatePeriodBounds();
+    final dateFrom = bounds['dateFrom']!;
+    final dateTo = bounds['dateTo']!;
 
     try {
-      final trends = await reportsService.getTrends(
-        entityId: state.entityId,
-        dateFrom: state.dateFrom!,
-        dateTo: state.dateTo!,
-      );
-      if (mounted) {
-        state = state.copyWith(trends: trends);
-      }
-    } catch (e) {
-      if (mounted) {
-        state = state.copyWith(
-          error: 'Error al cargar tendencias: ${e.toString()}',
-        );
-      }
-    }
-  }
+      final results = await Future.wait([
+        reportsService.getTrends(
+          entityId: entityId,
+          dateFrom: dateFrom,
+          dateTo: dateTo,
+        ),
+        reportsService.getComparison(
+          entityId: entityId,
+          dateFrom: dateFrom,
+          dateTo: dateTo,
+          periodType: _periodType,
+          year: _year,
+          month:
+              _periodType == ReportPeriodType.monthly ? _periodIndex : null,
+          quarter:
+              _periodType == ReportPeriodType.quarterly ? _periodIndex : null,
+          half:
+              _periodType == ReportPeriodType.biannual ? _periodIndex : null,
+        ),
+        reportsService.getRankings(
+          entityId: entityId,
+          dateFrom: dateFrom,
+          dateTo: dateTo,
+        ),
+        reportsService.getExpenses(
+          entityId: entityId,
+          dateFrom: dateFrom,
+          dateTo: dateTo,
+        ),
+      ]);
 
-  /// Reload comparison only
-  Future<void> reloadComparison() async {
-    if (state.dateFrom == null || state.dateTo == null) return;
-
-    try {
-      final comparison = await reportsService.getComparison(
-        entityId: state.entityId,
-        dateFrom: state.dateFrom!,
-        dateTo: state.dateTo!,
-        periodType: state.periodType,
-        year: state.year,
-        month: state.periodType == ReportPeriodType.monthly
-            ? state.periodIndex
-            : null,
-        quarter: state.periodType == ReportPeriodType.quarterly
-            ? state.periodIndex
-            : null,
-        half: state.periodType == ReportPeriodType.biannual
-            ? state.periodIndex
-            : null,
-      );
       if (mounted) {
-        state = state.copyWith(comparison: comparison);
+        state = AsyncValue.data(LeadershipDashboardData(
+          trends: results[0] as TrendsResponse,
+          comparison: results[1] as ComparisonResponse,
+          rankings: results[2] as RankingsResponse,
+          expenses: results[3] as ExpensesResponse,
+        ));
       }
-    } catch (e) {
+    } catch (e, stack) {
       if (mounted) {
-        state = state.copyWith(
-          error: 'Error al cargar comparación: ${e.toString()}',
-        );
-      }
-    }
-  }
-
-  /// Reload rankings only
-  Future<void> reloadRankings() async {
-    if (state.dateFrom == null || state.dateTo == null) return;
-
-    try {
-      final rankings = await reportsService.getRankings(
-        entityId: state.entityId,
-        dateFrom: state.dateFrom!,
-        dateTo: state.dateTo!,
-      );
-      if (mounted) {
-        state = state.copyWith(rankings: rankings);
-      }
-    } catch (e) {
-      if (mounted) {
-        state = state.copyWith(
-          error: 'Error al cargar rankings: ${e.toString()}',
-        );
-      }
-    }
-  }
-
-  /// Reload expenses only
-  Future<void> reloadExpenses() async {
-    if (state.dateFrom == null || state.dateTo == null) return;
-
-    try {
-      final expenses = await reportsService.getExpenses(
-        entityId: state.entityId,
-        dateFrom: state.dateFrom!,
-        dateTo: state.dateTo!,
-      );
-      if (mounted) {
-        state = state.copyWith(expenses: expenses);
-      }
-    } catch (e) {
-      if (mounted) {
-        state = state.copyWith(
-          error: 'Error al cargar gastos: ${e.toString()}',
-        );
+        state = AsyncValue.error(e, stack);
       }
     }
   }
 
   Future<void> updatePeriodType(ReportPeriodType newType) async {
     final now = DateTime.now();
-    int newIndex;
+    _periodType = newType;
+    _year = now.year;
     switch (newType) {
       case ReportPeriodType.monthly:
-        newIndex = now.month;
+        _periodIndex = now.month;
         break;
       case ReportPeriodType.quarterly:
-        newIndex = ((now.month - 1) ~/ 3) + 1;
+        _periodIndex = ((now.month - 1) ~/ 3) + 1;
         break;
       case ReportPeriodType.biannual:
-        newIndex = now.month <= 6 ? 1 : 2;
+        _periodIndex = now.month <= 6 ? 1 : 2;
         break;
       case ReportPeriodType.annual:
-        newIndex = 1;
+        _periodIndex = 1;
         break;
     }
-
-    await loadDashboard(
-      entityId: state.entityId,
-      periodType: newType,
-      year: now.year,
-      periodIndex: newIndex,
-    );
+    await loadDashboard();
   }
 
-  Future<void> previousPeriod() async {
-    int newYear = state.year;
-    int newIndex = state.periodIndex;
-
-    if (newIndex > 1) {
-      newIndex--;
+  Future<void> previousPeriod({String? entityId}) async {
+    if (_periodIndex > 1) {
+      _periodIndex--;
     } else {
-      newYear--;
-      newIndex = state.periodType.maxPeriodIndex;
+      _year--;
+      _periodIndex = _periodType.maxPeriodIndex;
     }
-
-    await loadDashboard(
-      entityId: state.entityId,
-      periodType: state.periodType,
-      year: newYear,
-      periodIndex: newIndex,
-    );
+    await loadDashboard(entityId: entityId);
   }
 
-  Future<void> nextPeriod() async {
-    int newYear = state.year;
-    int newIndex = state.periodIndex;
-
-    if (newIndex < state.periodType.maxPeriodIndex) {
-      newIndex++;
+  Future<void> nextPeriod({String? entityId}) async {
+    if (_periodIndex < _periodType.maxPeriodIndex) {
+      _periodIndex++;
     } else {
-      newYear++;
-      newIndex = 1;
+      _year++;
+      _periodIndex = 1;
     }
-
-    await loadDashboard(
-      entityId: state.entityId,
-      periodType: state.periodType,
-      year: newYear,
-      periodIndex: newIndex,
-    );
-  }
-
-  /// Clear error
-  void clearError() {
-    state = state.copyWith(error: null);
+    await loadDashboard(entityId: entityId);
   }
 }
