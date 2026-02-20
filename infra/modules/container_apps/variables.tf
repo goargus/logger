@@ -64,6 +64,11 @@ variable "auth0_issuer" {
   type = string
 }
 
+variable "cors_origins" {
+  type    = string
+  default = ""
+}
+
 variable "admin_email" {
   type = string
 }
