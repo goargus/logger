@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/layout_constants.dart';
+import '../../providers/auth.dart';
 import '../../router.dart';
 import '../../theme/app_theme.dart';
 
 /// Mobile navigation drawer with the same styling as the desktop sidebar
-class MobileDrawer extends StatelessWidget {
+class MobileDrawer extends ConsumerWidget {
   final String userName;
   final String userEmail;
   final String? userPicture;
@@ -21,7 +23,7 @@ class MobileDrawer extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Drawer(
       child: Container(
         decoration: const BoxDecoration(
@@ -89,6 +91,15 @@ class MobileDrawer extends StatelessWidget {
                           path: AppRoutes.reports,
                           isActive: currentPath == AppRoutes.reports,
                         ),
+                        if (ref.watch(canViewReportsProvider))
+                          _buildNavItem(
+                            context,
+                            icon: Icons.analytics,
+                            label: 'Rendimiento',
+                            path: AppRoutes.leadershipDashboard,
+                            isActive:
+                                currentPath == AppRoutes.leadershipDashboard,
+                          ),
                         const SizedBox(height: LayoutConstants.spacing12),
                       ],
                     ),

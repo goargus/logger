@@ -102,6 +102,130 @@ export class ReportsService {
     };
   }
 
+  private buildEmptyComparisonResponse(): ComparisonResponse {
+    return {
+      current: {
+        periodId: '',
+        dates: '',
+        activities: 0,
+        expenses: 0,
+        complianceRate: 0,
+        usersActive: 0,
+      },
+      previous: {
+        periodId: '',
+        dates: '',
+        activities: 0,
+        expenses: 0,
+        complianceRate: 0,
+        usersActive: 0,
+      },
+      changes: {
+        activities: { value: 0, percent: 0 },
+        expenses: { value: 0, percent: 0 },
+        complianceRate: { value: 0, percent: 0 },
+        usersActive: { value: 0, percent: 0 },
+      },
+    };
+  }
+
+  private createComparisonPeriod(start: Date, end: Date, id: string): ReportingPeriod {
+    return {
+      id,
+      entityId: '',
+      entity: {} as any,
+      name: id,
+      description: null,
+      startDate: start.toISOString().split('T')[0],
+      endDate: end.toISOString().split('T')[0],
+      status: 'active' as any,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      createdBy: '',
+      updatedBy: '',
+      isLocked: false,
+      containsDate: () => false,
+      activities: [],
+    } as ReportingPeriod;
+  }
+
+  private resolveComparisonDateRanges(query: ReportQueryDto): {
+    current: { start: Date; end: Date; id: string };
+    previous: { start: Date; end: Date; id: string };
+  } | null {
+    if (query.periodType && query.year) {
+      const periodIndex = this.periodBoundaryCalculator.getPeriodIndexFromQuery(
+        query.periodType,
+        query.month,
+        query.quarter,
+        query.half,
+      );
+
+      const current = this.periodBoundaryCalculator.calculateBoundaries(
+        query.periodType,
+        query.year,
+        periodIndex,
+      );
+      const previousRef = this.periodBoundaryCalculator.getPreviousPeriod(
+        query.periodType,
+        query.year,
+        periodIndex,
+      );
+      const previous = this.periodBoundaryCalculator.calculateBoundaries(
+        query.periodType,
+        previousRef.year,
+        previousRef.periodIndex,
+      );
+
+      return {
+        current: {
+          start: current.dateFrom,
+          end: current.dateTo,
+          id: `current-${query.periodType}-${query.year}-${periodIndex}`,
+        },
+        previous: {
+          start: previous.dateFrom,
+          end: previous.dateTo,
+          id: `previous-${query.periodType}-${previousRef.year}-${previousRef.periodIndex}`,
+        },
+      };
+    }
+
+    if (query.dateFrom && query.dateTo) {
+      const currentStart = new Date(`${query.dateFrom}T00:00:00.000Z`);
+      const currentEnd = new Date(`${query.dateTo}T23:59:59.999Z`);
+
+      if (Number.isNaN(currentStart.getTime()) || Number.isNaN(currentEnd.getTime())) {
+        throw new BadRequestException('Invalid date range for comparison');
+      }
+      if (currentStart > currentEnd) {
+        throw new BadRequestException('dateFrom must be before or equal to dateTo');
+      }
+
+      const totalDays =
+        Math.floor((currentEnd.getTime() - currentStart.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+      const previousEnd = new Date(currentStart);
+      previousEnd.setUTCDate(previousEnd.getUTCDate() - 1);
+      const previousStart = new Date(previousEnd);
+      previousStart.setUTCDate(previousStart.getUTCDate() - (totalDays - 1));
+
+      return {
+        current: {
+          start: currentStart,
+          end: currentEnd,
+          id: `current-range-${query.dateFrom}-${query.dateTo}`,
+        },
+        previous: {
+          start: previousStart,
+          end: previousEnd,
+          id: `previous-range-${previousStart.toISOString().split('T')[0]}-${previousEnd.toISOString().split('T')[0]}`,
+        },
+      };
+    }
+
+    return null;
+  }
+
   async getSummary(actorUserId: string, query: ReportQueryDto): Promise<SummaryResponse> {
     const actor = await this.userRepo.findOne({
       where: { id: actorUserId },
@@ -299,7 +423,7 @@ export class ReportsService {
     });
 
     if (periods.length === 0) {
-      throw new NotFoundException('No reporting periods found');
+      return { periods: [] };
     }
 
     const { entityIds, filterUserId, isUserFiltered } = await this.resolveReportScope(
@@ -351,39 +475,81 @@ export class ReportsService {
       throw new ForbiddenException('You do not have permission to view entity reports');
     }
 
-    const periods = await this.periodRepo.find({
-      where: { entityId: targetEntityId },
-      order: { startDate: 'DESC' },
-      take: 2,
-    });
-
-    if (periods.length < 2) {
-      throw new BadRequestException('Not enough periods for comparison');
-    }
-
-    const [currentPeriod, previousPeriod] = periods;
     const { entityIds, filterUserId, isUserFiltered } = await this.resolveReportScope(
       actorUserId,
       query,
       canViewReports,
       targetEntityId,
     );
+    const resolvedRanges = this.resolveComparisonDateRanges(query);
 
-    const currentQb = this.queryFactory.buildActivityQuery(
-      actorUserId,
-      entityIds,
-      { periodIds: [currentPeriod.id] },
-      filterUserId,
-    );
-    const currentActivities = await currentQb.getMany();
+    let currentPeriod: ReportingPeriod;
+    let previousPeriod: ReportingPeriod;
+    let currentActivities: Activity[];
+    let previousActivities: Activity[];
 
-    const previousQb = this.queryFactory.buildActivityQuery(
-      actorUserId,
-      entityIds,
-      { periodIds: [previousPeriod.id] },
-      filterUserId,
-    );
-    const previousActivities = await previousQb.getMany();
+    if (resolvedRanges) {
+      currentPeriod = this.createComparisonPeriod(
+        resolvedRanges.current.start,
+        resolvedRanges.current.end,
+        resolvedRanges.current.id,
+      );
+      previousPeriod = this.createComparisonPeriod(
+        resolvedRanges.previous.start,
+        resolvedRanges.previous.end,
+        resolvedRanges.previous.id,
+      );
+
+      const currentQb = this.queryFactory.buildActivityQuery(
+        actorUserId,
+        entityIds,
+        {
+          dateFrom: resolvedRanges.current.start.toISOString(),
+          dateTo: resolvedRanges.current.end.toISOString(),
+        },
+        filterUserId,
+      );
+      currentActivities = await currentQb.getMany();
+
+      const previousQb = this.queryFactory.buildActivityQuery(
+        actorUserId,
+        entityIds,
+        {
+          dateFrom: resolvedRanges.previous.start.toISOString(),
+          dateTo: resolvedRanges.previous.end.toISOString(),
+        },
+        filterUserId,
+      );
+      previousActivities = await previousQb.getMany();
+    } else {
+      const periods = await this.periodRepo.find({
+        where: { entityId: targetEntityId },
+        order: { startDate: 'DESC' },
+        take: 2,
+      });
+
+      if (periods.length < 2) {
+        return this.buildEmptyComparisonResponse();
+      }
+
+      [currentPeriod, previousPeriod] = periods;
+
+      const currentQb = this.queryFactory.buildActivityQuery(
+        actorUserId,
+        entityIds,
+        { periodIds: [currentPeriod.id] },
+        filterUserId,
+      );
+      currentActivities = await currentQb.getMany();
+
+      const previousQb = this.queryFactory.buildActivityQuery(
+        actorUserId,
+        entityIds,
+        { periodIds: [previousPeriod.id] },
+        filterUserId,
+      );
+      previousActivities = await previousQb.getMany();
+    }
 
     return this.comparisonCalculator.calculate(
       currentPeriod,
@@ -424,7 +590,7 @@ export class ReportsService {
 
     const entityIds = await this.accessService.getEntityHierarchy(targetEntityId);
     const timeScope = await this.timeScopeService.getOrDetermineTimeScope(query, actor.entity_id);
-    const limit = query.limit || 5;
+    const limit = query.limit ?? query.topN ?? 5;
 
     const qb = this.queryFactory.buildActivityQuery(actorUserId, entityIds, timeScope);
     const activities = await qb.getMany();

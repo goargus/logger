@@ -135,5 +135,15 @@ export class RankingsQueryDto extends ReportQueryDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  limit?: number = 5;
+  limit?: number;
+
+  @ApiPropertyOptional({
+    description: 'Legacy alias for limit',
+    minimum: 1,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  topN?: number;
 }
