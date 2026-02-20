@@ -56,7 +56,7 @@ variable "auth0_issuer" {
 variable "cors_origins" {
   type        = string
   description = "Comma-separated CORS origins for the API."
-  default     = ""
+  default     = "https://secretary-backend.pages.dev"
 }
 
 variable "admin_email" {
