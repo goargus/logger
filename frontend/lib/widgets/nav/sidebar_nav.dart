@@ -94,13 +94,14 @@ class SidebarNav extends ConsumerWidget {
                       path: AppRoutes.reports,
                       isActive: currentPath == AppRoutes.reports,
                     ),
-                    _buildNavItem(
-                      context,
-                      icon: Icons.analytics,
-                      label: 'Rendimiento',
-                      path: AppRoutes.leadershipDashboard,
-                      isActive: currentPath == AppRoutes.leadershipDashboard,
-                    ),
+                    if (ref.watch(canViewReportsProvider))
+                      _buildNavItem(
+                        context,
+                        icon: Icons.analytics,
+                        label: 'Rendimiento',
+                        path: AppRoutes.leadershipDashboard,
+                        isActive: currentPath == AppRoutes.leadershipDashboard,
+                      ),
                     const SizedBox(height: LayoutConstants.spacing12),
                   ],
                 ),
