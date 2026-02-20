@@ -14,6 +14,8 @@ export const configValidationSchema = Joi.object({
 
   AUTH0_AUDIENCE: Joi.string().required(),
 
+  CORS_ORIGINS: Joi.string().optional(),
+
   DB_HOST: Joi.string().required(),
   DB_PORT: Joi.number().default(5432),
   DB_USERNAME: Joi.string().required(),
