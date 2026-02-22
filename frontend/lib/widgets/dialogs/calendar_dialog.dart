@@ -138,9 +138,8 @@ class _CalendarDialogState extends State<CalendarDialog> {
     final today =
         DateFormat('d \'de\' MMMM, y', 'es_ES').format(DateTime.now());
     final localizations = MaterialLocalizations.of(context);
-    final visibleLockedRanges = _lockedRanges
-        .where((range) => !_overlapsActivePeriod(range))
-        .toList();
+    final visibleLockedRanges =
+        _lockedRanges.where((range) => !_overlapsActivePeriod(range)).toList();
 
     return Dialog(
       insetPadding: const EdgeInsets.all(16),
@@ -210,7 +209,8 @@ class _CalendarDialogState extends State<CalendarDialog> {
                     child: Text(
                       _isLoading
                           ? 'Cargando restricciones...'
-                          : (_errorMessage != null || _periodErrorMessage != null)
+                          : (_errorMessage != null ||
+                                  _periodErrorMessage != null)
                               ? 'Restricciones con advertencias'
                               : _activePeriod != null
                                   ? 'Período activo: ${_formatActivePeriod()}'
@@ -233,14 +233,15 @@ class _CalendarDialogState extends State<CalendarDialog> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: (_errorMessage != null || _periodErrorMessage != null)
-                        ? Theme.of(context)
-                            .colorScheme
-                            .errorContainer
-                            .withValues(alpha: 0.6)
-                        : _lockedRanges.isNotEmpty
-                            ? Theme.of(context).colorScheme.errorContainer
-                            : Theme.of(context).colorScheme.surface,
+                    color:
+                        (_errorMessage != null || _periodErrorMessage != null)
+                            ? Theme.of(context)
+                                .colorScheme
+                                .errorContainer
+                                .withValues(alpha: 0.6)
+                            : _lockedRanges.isNotEmpty
+                                ? Theme.of(context).colorScheme.errorContainer
+                                : Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Theme.of(context).dividerColor),
                   ),
@@ -250,11 +251,12 @@ class _CalendarDialogState extends State<CalendarDialog> {
                         : _lockedRanges.isNotEmpty
                             ? Icons.lock_outline
                             : Icons.filter_list,
-                    color: (_errorMessage != null || _periodErrorMessage != null)
-                        ? Theme.of(context).colorScheme.error
-                        : _lockedRanges.isNotEmpty
+                    color:
+                        (_errorMessage != null || _periodErrorMessage != null)
                             ? Theme.of(context).colorScheme.error
-                            : Theme.of(context).colorScheme.primary,
+                            : _lockedRanges.isNotEmpty
+                                ? Theme.of(context).colorScheme.error
+                                : Theme.of(context).colorScheme.primary,
                   ),
                 ),
               ],
@@ -358,10 +360,10 @@ class _CalendarDialogState extends State<CalendarDialog> {
                         if (day == null) {
                           return const SizedBox.shrink();
                         }
-                        final isToday = DateUtils.isSameDay(
-                            day, DateTime.now());
-                        final isSelected =
-                            _selected != null && DateUtils.isSameDay(day, _selected);
+                        final isToday =
+                            DateUtils.isSameDay(day, DateTime.now());
+                        final isSelected = _selected != null &&
+                            DateUtils.isSameDay(day, _selected);
                         final isWithinRange = _isWithinSelectableRange(day);
                         final isWithinActivePeriod = _isWithinActivePeriod(day);
                         final lockedRange = _lockedRangeForDate(day);
@@ -524,8 +526,8 @@ class _CalendarDialogState extends State<CalendarDialog> {
       return '';
     }
     try {
-      final start = DateFormat('d MMM', 'es_ES')
-          .format(DateTime.parse(period.startDate));
+      final start =
+          DateFormat('d MMM', 'es_ES').format(DateTime.parse(period.startDate));
       final end = DateFormat('d MMM yyyy', 'es_ES')
           .format(DateTime.parse(period.endDate));
       return '$start - $end';
@@ -599,19 +601,18 @@ class _DayCell extends StatelessWidget {
             ? lockedColor
             : isOutOfPeriod
                 ? outOfPeriodColor
-            : isDisabled
-                ? disabledColor
-                : baseTextColor;
+                : isDisabled
+                    ? disabledColor
+                    : baseTextColor;
     final background = isSelected
         ? scheme.primary
         : isLocked
             ? scheme.errorContainer.withValues(alpha: 0.35)
             : isOutOfPeriod
                 ? scheme.surfaceContainerHighest.withValues(alpha: 0.4)
-            : Colors.transparent;
-    final borderColor = isToday
-        ? scheme.primary.withValues(alpha: 0.6)
-        : Colors.transparent;
+                : Colors.transparent;
+    final borderColor =
+        isToday ? scheme.primary.withValues(alpha: 0.6) : Colors.transparent;
 
     return Material(
       color: Colors.transparent,

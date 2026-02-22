@@ -86,7 +86,8 @@ void main() {
     );
   });
 
-  testWidgets('out-of-period date shows blocked styling and feedback', (tester) async {
+  testWidgets('out-of-period date shows blocked styling and feedback',
+      (tester) async {
     final service = FakeReportingPeriodsService(
       lockedRanges: const [],
       activePeriod: ReportingPeriodSummary(

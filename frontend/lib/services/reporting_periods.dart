@@ -136,8 +136,7 @@ class ReportingPeriodSummary {
     );
   }
 
-  bool get isActive =>
-      status.toLowerCase() == 'active' && isLocked == false;
+  bool get isActive => status.toLowerCase() == 'active' && isLocked == false;
 
   bool containsDate(String dateStr) {
     return dateStr.compareTo(startDate) >= 0 && dateStr.compareTo(endDate) <= 0;
