@@ -14,8 +14,10 @@ import { ActivityType } from '../activities-type/activity-type.entity';
 import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
 import { ReportingPeriodStatus } from '../reporting-periods/reporting-period-status.enum';
 import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
-import { formatDateToString } from '../common/date.utils';
+import { formatDateToString, isDateInRange } from '../common/date.utils';
 import { ReportingPeriodException } from '../reporting-periods/reporting-period-exception.entity';
+import { User } from '../users/user.entity';
+import { ReportingPeriodsService } from '../reporting-periods/reporting-periods.service';
 
 @Injectable()
 export class ActivitiesService {
@@ -28,6 +30,9 @@ export class ActivitiesService {
     private readonly exceptionsRepo: Repository<ReportingPeriodException>,
     @InjectRepository(UserRoleAssignment)
     private readonly uraRepo: Repository<UserRoleAssignment>,
+    @InjectRepository(User)
+    private readonly usersRepo: Repository<User>,
+    private readonly reportingPeriodsService: ReportingPeriodsService,
   ) {}
 
   private ensureOwnershipOrThrow(activity: Activity, userId: string) {
@@ -42,11 +47,79 @@ export class ActivitiesService {
     return type;
   }
 
-  private async findReportingPeriodForDate(date: string): Promise<ReportingPeriod | null> {
+  private async getUserEntityId(userId: string): Promise<string> {
+    const user = await this.usersRepo.findOne({
+      where: { id: userId },
+      select: ['id', 'entity_id'],
+    });
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
+    return user.entity_id;
+  }
+
+  private normalizeDateString(date: string): string {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return date;
+    }
+    return formatDateToString(new Date(date));
+  }
+
+  private async findLockedPeriodForDate(
+    entityId: string,
+    date: string,
+  ): Promise<ReportingPeriod | null> {
     return this.reportingPeriodsRepo
       .createQueryBuilder('period')
-      .where('period.startDate <= :date AND period.endDate >= :date', { date })
+      .where('period.entity_id = :entityId', { entityId })
+      .andWhere('period.status = :status', { status: ReportingPeriodStatus.LOCKED })
+      .andWhere('period.startDate <= :date AND period.endDate >= :date', { date })
       .getOne();
+  }
+
+  private async resolveReportingPeriodForDate(
+    userId: string,
+    date: string,
+  ): Promise<ReportingPeriod> {
+    const entityId = await this.getUserEntityId(userId);
+
+    let activePeriod = await this.reportingPeriodsRepo.findOne({
+      where: { entityId, status: ReportingPeriodStatus.ACTIVE },
+    });
+
+    if (!activePeriod) {
+      activePeriod = await this.reportingPeriodsService.ensureCurrentPeriodForEntity(
+        entityId,
+        userId,
+      );
+    }
+
+    if (isDateInRange(date, activePeriod.startDate, activePeriod.endDate)) {
+      return activePeriod;
+    }
+
+    const lockedPeriod = await this.findLockedPeriodForDate(entityId, date);
+    if (!lockedPeriod) {
+      throw new ForbiddenException('Cannot create activity outside active reporting period');
+    }
+
+    const hasException = await this.exceptionsRepo.findOne({
+      where: {
+        userId,
+        reportingPeriodId: lockedPeriod.id,
+      },
+    });
+
+    if (!hasException) {
+      throw new ForbiddenException('Cannot create activity in a locked reporting period');
+    }
+
+    const { startDate, endDate } = hasException;
+    if (!isDateInRange(date, startDate, endDate)) {
+      throw new ForbiddenException('Cannot create activity in a locked reporting period');
+    }
+
+    return lockedPeriod;
   }
 
   private async ensureActivityNotLocked(activity: Activity, userId: string): Promise<void> {
@@ -115,29 +188,12 @@ export class ActivitiesService {
       throw new BadRequestException('expenseAmount is required when hasExpense is true.');
     }
 
-    const reportingPeriod = await this.findReportingPeriodForDate(dto.activityDate);
-    if (reportingPeriod && reportingPeriod.status === ReportingPeriodStatus.LOCKED) {
-      const hasException = await this.exceptionsRepo.findOne({
-        where: {
-          userId: actorUserId,
-          reportingPeriodId: reportingPeriod.id,
-        },
-      });
-
-      if (hasException) {
-        const activityDate = dto.activityDate;
-        const { startDate, endDate } = hasException;
-        if (!(activityDate >= startDate && activityDate <= endDate)) {
-          throw new ForbiddenException('Cannot create activity in a locked reporting period');
-        }
-      } else {
-        throw new ForbiddenException('Cannot create activity in a locked reporting period');
-      }
-    }
+    const activityDate = this.normalizeDateString(dto.activityDate);
+    const reportingPeriod = await this.resolveReportingPeriodForDate(actorUserId, activityDate);
 
     const entity = this.repo.create({
       activityTypeId: dto.activityTypeId,
-      activityDate: dto.activityDate,
+      activityDate,
       description: dto.description ?? null,
       hasExpense: dto.hasExpense,
       expenseAmount: dto.hasExpense ? dto.expenseAmount : null,
@@ -242,26 +298,10 @@ export class ActivitiesService {
     }
 
     if (dto.activityDate && dto.activityDate !== a.activityDate) {
-      const newReportingPeriod = await this.findReportingPeriodForDate(dto.activityDate);
-      if (newReportingPeriod && newReportingPeriod.status === ReportingPeriodStatus.LOCKED) {
-        const hasException = await this.exceptionsRepo.findOne({
-          where: {
-            userId,
-            reportingPeriodId: newReportingPeriod.id,
-          },
-        });
-
-        if (hasException) {
-          const activityDate = dto.activityDate;
-          const { startDate, endDate } = hasException;
-          if (!(activityDate >= startDate && activityDate <= endDate)) {
-            throw new ForbiddenException('Cannot move activity to a locked reporting period');
-          }
-        } else {
-          throw new ForbiddenException('Cannot move activity to a locked reporting period');
-        }
-      }
-      a.reportingPeriodId = newReportingPeriod?.id ?? null;
+      const activityDate = this.normalizeDateString(dto.activityDate);
+      const newReportingPeriod = await this.resolveReportingPeriodForDate(userId, activityDate);
+      a.reportingPeriodId = newReportingPeriod.id;
+      a.activityDate = activityDate;
     }
 
     if (dto.hasExpense === true && (dto.expenseAmount == null || dto.expenseAmount === '')) {
@@ -271,10 +311,15 @@ export class ActivitiesService {
       a.expenseAmount = null;
     }
 
-    Object.assign(a, {
+    const updates = {
       ...dto,
       updatedBy: userId,
-    });
+    };
+    if (updates.activityDate != null) {
+      updates.activityDate = a.activityDate;
+    }
+
+    Object.assign(a, updates);
 
     return this.repo.save(a);
   }
