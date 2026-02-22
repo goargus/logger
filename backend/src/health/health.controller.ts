@@ -88,20 +88,14 @@ export class HealthController {
     }
   }
 
-  private async runChecks() {
-    const [database, jwks] = await Promise.all([this.checkDatabase(), this.checkJwks()]);
-    return { database, jwks };
-  }
-
   @Get('health')
   @ApiOperation({ summary: 'Public health check' })
-  @ApiResponse({ status: 200, description: 'Dependencies are healthy' })
-  @ApiResponse({ status: 503, description: 'Dependency check failed' })
+  @ApiResponse({ status: 200, description: 'Service is healthy' })
+  @ApiResponse({ status: 503, description: 'Service is unhealthy' })
   async getHealth() {
-    const details = await this.runChecks();
-    const isHealthy = Object.values(details).every((d) => d.status === 'up');
+    const database = await this.checkDatabase();
 
-    if (!isHealthy) {
+    if (database.status !== 'up') {
       throw new HttpException({ status: 'error' }, HttpStatus.SERVICE_UNAVAILABLE);
     }
 
@@ -118,15 +112,12 @@ export class HealthController {
   @ApiResponse({ status: 403, description: 'Forbidden - requires admin permission' })
   @ApiResponse({ status: 503, description: 'Dependency check failed' })
   async getAdminHealth() {
-    const details = await this.runChecks();
+    const [database, jwks] = await Promise.all([this.checkDatabase(), this.checkJwks()]);
     const uptime = Math.floor(process.uptime());
-    const isHealthy = Object.values(details).every((d) => d.status === 'up');
+    const isHealthy = database.status === 'up' && jwks.status === 'up';
     const response = {
       status: isHealthy ? 'ok' : 'error',
-      details: {
-        ...details,
-        uptime,
-      },
+      details: { database, jwks, uptime },
     };
 
     if (!isHealthy) {

@@ -49,36 +49,22 @@ describe('HealthController', () => {
     });
   };
 
-  it('returns ok when dependencies are healthy', async () => {
-    setIssuer();
+  it('returns ok when database is healthy', async () => {
     dbIndicator.pingCheck.mockResolvedValue({ database: { status: 'up' } });
-    httpIndicator.pingCheck.mockResolvedValue({ jwks: { status: 'up' } });
 
     const result = await controller.getHealth();
 
     expect(result).toEqual({ status: 'ok' });
     expect(dbIndicator.pingCheck).toHaveBeenCalledWith('database', { timeout: 1000 });
-    expect(httpIndicator.pingCheck).toHaveBeenCalledWith(
-      'jwks',
-      'https://issuer.example.com/.well-known/jwks.json',
-      { timeout: 1000 },
-    );
   });
 
-  it('returns 503 when a dependency is unhealthy', async () => {
-    setIssuer();
+  it('returns 503 when database is unhealthy', async () => {
     dbIndicator.pingCheck.mockRejectedValue(new Error('db down'));
-    httpIndicator.pingCheck.mockResolvedValue({ jwks: { status: 'up' } });
 
-    try {
-      await controller.getHealth();
-      throw new Error('Expected getHealth to throw');
-    } catch (err) {
-      expect(err).toBeInstanceOf(HttpException);
-      const httpError = err as HttpException;
-      expect(httpError.getStatus()).toBe(503);
-      expect(httpError.getResponse()).toEqual({ status: 'error' });
-    }
+    await expect(controller.getHealth()).rejects.toThrow(HttpException);
+    await expect(controller.getHealth()).rejects.toMatchObject({
+      response: { status: 'error' },
+    });
   });
 
   it('returns admin details with response times and uptime', async () => {
@@ -86,16 +72,20 @@ describe('HealthController', () => {
     dbIndicator.pingCheck.mockResolvedValue({ database: { status: 'up' } });
     httpIndicator.pingCheck.mockResolvedValue({ jwks: { status: 'up' } });
 
-    jest.spyOn(Date, 'now').mockImplementation(() => 1000);
+    // Promise.all interleaves: db-start, jwks-start, db-end, jwks-end
+    jest
+      .spyOn(Date, 'now')
+      .mockReturnValueOnce(1000)
+      .mockReturnValueOnce(2000)
+      .mockReturnValueOnce(1012)
+      .mockReturnValueOnce(2025);
     jest.spyOn(process, 'uptime').mockReturnValue(86400);
 
     const result = await controller.getAdminHealth();
 
     expect(result.status).toBe('ok');
-    expect(result.details.database.status).toBe('up');
-    expect(result.details.database.responseTime).toMatch(/^\d+ms$/);
-    expect(result.details.jwks.status).toBe('up');
-    expect(result.details.jwks.responseTime).toMatch(/^\d+ms$/);
+    expect(result.details.database).toEqual({ status: 'up', responseTime: '12ms' });
+    expect(result.details.jwks).toEqual({ status: 'up', responseTime: '25ms' });
     expect(result.details.uptime).toBe(86400);
   });
 });
