@@ -225,7 +225,7 @@ class _ReportsViewContentState extends ConsumerState<ReportsViewContent> {
                   Row(
                     children: [
                       Text(
-                        'Estado: ${_summary?.status ?? "Activo"}',
+                        'Estado: ${_summary?.statusLabel ?? "Activo"}',
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
