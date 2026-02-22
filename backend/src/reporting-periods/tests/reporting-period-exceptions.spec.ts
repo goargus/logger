@@ -7,11 +7,13 @@ import { ReportingPeriod } from '../reporting-period.entity';
 import { ReportingPeriodException } from '../reporting-period-exception.entity';
 import { ReportingPeriodStatus } from '../reporting-period-status.enum';
 import { CreateExceptionDto } from '../dto/create-exception.dto';
+import { Entity } from '../../entities/entity.entity';
 
 describe('ReportingPeriodsService - Exceptions', () => {
   let service: ReportingPeriodsService;
   let periodRepo: jest.Mocked<Repository<ReportingPeriod>>;
   let exceptionRepo: jest.Mocked<Repository<ReportingPeriodException>>;
+  let entityRepo: jest.Mocked<Repository<Entity>>;
 
   const mockPeriod: ReportingPeriod = {
     id: 'period-id',
@@ -60,6 +62,10 @@ describe('ReportingPeriodsService - Exceptions', () => {
       remove: jest.fn(),
     };
 
+    const mockEntityRepo = {
+      findOne: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ReportingPeriodsService,
@@ -71,12 +77,17 @@ describe('ReportingPeriodsService - Exceptions', () => {
           provide: getRepositoryToken(ReportingPeriodException),
           useValue: mockExceptionRepo,
         },
+        {
+          provide: getRepositoryToken(Entity),
+          useValue: mockEntityRepo,
+        },
       ],
     }).compile();
 
     service = module.get<ReportingPeriodsService>(ReportingPeriodsService);
     periodRepo = module.get(getRepositoryToken(ReportingPeriod));
     exceptionRepo = module.get(getRepositoryToken(ReportingPeriodException));
+    entityRepo = module.get(getRepositoryToken(Entity));
   });
 
   describe('createOrUpdateException', () => {

@@ -50,6 +50,9 @@ export class Entity {
   @Column({ type: 'int', default: 5, name: 'term_length_years' })
   term_length_years!: number;
 
+  @Column({ type: 'int', nullable: true, name: 'reporting_period_days' })
+  reporting_period_days?: number;
+
   @Column({ type: 'uuid', nullable: true })
   parent_id?: string | null;
 
