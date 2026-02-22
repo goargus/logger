@@ -24,52 +24,99 @@ class _CalendarDialogState extends State<CalendarDialog> {
   late DateTime _focusedMonth;
   DateTime? _selected;
   List<LockedDateRange> _lockedRanges = [];
+  ReportingPeriodSummary? _activePeriod;
   bool _isLoading = true;
   String? _errorMessage;
+  String? _periodErrorMessage;
 
   @override
   void initState() {
     super.initState();
     _focusedMonth = DateTime(widget.initialDate.year, widget.initialDate.month);
     _selected = widget.initialDate;
-    _loadLockedDateRanges();
+    _loadReportingContext();
   }
 
-  Future<void> _loadLockedDateRanges() async {
+  Future<void> _loadReportingContext() async {
+    String? lockedError;
+    String? periodError;
+    List<LockedDateRange> ranges = [];
+    ReportingPeriodSummary? activePeriod;
+
     try {
-      final ranges = await widget.reportingPeriodsService.getLockedDateRanges();
-      if (mounted) {
-        setState(() {
-          _lockedRanges = ranges;
-          _isLoading = false;
-        });
-      }
+      ranges = await widget.reportingPeriodsService.getLockedDateRanges();
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _errorMessage = 'Error al cargar restricciones de fechas';
-          _isLoading = false;
-          _lockedRanges = [];
-        });
-      }
+      lockedError = 'Error al cargar restricciones de fechas';
     }
+
+    try {
+      activePeriod =
+          await widget.reportingPeriodsService.getActiveReportingPeriod();
+    } catch (e) {
+      periodError = 'No se pudo cargar el período activo';
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _lockedRanges = ranges;
+      _activePeriod = activePeriod;
+      _errorMessage = lockedError;
+      _periodErrorMessage =
+          periodError ?? (activePeriod == null ? 'Sin período activo' : null);
+      _isLoading = false;
+
+      if (_selected != null) {
+        if (_lockedRanges.any((range) => range.containsDateTime(_selected!)) ||
+            !_isWithinActivePeriod(_selected!)) {
+          _selected = null;
+        }
+      }
+    });
   }
 
-  bool _isDateSelectable(DateTime date) {
-    if (_isLoading) {
+  bool _isWithinSelectableRange(DateTime date) {
+    final day = DateTime(date.year, date.month, date.day);
+    final first = DateTime(
+        widget.firstDate.year, widget.firstDate.month, widget.firstDate.day);
+    final last = DateTime(
+        widget.lastDate.year, widget.lastDate.month, widget.lastDate.day);
+    return !day.isBefore(first) && !day.isAfter(last);
+  }
+
+  bool _isWithinActivePeriod(DateTime date) {
+    if (_activePeriod == null) {
       return false;
     }
+    return _activePeriod!.containsDateTime(date);
+  }
 
-    if (_errorMessage != null) {
-      return true;
+  LockedDateRange? _lockedRangeForDate(DateTime date) {
+    if (_activePeriod != null && _activePeriod!.containsDateTime(date)) {
+      return null;
     }
-
     for (final range in _lockedRanges) {
       if (range.containsDateTime(date)) {
-        return false;
+        return range;
       }
     }
-    return true;
+    return null;
+  }
+
+  void _showLockedDateFeedback() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Esta fecha pertenece a un periodo bloqueado'),
+      ),
+    );
+  }
+
+  void _showOutOfPeriodFeedback() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Esta fecha está fuera del período activo'),
+      ),
+    );
   }
 
   void _prevMonth() {
@@ -90,6 +137,10 @@ class _CalendarDialogState extends State<CalendarDialog> {
     final monthLabel = DateFormat.MMMM('es_ES').format(_focusedMonth);
     final today =
         DateFormat('d \'de\' MMMM, y', 'es_ES').format(DateTime.now());
+    final localizations = MaterialLocalizations.of(context);
+    final visibleLockedRanges = _lockedRanges
+        .where((range) => !_overlapsActivePeriod(range))
+        .toList();
 
     return Dialog(
       insetPadding: const EdgeInsets.all(16),
@@ -159,11 +210,13 @@ class _CalendarDialogState extends State<CalendarDialog> {
                     child: Text(
                       _isLoading
                           ? 'Cargando restricciones...'
-                          : _errorMessage != null
-                              ? 'Sin restricciones'
-                              : _lockedRanges.isEmpty
-                                  ? 'Todas las fechas disponibles'
-                                  : '${_lockedRanges.length} período(s) bloqueado(s)',
+                          : (_errorMessage != null || _periodErrorMessage != null)
+                              ? 'Restricciones con advertencias'
+                              : _activePeriod != null
+                                  ? 'Período activo: ${_formatActivePeriod()}'
+                                  : _lockedRanges.isEmpty
+                                      ? 'Todas las fechas disponibles'
+                                      : '${_lockedRanges.length} período(s) bloqueado(s)',
                       style: TextStyle(
                         color: Theme.of(context)
                             .textTheme
@@ -180,50 +233,82 @@ class _CalendarDialogState extends State<CalendarDialog> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: _lockedRanges.isNotEmpty
-                        ? Theme.of(context).colorScheme.errorContainer
-                        : Theme.of(context).colorScheme.surface,
+                    color: (_errorMessage != null || _periodErrorMessage != null)
+                        ? Theme.of(context)
+                            .colorScheme
+                            .errorContainer
+                            .withValues(alpha: 0.6)
+                        : _lockedRanges.isNotEmpty
+                            ? Theme.of(context).colorScheme.errorContainer
+                            : Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Theme.of(context).dividerColor),
                   ),
                   child: Icon(
-                    _lockedRanges.isNotEmpty
-                        ? Icons.lock_outline
-                        : Icons.filter_list,
-                    color: _lockedRanges.isNotEmpty
+                    (_errorMessage != null || _periodErrorMessage != null)
+                        ? Icons.warning_amber_outlined
+                        : _lockedRanges.isNotEmpty
+                            ? Icons.lock_outline
+                            : Icons.filter_list,
+                    color: (_errorMessage != null || _periodErrorMessage != null)
                         ? Theme.of(context).colorScheme.error
-                        : Theme.of(context).colorScheme.primary,
+                        : _lockedRanges.isNotEmpty
+                            ? Theme.of(context).colorScheme.error
+                            : Theme.of(context).colorScheme.primary,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
+            if (_errorMessage != null || _periodErrorMessage != null)
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context)
+                      .colorScheme
+                      .errorContainer
+                      .withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .error
+                        .withValues(alpha: 0.3),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.warning_amber_outlined,
+                      size: 18,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _errorMessage != null && _periodErrorMessage != null
+                            ? 'No se pudieron cargar restricciones ni el período activo.'
+                            : _errorMessage != null
+                                ? 'No se pudieron cargar los períodos bloqueados. Algunas fechas podrían estar bloqueadas.'
+                                : _periodErrorMessage == 'Sin período activo'
+                                    ? 'No se encontró un período activo. Algunas fechas podrían no estar disponibles.'
+                                    : 'No se pudo cargar el período activo. Algunas fechas podrían no estar disponibles.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (_errorMessage != null) const SizedBox(height: 12),
             if (_isLoading)
               Container(
                 height: 340,
                 alignment: Alignment.center,
                 child: const CircularProgressIndicator(),
-              )
-            else if (_errorMessage != null)
-              Container(
-                height: 340,
-                alignment: Alignment.center,
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline,
-                        size: 48, color: Theme.of(context).colorScheme.error),
-                    const SizedBox(height: 16),
-                    Text(
-                      _errorMessage!,
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                  ],
-                ),
               )
             else
               Container(
@@ -232,19 +317,88 @@ class _CalendarDialogState extends State<CalendarDialog> {
                   color: Theme.of(context).colorScheme.surface,
                   borderRadius: BorderRadius.circular(8),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                child: CalendarDatePicker(
-                  initialDate: _selected ?? widget.initialDate,
-                  firstDate: widget.firstDate,
-                  lastDate: widget.lastDate,
-                  currentDate: DateTime.now(),
-                  onDateChanged: (d) => setState(() => _selected = d),
-                  initialCalendarMode: DatePickerMode.day,
-                  selectableDayPredicate: _isDateSelectable,
+                padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: _orderedWeekdays(localizations)
+                          .map((label) => Expanded(
+                                child: Center(
+                                  child: Text(
+                                    label,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      color: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall
+                                          ?.color
+                                          ?.withValues(alpha: 0.7),
+                                    ),
+                                  ),
+                                ),
+                              ))
+                          .toList(),
+                    ),
+                    const SizedBox(height: 6),
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 7,
+                        mainAxisSpacing: 4,
+                        crossAxisSpacing: 4,
+                        childAspectRatio: 1.2,
+                      ),
+                      itemCount: _daysInGrid(localizations),
+                      itemBuilder: (context, index) {
+                        final day = _dateForIndex(index, localizations);
+                        if (day == null) {
+                          return const SizedBox.shrink();
+                        }
+                        final isToday = DateUtils.isSameDay(
+                            day, DateTime.now());
+                        final isSelected =
+                            _selected != null && DateUtils.isSameDay(day, _selected);
+                        final isWithinRange = _isWithinSelectableRange(day);
+                        final isWithinActivePeriod = _isWithinActivePeriod(day);
+                        final lockedRange = _lockedRangeForDate(day);
+                        final isLocked = lockedRange != null;
+                        final isOutOfPeriod = !isWithinActivePeriod;
+                        final isTappable = isWithinRange;
+
+                        return _DayCell(
+                          date: day,
+                          isToday: isToday,
+                          isSelected: isSelected,
+                          isLocked: isLocked,
+                          isOutOfPeriod: isOutOfPeriod,
+                          isDisabled: !isWithinRange,
+                          isTappable: isTappable,
+                          onTap: () {
+                            if (!isWithinRange) {
+                              return;
+                            }
+                            if (isLocked) {
+                              _showLockedDateFeedback();
+                              return;
+                            }
+                            if (isOutOfPeriod) {
+                              _showOutOfPeriodFeedback();
+                              return;
+                            }
+                            setState(() => _selected = day);
+                          },
+                        );
+                      },
+                    ),
+                  ],
                 ),
               ),
             const SizedBox(height: 12),
-            if (_lockedRanges.isNotEmpty) ...[
+            if (visibleLockedRanges.isNotEmpty) ...[
               Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
@@ -280,7 +434,7 @@ class _CalendarDialogState extends State<CalendarDialog> {
                       ],
                     ),
                     const SizedBox(height: 8),
-                    ..._lockedRanges.map((range) {
+                    ...visibleLockedRanges.map((range) {
                       final start = DateFormat('d MMM', 'es_ES')
                           .format(DateTime.parse(range.startDate));
                       final end = DateFormat('d MMM yyyy', 'es_ES')
@@ -347,4 +501,168 @@ class _CalendarDialogState extends State<CalendarDialog> {
 
   String _capitalize(String s) =>
       s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+
+  bool _overlapsActivePeriod(LockedDateRange range) {
+    if (_activePeriod == null) {
+      return false;
+    }
+    try {
+      final activeStart = DateTime.parse(_activePeriod!.startDate);
+      final activeEnd = DateTime.parse(_activePeriod!.endDate);
+      final lockedStart = DateTime.parse(range.startDate);
+      final lockedEnd = DateTime.parse(range.endDate);
+      return !(lockedEnd.isBefore(activeStart) ||
+          lockedStart.isAfter(activeEnd));
+    } catch (e) {
+      return false;
+    }
+  }
+
+  String _formatActivePeriod() {
+    final period = _activePeriod;
+    if (period == null) {
+      return '';
+    }
+    try {
+      final start = DateFormat('d MMM', 'es_ES')
+          .format(DateTime.parse(period.startDate));
+      final end = DateFormat('d MMM yyyy', 'es_ES')
+          .format(DateTime.parse(period.endDate));
+      return '$start - $end';
+    } catch (e) {
+      return period.label;
+    }
+  }
+
+  List<String> _orderedWeekdays(MaterialLocalizations localizations) {
+    final labels = localizations.narrowWeekdays;
+    final firstDay = localizations.firstDayOfWeekIndex;
+    return [
+      ...labels.sublist(firstDay),
+      ...labels.sublist(0, firstDay),
+    ];
+  }
+
+  int _daysInGrid(MaterialLocalizations localizations) {
+    final year = _focusedMonth.year;
+    final month = _focusedMonth.month;
+    final daysInMonth = DateUtils.getDaysInMonth(year, month);
+    final offset = DateUtils.firstDayOffset(year, month, localizations);
+    final total = daysInMonth + offset;
+    return ((total + 6) ~/ 7) * 7;
+  }
+
+  DateTime? _dateForIndex(int index, MaterialLocalizations localizations) {
+    final year = _focusedMonth.year;
+    final month = _focusedMonth.month;
+    final daysInMonth = DateUtils.getDaysInMonth(year, month);
+    final offset = DateUtils.firstDayOffset(year, month, localizations);
+    final dayNumber = index - offset + 1;
+    if (dayNumber < 1 || dayNumber > daysInMonth) {
+      return null;
+    }
+    return DateTime(year, month, dayNumber);
+  }
+}
+
+class _DayCell extends StatelessWidget {
+  const _DayCell({
+    required this.date,
+    required this.isToday,
+    required this.isSelected,
+    required this.isLocked,
+    required this.isOutOfPeriod,
+    required this.isDisabled,
+    required this.isTappable,
+    required this.onTap,
+  });
+
+  final DateTime date;
+  final bool isToday;
+  final bool isSelected;
+  final bool isLocked;
+  final bool isOutOfPeriod;
+  final bool isDisabled;
+  final bool isTappable;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final baseTextColor = Theme.of(context).textTheme.bodySmall?.color;
+    final disabledColor = baseTextColor?.withValues(alpha: 0.35);
+    final lockedColor = scheme.error.withValues(alpha: 0.6);
+    final outOfPeriodColor = scheme.onSurface.withValues(alpha: 0.35);
+    final textColor = isSelected
+        ? scheme.onPrimary
+        : isLocked
+            ? lockedColor
+            : isOutOfPeriod
+                ? outOfPeriodColor
+            : isDisabled
+                ? disabledColor
+                : baseTextColor;
+    final background = isSelected
+        ? scheme.primary
+        : isLocked
+            ? scheme.errorContainer.withValues(alpha: 0.35)
+            : isOutOfPeriod
+                ? scheme.surfaceVariant.withValues(alpha: 0.4)
+            : Colors.transparent;
+    final borderColor = isToday
+        ? scheme.primary.withValues(alpha: 0.6)
+        : Colors.transparent;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: isTappable ? onTap : null,
+        child: Container(
+          decoration: BoxDecoration(
+            color: background,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: borderColor, width: 1),
+          ),
+          alignment: Alignment.center,
+          child: Stack(
+            children: [
+              Center(
+                child: Text(
+                  '${date.day}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: textColor,
+                    decoration: (isLocked || isOutOfPeriod)
+                        ? TextDecoration.lineThrough
+                        : null,
+                  ),
+                ),
+              ),
+              if (isLocked)
+                Positioned(
+                  right: 4,
+                  bottom: 4,
+                  child: Icon(
+                    Icons.lock_outline,
+                    size: 12,
+                    color: lockedColor,
+                  ),
+                ),
+              if (isOutOfPeriod && !isLocked)
+                Positioned(
+                  right: 4,
+                  bottom: 4,
+                  child: Icon(
+                    Icons.block,
+                    size: 12,
+                    color: outOfPeriodColor,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
