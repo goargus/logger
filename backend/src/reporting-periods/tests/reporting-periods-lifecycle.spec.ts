@@ -207,12 +207,14 @@ describe('ReportingPeriodsService - Lifecycle Management', () => {
         endDate: '2025-01-14',
       };
 
-      mockRepository.find.mockResolvedValue([expiredPeriod]);
+      mockRepository.find
+        .mockResolvedValueOnce([expiredPeriod])
+        .mockResolvedValueOnce([]);
       mockRepository.save.mockResolvedValue({
         ...expiredPeriod,
         status: ReportingPeriodStatus.LOCKED,
       });
-      mockRepository.findOne.mockResolvedValue(expiredPeriod);
+      mockRepository.findOne.mockResolvedValue(null);
       mockRepository.create.mockReturnValue({});
 
       await service.transitionExpiredPeriods('system');
@@ -323,8 +325,10 @@ describe('ReportingPeriodsService - Lifecycle Management', () => {
     });
   });
 
-  describe('14-Day Period Duration', () => {
-    it('should create periods with exactly 14-day duration', async () => {
+  describe('Half-Month Period Duration', () => {
+    it('should create periods for the first half of the month', async () => {
+      jest.useFakeTimers().setSystemTime(new Date('2024-02-03T00:00:00Z'));
+
       mockRepository.findOne.mockResolvedValue(null);
       mockRepository.create.mockImplementation((data) => data);
       mockRepository.save.mockImplementation((data) => Promise.resolve(data));
@@ -336,7 +340,11 @@ describe('ReportingPeriodsService - Lifecycle Management', () => {
       const end = new Date(createCall.endDate);
       const diffDays = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
-      expect(diffDays).toBe(14);
+      expect(diffDays).toBe(13);
+      expect(createCall.startDate).toBe('2024-02-01');
+      expect(createCall.endDate).toBe('2024-02-14');
+
+      jest.useRealTimers();
     });
   });
 });

@@ -8,6 +8,8 @@ import { ReportingPeriod } from '../../reporting-periods/reporting-period.entity
 import { UserRoleAssignment } from '../../roles/user-role-assignment.entity';
 import { ActivityStatus } from '../activity-status.enum';
 import { ReportingPeriodException } from '../../reporting-periods/reporting-period-exception.entity';
+import { User } from '../../users/user.entity';
+import { ReportingPeriodsService } from '../../reporting-periods/reporting-periods.service';
 
 describe('ActivitiesService - Filters', () => {
   let service: ActivitiesService;
@@ -51,6 +53,14 @@ describe('ActivitiesService - Filters', () => {
         {
           provide: getRepositoryToken(ReportingPeriodException),
           useValue: {},
+        },
+        {
+          provide: getRepositoryToken(User),
+          useValue: { findOne: jest.fn() },
+        },
+        {
+          provide: ReportingPeriodsService,
+          useValue: { ensureCurrentPeriodForEntity: jest.fn() },
         },
       ],
     }).compile();
