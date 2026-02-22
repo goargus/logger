@@ -16,12 +16,14 @@ import { ReportingPeriodsModule } from './reporting-periods/reporting-periods.mo
 import { CaslModule } from './casl/casl.module';
 import { ReportsModule } from './reports/reports.module';
 import { HealthModule } from './health/health.module';
+import { configValidationSchema } from './config/config.validation';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       load: [authConfig],
+      validationSchema: configValidationSchema,
     }),
     AuthModule,
     CaslModule,

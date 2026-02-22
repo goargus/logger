@@ -126,7 +126,7 @@ export class EntitiesController {
   }
 
   @Get(':id/descendants')
-  @ApiOperation({ summary: 'Get all descendant entities recursively (BFS)' })
+  @ApiOperation({ summary: 'Get all descendant entities recursively' })
   @ApiResponse({ status: 200, description: 'Flat list of all descendant entities' })
   async getDescendants(@Param('id', new ParseUUIDPipe()) id: string) {
     return this.entitiesService.findDescendants(id);

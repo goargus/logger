@@ -1,6 +1,4 @@
-import { IsUUID, IsEnum, IsArray, ArrayNotEmpty, IsOptional, IsDateString } from 'class-validator';
-import { Transform } from 'class-transformer';
-import { RoleEnum } from './assign-role.dto';
+import { IsUUID, IsArray, ArrayNotEmpty, IsOptional, IsDateString } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class BulkAssignRoleDto {
@@ -12,15 +10,11 @@ export class BulkAssignRoleDto {
   userId!: string;
 
   @ApiProperty({
-    description: 'Role to assign',
-    enum: RoleEnum,
-    example: 'MISSIONARY',
+    description: 'UUID of the role to assign',
+    example: '123e4567-e89b-12d3-a456-426614174000',
   })
-  @Transform(({ value }) => String(value).trim().toUpperCase())
-  @IsEnum(RoleEnum, {
-    message: 'Invalid role enum value. Allowed: ADMIN, MISSIONARY, PASTOR, MINISTER, EXECUTIVE, DEPARTMENTAL',
-  })
-  role!: RoleEnum;
+  @IsUUID()
+  roleId!: string;
 
   @ApiProperty({
     description: 'Array of entity UUIDs to assign the role for',

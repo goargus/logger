@@ -6,6 +6,7 @@ import { ReportingPeriod } from '../reporting-period.entity';
 import { ReportingPeriodException } from '../reporting-period-exception.entity';
 import { ReportingPeriodStatus } from '../reporting-period-status.enum';
 import { ConflictException } from '@nestjs/common';
+import { Entity } from '../../entities/entity.entity';
 
 describe('ReportingPeriodsService - Lifecycle Management', () => {
   let service: ReportingPeriodsService;
@@ -25,6 +26,10 @@ describe('ReportingPeriodsService - Lifecycle Management', () => {
     find: jest.fn(),
     findOne: jest.fn(),
     remove: jest.fn(),
+  };
+
+  const mockEntityRepository = {
+    findOne: jest.fn(),
   };
 
   const mockQueryBuilder = {
@@ -52,6 +57,10 @@ describe('ReportingPeriodsService - Lifecycle Management', () => {
         {
           provide: getRepositoryToken(ReportingPeriodException),
           useValue: mockExceptionsRepository,
+        },
+        {
+          provide: getRepositoryToken(Entity),
+          useValue: mockEntityRepository,
         },
       ],
     }).compile();

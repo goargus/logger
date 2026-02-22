@@ -92,6 +92,10 @@ resource "azurerm_container_app" "api" {
         value = var.auth0_issuer
       }
       env {
+        name  = "CORS_ORIGINS"
+        value = var.cors_origins
+      }
+      env {
         name  = "ADMIN_EMAIL"
         value = var.admin_email
       }

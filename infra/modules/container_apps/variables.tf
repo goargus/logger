@@ -64,6 +64,11 @@ variable "auth0_issuer" {
   type = string
 }
 
+variable "cors_origins" {
+  type    = string
+  default = "https://secretary-backend.pages.dev"
+}
+
 variable "admin_email" {
   type = string
 }

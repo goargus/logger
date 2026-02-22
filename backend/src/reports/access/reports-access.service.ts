@@ -5,6 +5,7 @@ import { Entity } from '../../entities/entity.entity';
 import { User } from '../../users/user.entity';
 import { UserRoleAssignment } from '../../roles/user-role-assignment.entity';
 import { getCurrentDateString } from '../../common/date.utils';
+import { fetchEntityHierarchyIds } from '../../entities/entity-hierarchy.query';
 
 @Injectable()
 export class ReportsAccessService {
@@ -18,30 +19,10 @@ export class ReportsAccessService {
   ) {}
 
   async getEntityHierarchy(entityId: string): Promise<string[]> {
-    const entity = await this.entityRepo.findOne({
-      where: { id: entityId },
-      relations: ['children'],
-    });
+    const entityIds = await fetchEntityHierarchyIds(this.entityRepo, entityId);
 
-    if (!entity) {
+    if (entityIds.length === 0) {
       throw new NotFoundException('Entity not found');
-    }
-
-    const entityIds = [entityId];
-    const queue = [entity];
-
-    while (queue.length > 0) {
-      const current = queue.shift();
-      if (!current) break;
-      const children = await this.entityRepo.find({
-        where: { parent_id: current.id },
-        relations: ['children'],
-      });
-
-      for (const child of children) {
-        entityIds.push(child.id);
-        queue.push(child);
-      }
     }
 
     return entityIds;

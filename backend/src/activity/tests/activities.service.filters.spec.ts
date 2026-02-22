@@ -7,6 +7,7 @@ import { ActivityType } from '../../activities-type/activity-type.entity';
 import { ReportingPeriod } from '../../reporting-periods/reporting-period.entity';
 import { UserRoleAssignment } from '../../roles/user-role-assignment.entity';
 import { ActivityStatus } from '../activity-status.enum';
+import { ReportingPeriodException } from '../../reporting-periods/reporting-period-exception.entity';
 
 describe('ActivitiesService - Filters', () => {
   let service: ActivitiesService;
@@ -45,6 +46,10 @@ describe('ActivitiesService - Filters', () => {
         },
         {
           provide: getRepositoryToken(UserRoleAssignment),
+          useValue: {},
+        },
+        {
+          provide: getRepositoryToken(ReportingPeriodException),
           useValue: {},
         },
       ],

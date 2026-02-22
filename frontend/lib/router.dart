@@ -7,6 +7,7 @@ import 'pages/activities_list_page.dart';
 import 'pages/activity_detail_page.dart';
 import 'pages/reports_page.dart';
 import 'pages/user_activities_page.dart';
+import 'pages/leadership_dashboard_page.dart';
 
 /// Route path constants
 class AppRoutes {
@@ -15,6 +16,7 @@ class AppRoutes {
   static const activityDetail = '/activities/:id';
   static const reports = '/reports';
   static const userActivities = '/reports/user/:userId';
+  static const leadershipDashboard = '/leadership';
 
   /// Generate activity detail path with ID
   static String activityDetailPath(String id) => '/activities/$id';
@@ -71,6 +73,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                 child: UserActivitiesPage(userId: userId),
               );
             },
+          ),
+          GoRoute(
+            path: AppRoutes.leadershipDashboard,
+            pageBuilder: (context, state) => const NoTransitionPage(
+              child: LeadershipDashboardContent(),
+            ),
           ),
         ],
       ),
