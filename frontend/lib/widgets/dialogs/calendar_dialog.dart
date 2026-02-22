@@ -607,7 +607,7 @@ class _DayCell extends StatelessWidget {
         : isLocked
             ? scheme.errorContainer.withValues(alpha: 0.35)
             : isOutOfPeriod
-                ? scheme.surfaceVariant.withValues(alpha: 0.4)
+                ? scheme.surfaceContainerHighest.withValues(alpha: 0.4)
             : Colors.transparent;
     final borderColor = isToday
         ? scheme.primary.withValues(alpha: 0.6)
