@@ -14,7 +14,14 @@ import {
   UseGuards,
   Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiParam } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+  ApiParam,
+} from '@nestjs/swagger';
 import { Request } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { PoliciesGuard } from '../casl/policies.guard';
@@ -24,6 +31,7 @@ import { EntitiesService } from './entities.service';
 import { CreateEntityDto } from './dto/create-entity.dto';
 import { UpdateEntityDto } from './dto/update-entity.dto';
 import { EntityType, Entity } from './entity.entity';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 
 @ApiTags('Entities')
 @ApiBearerAuth('JWT-auth')
@@ -61,8 +69,8 @@ export class EntitiesController {
   @Get()
   @ApiOperation({ summary: 'List all entities' })
   @ApiResponse({ status: 200, description: 'List of all entities' })
-  async findAll() {
-    return this.entitiesService.findAll();
+  async findAll(@Query() query: PaginationQueryDto) {
+    return this.entitiesService.findAll(query);
   }
 
   @Get(':id')

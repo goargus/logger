@@ -7,16 +7,18 @@ import { ENDPOINTS } from '../../../support/api/api-client';
 
 async function ensureActivityType(world: CustomWorld, typeName: string): Promise<string> {
   const response = await world.apiClient.get(ENDPOINTS.ACTIVITY_TYPES);
+  const activityTypesList = response.data?.data || response.data;
 
-  if (response.status === 200 && Array.isArray(response.data)) {
-    const existing = response.data.find((t: any) => t.name.includes(typeName));
+  if (response.status === 200 && Array.isArray(activityTypesList)) {
+    const existing = activityTypesList.find((t: any) => t.name.includes(typeName));
     if (existing) {
       return existing.id;
     }
   }
 
   const rolesResponse = await world.apiClient.get(ENDPOINTS.ROLES);
-  const roleId = rolesResponse.data?.[0]?.id;
+  const rolesList = rolesResponse.data?.data || rolesResponse.data;
+  const roleId = rolesList?.[0]?.id;
 
   const timestamp = Date.now();
   const createResponse = await world.apiClient.post(ENDPOINTS.ACTIVITY_TYPES, {
@@ -43,8 +45,9 @@ async function ensureCompletedPeriodWithActivities(world: CustomWorld): Promise<
   let periodId: string;
   let startDate: string;
 
-  if (listResponse.status === 200 && Array.isArray(listResponse.data)) {
-    const lockedPeriod = listResponse.data.find((p: any) => p.status === 'locked');
+  const listData = listResponse.data?.data || listResponse.data;
+  if (listResponse.status === 200 && Array.isArray(listData)) {
+    const lockedPeriod = listData.find((p: any) => p.status === 'locked');
     if (lockedPeriod) {
       periodId = lockedPeriod.id;
       startDate = lockedPeriod.startDate;
@@ -54,7 +57,7 @@ async function ensureCompletedPeriodWithActivities(world: CustomWorld): Promise<
     }
 
     // Use active period and lock it after adding activities
-    const activePeriod = listResponse.data.find((p: any) => p.status === 'active');
+    const activePeriod = listData.find((p: any) => p.status === 'active');
     if (activePeriod) {
       periodId = activePeriod.id;
       startDate = activePeriod.startDate;
@@ -110,7 +113,8 @@ async function ensureMultiplePeriods(world: CustomWorld): Promise<void> {
     `${ENDPOINTS.REPORTING_PERIODS}?entityId=${entityId}`,
   );
 
-  if (listResponse.status === 200 && Array.isArray(listResponse.data) && listResponse.data.length >= 2) {
+  const multiPeriodsList = listResponse.data?.data || listResponse.data;
+  if (listResponse.status === 200 && Array.isArray(multiPeriodsList) && multiPeriodsList.length >= 2) {
     // Already have multiple periods
     return;
   }

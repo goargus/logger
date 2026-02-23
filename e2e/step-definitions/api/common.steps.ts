@@ -76,14 +76,18 @@ Then('the response should have property {string} with value {string}', function 
 
 Then('the response should be an array', function (this: CustomWorld) {
   const data = this.context.lastResponse?.data;
-  expect(Array.isArray(data)).toBe(true);
+  // Support both plain arrays and paginated responses ({ data: [...], pagination: {...} })
+  const items = Array.isArray(data) ? data : data?.data;
+  expect(Array.isArray(items)).toBe(true);
 });
 
 Then('each item should have property {string}', function (this: CustomWorld, propertyName: string) {
   const data = this.context.lastResponse?.data;
-  expect(Array.isArray(data)).toBe(true);
+  // Support both plain arrays and paginated responses ({ data: [...], pagination: {...} })
+  const items = Array.isArray(data) ? data : data?.data;
+  expect(Array.isArray(items)).toBe(true);
 
-  for (const item of data) {
+  for (const item of items) {
     expect(item).toHaveProperty(propertyName);
   }
 });

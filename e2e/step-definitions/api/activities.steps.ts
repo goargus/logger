@@ -38,13 +38,14 @@ async function ensureUserCanSubmitActivities(world: CustomWorld): Promise<string
 
   // Get all activity types
   const typesResponse = await world.apiClient.get(ENDPOINTS.ACTIVITY_TYPES);
-  if (typesResponse.data.length === 0) {
+  const activityTypesList = typesResponse.data?.data || typesResponse.data;
+  if (activityTypesList.length === 0) {
     throw new Error('No activity types found in database');
   }
 
   // Find an activity type that requires a role we can assign via the API
   // (roles like 'president' are not in the RoleEnum and will fail validation)
-  const validActivityType = typesResponse.data.find((at: any) => {
+  const validActivityType = activityTypesList.find((at: any) => {
     if (!at.allowed_roles || at.allowed_roles.length === 0) {
       return true; // No restrictions
     }
@@ -105,7 +106,8 @@ Given('I have an authorized activity type', async function (this: CustomWorld) {
 
   // Get the name
   const typesResponse = await this.apiClient.get(ENDPOINTS.ACTIVITY_TYPES);
-  const activityType = typesResponse.data.find((t: any) => t.id === activityTypeId);
+  const activityTypesList = typesResponse.data?.data || typesResponse.data;
+  const activityType = activityTypesList.find((t: any) => t.id === activityTypeId);
   this.context.activityTypeName = activityType?.name || 'Unknown';
 });
 
@@ -256,7 +258,7 @@ Then('the activity should not be in the list', async function (this: CustomWorld
   const response = await this.apiClient.get(ENDPOINTS.ACTIVITIES);
   expect(response.status).toBe(200);
 
-  const items = response.data.items || response.data;
+  const items = response.data?.data || response.data;
   const found = items.find((item: any) => item.id === notedId);
 
   expect(found).toBeUndefined();

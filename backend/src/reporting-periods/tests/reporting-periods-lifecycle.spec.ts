@@ -38,8 +38,11 @@ describe('ReportingPeriodsService - Lifecycle Management', () => {
     orderBy: jest.fn().mockReturnThis(),
     leftJoinAndSelect: jest.fn().mockReturnThis(),
     leftJoin: jest.fn().mockReturnThis(),
+    skip: jest.fn().mockReturnThis(),
+    take: jest.fn().mockReturnThis(),
     getOne: jest.fn(),
     getMany: jest.fn(),
+    getManyAndCount: jest.fn(),
     getCount: jest.fn(),
     update: jest.fn().mockReturnThis(),
     set: jest.fn().mockReturnThis(),
@@ -258,13 +261,17 @@ describe('ReportingPeriodsService - Lifecycle Management', () => {
 
     it('should find all periods with entity filter', async () => {
       mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
-      mockQueryBuilder.getMany.mockResolvedValue([{ id: '1' }]);
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[{ id: '1' }], 1]);
+      mockQueryBuilder.skip.mockReturnThis();
+      mockQueryBuilder.take.mockReturnThis();
 
-      await service.findAll('entity-1');
+      await service.findAll({ entityId: 'entity-1' } as any);
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('period.entity_id = :entityId', {
         entityId: 'entity-1',
       });
+      expect(mockQueryBuilder.skip).toHaveBeenCalledWith(0);
+      expect(mockQueryBuilder.take).toHaveBeenCalledWith(20);
     });
   });
 
