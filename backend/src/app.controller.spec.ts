@@ -22,5 +22,6 @@ describe('AppController', () => {
     const result = appController.getRootMessage();
     expect(result.status).toBe('ok');
     expect(result.message).toBe('API is running');
+    expect(result).not.toHaveProperty('env');
   });
 });

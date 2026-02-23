@@ -12,6 +12,7 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsNotFutureActivityDate } from '../validators/is-not-future-activity-date.decorator';
 
 export class CreateActivityDto {
   @ApiProperty({
@@ -29,6 +30,9 @@ export class CreateActivityDto {
   })
   @Transform(({ obj }) => obj.activityDate ?? obj.activity_date)
   @IsDateString()
+  @IsNotFutureActivityDate({
+    message: 'Activity date cannot be in the future',
+  })
   @IsDefined()
   activityDate!: string;
 

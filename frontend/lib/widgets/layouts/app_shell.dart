@@ -108,6 +108,9 @@ class AppShell extends ConsumerWidget {
       case '/reports':
         title = 'Reportes';
         break;
+      case '/leadership':
+        title = 'Rendimiento';
+        break;
       default:
         if (currentPath.startsWith('/activities/')) {
           title = 'Actividades';

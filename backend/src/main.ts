@@ -2,16 +2,21 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  const corsOriginsEnv = process.env.CORS_ORIGINS?.trim();
+  const corsOrigins = corsOriginsEnv
+    ? corsOriginsEnv
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean)
+    : ['http://localhost:3000', 'http://localhost:8080'];
+
   app.enableCors({
-    origin: [
-      'http://localhost:8080',
-      'http://localhost:3000',
-      'https://secretary-backend.pages.dev',
-    ],
+    origin: corsOrigins,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
@@ -25,6 +30,8 @@ async function bootstrap() {
       transformOptions: { enableImplicitConversion: true },
     }),
   );
+
+  app.useGlobalFilters(new AllExceptionsFilter());
 
   // Swagger configuration
   const config = new DocumentBuilder()

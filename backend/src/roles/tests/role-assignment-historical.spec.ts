@@ -8,7 +8,7 @@ import { User } from '../../users/user.entity';
 import { Role } from '../role.entity';
 import { Entity as OrgEntity } from '../../entities/entity.entity';
 import { UserStatus } from '../../users/user-status.enum';
-import { AssignRoleDto, RoleEnum } from '../dto/assign-role.dto';
+import { AssignRoleDto } from '../dto/assign-role.dto';
 
 describe('RoleAssignmentService - Historical Tracking', () => {
   let service: RoleAssignmentService;
@@ -101,7 +101,7 @@ describe('RoleAssignmentService - Historical Tracking', () => {
     it('should set start_date to today and calculate end_date when not provided', async () => {
       const dto: AssignRoleDto = {
         userId: 'user-id',
-        role: RoleEnum.MISSIONARY,
+        roleId: 'role-id',
         entityId: 'entity-id',
       };
 
@@ -149,7 +149,7 @@ describe('RoleAssignmentService - Historical Tracking', () => {
     it('should use provided start_date and calculate correct end_date', async () => {
       const dto: AssignRoleDto = {
         userId: 'user-id',
-        role: RoleEnum.MISSIONARY,
+        roleId: 'role-id',
         entityId: 'entity-id',
         startDate: '2025-01-01',
       };

@@ -596,6 +596,108 @@ describe('ReportsService', () => {
       expect(result.periods[0].activities).toBe(1);
       expect(result.periods[0].expenses).toBe(50);
     });
+
+    it('should return empty trends when no reporting periods exist', async () => {
+      const mockUser = {
+        id: 'user-1',
+        entity_id: 'entity-1',
+        role: { rolePermissions: [] },
+        entity: { id: 'entity-1' },
+      };
+
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
+      jest.spyOn(periodRepo, 'find').mockResolvedValue([]);
+
+      const result = await service.getTrends('user-1', {});
+
+      expect(result).toEqual({ periods: [] });
+      expect(queryFactory.buildActivityQuery).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getComparison', () => {
+    it('should return empty comparison when fewer than 2 reporting periods exist', async () => {
+      const mockUser = {
+        id: 'user-1',
+        entity_id: 'entity-1',
+        role: { rolePermissions: [] },
+        entity: { id: 'entity-1' },
+      };
+
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
+      jest.spyOn(periodRepo, 'find').mockResolvedValue([
+        {
+          id: 'period-1',
+          startDate: '2024-12-01',
+          endDate: '2024-12-14',
+          entityId: 'entity-1',
+        },
+      ] as any);
+
+      const result = await service.getComparison('user-1', {});
+
+      expect(result.current.periodId).toBe('');
+      expect(result.previous.periodId).toBe('');
+      expect(result.current.activities).toBe(0);
+      expect(result.previous.activities).toBe(0);
+      expect(result.changes.activities.value).toBe(0);
+      expect(queryFactory.buildActivityQuery).not.toHaveBeenCalled();
+    });
+
+    it('should compare by periodType boundaries when provided', async () => {
+      const mockUser = {
+        id: 'user-1',
+        entity_id: 'entity-1',
+        role: { rolePermissions: [] },
+        entity: { id: 'entity-1' },
+      };
+
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
+      jest.spyOn(periodRepo, 'find').mockResolvedValue([]);
+      jest
+        .spyOn(userRepo, 'find')
+        .mockResolvedValue([{ id: 'user-1', status: 'active', entity_id: 'entity-1' }] as any);
+      mockQueryBuilder.getMany
+        .mockResolvedValueOnce([{ id: 'a1', userId: 'user-1', expenseAmount: '10.00' }] as any)
+        .mockResolvedValueOnce([{ id: 'a2', userId: 'user-1', expenseAmount: '5.00' }] as any);
+
+      const result = await service.getComparison('user-1', {
+        periodType: 'monthly' as any,
+        year: 2026,
+        month: 2,
+      });
+
+      expect(result.current.periodId).toContain('current-monthly-2026-2');
+      expect(result.previous.periodId).toContain('previous-monthly-2026-1');
+      expect(queryFactory.buildActivityQuery).toHaveBeenCalledTimes(2);
+      expect(periodRepo.find).not.toHaveBeenCalled();
+    });
+
+    it('should compare provided date range with immediately previous range', async () => {
+      const mockUser = {
+        id: 'user-1',
+        entity_id: 'entity-1',
+        role: { rolePermissions: [] },
+        entity: { id: 'entity-1' },
+      };
+
+      jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
+      jest
+        .spyOn(userRepo, 'find')
+        .mockResolvedValue([{ id: 'user-1', status: 'active', entity_id: 'entity-1' }] as any);
+      mockQueryBuilder.getMany
+        .mockResolvedValueOnce([{ id: 'a1', userId: 'user-1', expenseAmount: '10.00' }] as any)
+        .mockResolvedValueOnce([{ id: 'a2', userId: 'user-1', expenseAmount: '5.00' }] as any);
+
+      const result = await service.getComparison('user-1', {
+        dateFrom: '2026-02-01',
+        dateTo: '2026-02-28',
+      });
+
+      expect(result.current.periodId).toContain('current-range-2026-02-01-2026-02-28');
+      expect(result.previous.periodId).toContain('previous-range-2026-01-04-2026-01-31');
+      expect(queryFactory.buildActivityQuery).toHaveBeenCalledTimes(2);
+    });
   });
 
   describe('getRankings', () => {
