@@ -18,7 +18,7 @@ import { HierarchyValidationService } from './hierarchy-validation.service';
 import { EntityTreeNode } from './dto/entity-tree.dto';
 import { ReportingPeriodsService } from '../reporting-periods/reporting-periods.service';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
-import { buildPagination, normalizePagination } from '../common/pagination';
+import { PaginatedResult, buildPagination, normalizePagination } from '../common/pagination';
 
 @Injectable()
 export class EntitiesService {
@@ -75,15 +75,12 @@ export class EntitiesService {
     return saved;
   }
 
-  async findAll(query?: PaginationQueryDto): Promise<{
-    data: Entity[];
-    pagination: { page: number; limit: number; total: number; totalPages: number };
-  }> {
-    const { page, limit, skip, take } = normalizePagination(query);
+  async findAll(query?: PaginationQueryDto): Promise<PaginatedResult<Entity>> {
+    const { page, limit, skip } = normalizePagination(query);
     const [data, total] = await this.repo.findAndCount({
       order: { name: 'ASC' },
       skip,
-      take,
+      take: limit,
     });
     return { data, pagination: buildPagination(page, limit, total) };
   }

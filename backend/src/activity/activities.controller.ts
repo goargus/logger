@@ -22,6 +22,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { IdentityResolutionService } from '../auth/identity-resolution.service';
 import { ActivityResponseDto } from './dto/activity-response.dto';
 import { ReportingPeriodsService } from '../reporting-periods/reporting-periods.service';
+import { buildPagination } from '../common/pagination';
 import { Request } from 'express';
 import { Repository, In } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -191,10 +192,8 @@ export class ActivitiesController {
     );
 
     return {
-      page,
-      limit,
-      total,
-      items: itemsWithLocked,
+      data: itemsWithLocked,
+      pagination: buildPagination(page, limit, total),
     };
   }
 

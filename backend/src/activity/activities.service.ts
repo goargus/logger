@@ -15,6 +15,7 @@ import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
 import { ReportingPeriodStatus } from '../reporting-periods/reporting-period-status.enum';
 import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
 import { formatDateToString } from '../common/date.utils';
+import { normalizePagination } from '../common/pagination';
 
 @Injectable()
 export class ActivitiesService {
@@ -164,8 +165,7 @@ export class ActivitiesService {
       search?: string;
     },
   ): Promise<[Activity[], number]> {
-    const take = Math.min(Math.max(limit, 1), 100);
-    const skip = Math.max(page - 1, 0) * take;
+    const { skip, limit: take } = normalizePagination({ page, limit });
 
     const qb = this.repo
       .createQueryBuilder('activity')

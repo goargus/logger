@@ -34,7 +34,7 @@ export class ActivityTypesController {
   @Get()
   @ApiOperation({ summary: 'List all activity types' })
   @ApiResponse({ status: 200, description: 'List of all activity types' })
-  async list(@Query() query: PaginationQueryDto = new PaginationQueryDto()) {
+  async list(@Query() query: PaginationQueryDto) {
     return this.service.findAll(query);
   }
 

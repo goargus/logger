@@ -95,7 +95,7 @@ export class RolesController {
 
   @Get()
   @Roles('admin')
-  findAll(@Query() query: PaginationQueryDto = new PaginationQueryDto()) {
+  findAll(@Query() query: PaginationQueryDto) {
     return this.rolesService.findAll(query);
   }
 

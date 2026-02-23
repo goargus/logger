@@ -10,7 +10,7 @@ import { Role } from './role.entity';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
-import { buildPagination, normalizePagination } from '../common/pagination';
+import { PaginatedResult, buildPagination, normalizePagination } from '../common/pagination';
 
 @Injectable()
 export class RolesService {
@@ -43,15 +43,12 @@ export class RolesService {
     return this.rolesRepo.save(role);
   }
 
-  async findAll(query?: PaginationQueryDto): Promise<{
-    data: Role[];
-    pagination: { page: number; limit: number; total: number; totalPages: number };
-  }> {
-    const { page, limit, skip, take } = normalizePagination(query);
+  async findAll(query?: PaginationQueryDto): Promise<PaginatedResult<Role>> {
+    const { page, limit, skip } = normalizePagination(query);
     const [data, total] = await this.rolesRepo.findAndCount({
       order: { name: 'ASC' },
       skip,
-      take,
+      take: limit,
     });
     return { data, pagination: buildPagination(page, limit, total) };
   }

@@ -11,7 +11,7 @@ import {
   ParseUUIDPipe,
   Query,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { ReportingPeriodsService } from './reporting-periods.service';
 import { CreateReportingPeriodDto } from './dto/create-reporting-period.dto';
 import { UpdateReportingPeriodDto } from './dto/update-reporting-period.dto';
@@ -19,6 +19,7 @@ import { CreateExceptionDto } from './dto/create-exception.dto';
 import { ReportingPeriodResponseDto } from './dto/reporting-period-response.dto';
 import { ExceptionResponseDto } from './dto/exception-response.dto';
 import { ListReportingPeriodsQueryDto } from './dto/list-reporting-periods.dto';
+import { PaginationMeta } from '../common/pagination';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
@@ -65,12 +66,11 @@ export class ReportingPeriodsController {
     status: 200,
     description: 'List of reporting periods',
   })
-  @ApiQuery({ name: 'entityId', required: false, description: 'Filter by entity UUID' })
   async findAll(
-    @Query() query: ListReportingPeriodsQueryDto = new ListReportingPeriodsQueryDto(),
+    @Query() query: ListReportingPeriodsQueryDto,
   ): Promise<{
     data: ReportingPeriodResponseDto[];
-    pagination: { page: number; limit: number; total: number; totalPages: number };
+    pagination: PaginationMeta;
   }> {
     const result = await this.reportingPeriodsService.findAll(query);
     return {

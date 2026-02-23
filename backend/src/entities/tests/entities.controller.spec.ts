@@ -130,7 +130,7 @@ describe('EntitiesController', () => {
         pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
       };
       service.findAll.mockResolvedValue(payload as any);
-      await expect(controller.findAll()).resolves.toEqual(payload);
+      await expect(controller.findAll({} as any)).resolves.toEqual(payload);
     });
   });
 

@@ -73,7 +73,7 @@ describe('RolesController', () => {
     };
     rolesService.findAll.mockResolvedValue(payload as any);
 
-    const res = await controller.findAll();
+    const res = await controller.findAll({} as any);
     expect(rolesService.findAll).toHaveBeenCalled();
     expect(res).toEqual(payload);
   });

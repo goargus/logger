@@ -41,7 +41,7 @@ export class AdminUsersController {
   @ApiResponse({ status: 200, description: 'List of all users' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   @ApiResponse({ status: 403, description: 'Forbidden - requires admin role' })
-  async list(@Query() query: PaginationQueryDto = new PaginationQueryDto()) {
+  async list(@Query() query: PaginationQueryDto) {
     return this.usersService.findAll(query);
   }
 

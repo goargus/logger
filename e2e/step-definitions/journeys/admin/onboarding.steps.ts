@@ -17,10 +17,11 @@ When(
   'I create an account for {string} with email {string}',
   async function (this: CustomWorld, fullName: string, email: string) {
     const roleResponse = await this.apiClient.get(ENDPOINTS.ROLES);
-    if (roleResponse.status !== 200 || !Array.isArray(roleResponse.data) || roleResponse.data.length === 0) {
+    const rolesList = roleResponse.data?.data || roleResponse.data;
+    if (roleResponse.status !== 200 || !Array.isArray(rolesList) || rolesList.length === 0) {
       throw new Error('No roles available in the system');
     }
-    const roleId = roleResponse.data[0].id;
+    const roleId = rolesList[0].id;
 
     const timestamp = Date.now();
     const uniqueEmail = email.replace('@', `-${timestamp}@`);

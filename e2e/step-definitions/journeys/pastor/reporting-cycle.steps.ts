@@ -11,9 +11,10 @@ async function ensureActivePeriod(world: CustomWorld, periodName: string): Promi
     `${ENDPOINTS.REPORTING_PERIODS}?entityId=${entityId}`,
   );
 
-  if (listResponse.status === 200 && Array.isArray(listResponse.data)) {
+  const periodsList = listResponse.data?.data || listResponse.data;
+  if (listResponse.status === 200 && Array.isArray(periodsList)) {
     // Look for an existing active period
-    const activePeriod = listResponse.data.find((p: any) => p.status === 'active');
+    const activePeriod = periodsList.find((p: any) => p.status === 'active');
     if (activePeriod) {
       world.context.createdReportingPeriodId = activePeriod.id;
       world.context.createdPeriodName = activePeriod.name;
@@ -23,7 +24,7 @@ async function ensureActivePeriod(world: CustomWorld, periodName: string): Promi
     }
 
     // Look for a locked period we can unlock
-    const lockedPeriod = listResponse.data.find((p: any) => p.status === 'locked');
+    const lockedPeriod = periodsList.find((p: any) => p.status === 'locked');
     if (lockedPeriod) {
       await world.apiClient.patch(`${ENDPOINTS.REPORTING_PERIODS}/${lockedPeriod.id}/unlock`);
       world.context.createdReportingPeriodId = lockedPeriod.id;
@@ -67,9 +68,10 @@ async function ensureLockedPeriod(world: CustomWorld, periodName: string): Promi
     `${ENDPOINTS.REPORTING_PERIODS}?entityId=${entityId}`,
   );
 
-  if (listResponse.status === 200 && Array.isArray(listResponse.data)) {
+  const periodsList = listResponse.data?.data || listResponse.data;
+  if (listResponse.status === 200 && Array.isArray(periodsList)) {
     // Look for an existing locked period
-    const lockedPeriod = listResponse.data.find((p: any) => p.status === 'locked');
+    const lockedPeriod = periodsList.find((p: any) => p.status === 'locked');
     if (lockedPeriod) {
       world.context.createdReportingPeriodId = lockedPeriod.id;
       world.context.createdPeriodName = lockedPeriod.name;
@@ -79,7 +81,7 @@ async function ensureLockedPeriod(world: CustomWorld, periodName: string): Promi
     }
 
     // Look for an active period we can lock
-    const activePeriod = listResponse.data.find((p: any) => p.status === 'active');
+    const activePeriod = periodsList.find((p: any) => p.status === 'active');
     if (activePeriod) {
       await world.apiClient.patch(`${ENDPOINTS.REPORTING_PERIODS}/${activePeriod.id}/lock`);
       world.context.createdReportingPeriodId = activePeriod.id;
@@ -101,7 +103,7 @@ Given('my organization has team members who log activities', async function (thi
   // Verify we have users in the system
   const response = await this.apiClient.get(ENDPOINTS.ADMIN_USERS);
   expect(response.status).toBe(200);
-  expect(Array.isArray(response.data)).toBe(true);
+  expect(Array.isArray(response.data?.data || response.data)).toBe(true);
 });
 
 Given('there are no active reporting periods', async function (this: CustomWorld) {
@@ -110,8 +112,9 @@ Given('there are no active reporting periods', async function (this: CustomWorld
     `${ENDPOINTS.REPORTING_PERIODS}?entityId=${this.context.entityId}`,
   );
 
-  if (listResponse.status === 200 && Array.isArray(listResponse.data)) {
-    for (const period of listResponse.data) {
+  const periodsList = listResponse.data?.data || listResponse.data;
+  if (listResponse.status === 200 && Array.isArray(periodsList)) {
+    for (const period of periodsList) {
       if (period.status === 'active') {
         await this.apiClient.patch(`${ENDPOINTS.REPORTING_PERIODS}/${period.id}/lock`);
       }
@@ -176,8 +179,9 @@ Then('the period should be visible to all team members', async function (this: C
     `${ENDPOINTS.REPORTING_PERIODS}?entityId=${this.context.entityId}`,
   );
   expect(response.status).toBe(200);
-  expect(Array.isArray(response.data)).toBe(true);
-  expect(response.data.length).toBeGreaterThan(0);
+  const periodsList = response.data?.data || response.data;
+  expect(Array.isArray(periodsList)).toBe(true);
+  expect(periodsList.length).toBeGreaterThan(0);
 });
 
 Then('no more activities can be added to this period', function (this: CustomWorld) {

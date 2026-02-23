@@ -69,7 +69,7 @@ export class EntitiesController {
   @Get()
   @ApiOperation({ summary: 'List all entities' })
   @ApiResponse({ status: 200, description: 'List of all entities' })
-  async findAll(@Query() query: PaginationQueryDto = new PaginationQueryDto()) {
+  async findAll(@Query() query: PaginationQueryDto) {
     return this.entitiesService.findAll(query);
   }
 

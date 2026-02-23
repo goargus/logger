@@ -93,7 +93,7 @@ describe('AdminUsersController', () => {
       };
       service.findAll.mockResolvedValue(payload as any);
 
-      const result = await controller.list();
+      const result = await controller.list({} as any);
       expect(service.findAll).toHaveBeenCalled();
       expect(result).toEqual(payload);
     });

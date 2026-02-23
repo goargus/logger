@@ -14,7 +14,7 @@ import { UpdateReportingPeriodDto } from './dto/update-reporting-period.dto';
 import { CreateExceptionDto } from './dto/create-exception.dto';
 import { ReportingPeriodStatus } from './reporting-period-status.enum';
 import { ListReportingPeriodsQueryDto } from './dto/list-reporting-periods.dto';
-import { buildPagination, normalizePagination } from '../common/pagination';
+import { PaginatedResult, buildPagination, normalizePagination } from '../common/pagination';
 
 @Injectable()
 export class ReportingPeriodsService {
@@ -192,12 +192,7 @@ export class ReportingPeriodsService {
       .getMany();
   }
 
-  async findAll(
-    query?: ListReportingPeriodsQueryDto,
-  ): Promise<{
-    data: ReportingPeriod[];
-    pagination: { page: number; limit: number; total: number; totalPages: number };
-  }> {
+  async findAll(query?: ListReportingPeriodsQueryDto): Promise<PaginatedResult<ReportingPeriod>> {
     const queryBuilder = this.repo
       .createQueryBuilder('period')
       .leftJoinAndSelect('period.entity', 'entity')
@@ -207,8 +202,8 @@ export class ReportingPeriodsService {
       queryBuilder.andWhere('period.entity_id = :entityId', { entityId: query.entityId });
     }
 
-    const { page, limit, skip, take } = normalizePagination(query);
-    const [data, total] = await queryBuilder.skip(skip).take(take).getManyAndCount();
+    const { page, limit, skip } = normalizePagination(query);
+    const [data, total] = await queryBuilder.skip(skip).take(limit).getManyAndCount();
     return { data, pagination: buildPagination(page, limit, total) };
   }
 

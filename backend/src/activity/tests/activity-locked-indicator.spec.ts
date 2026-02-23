@@ -329,10 +329,10 @@ describe('ActivitiesController - Locked Indicator', () => {
 
       const result = await controller.findMine(mockRequest, 1, 20);
 
-      expect(result.items).toHaveLength(3);
-      expect(result.items[0].locked).toBe(false); // Jan 5 - has exception
-      expect(result.items[1].locked).toBe(false); // Jan 10 - has exception
-      expect(result.items[2].locked).toBe(true); // Jan 15 - no exception
+      expect(result.data).toHaveLength(3);
+      expect(result.data[0].locked).toBe(false); // Jan 5 - has exception
+      expect(result.data[1].locked).toBe(false); // Jan 10 - has exception
+      expect(result.data[2].locked).toBe(true); // Jan 15 - no exception
       expect(reportingPeriodsService.hasUserExceptionForDate).toHaveBeenCalledTimes(3);
     });
 
@@ -352,9 +352,9 @@ describe('ActivitiesController - Locked Indicator', () => {
 
       const result = await controller.findMine(mockRequest, 1, 20);
 
-      expect(result.items).toHaveLength(2);
-      expect(result.items[0].locked).toBe(false);
-      expect(result.items[1].locked).toBe(false);
+      expect(result.data).toHaveLength(2);
+      expect(result.data[0].locked).toBe(false);
+      expect(result.data[1].locked).toBe(false);
       expect(reportingPeriodsService.hasUserExceptionForDate).not.toHaveBeenCalled();
     });
   });

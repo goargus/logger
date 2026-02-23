@@ -31,9 +31,9 @@ async function run() {
     } catch (e: any) {
       const msg = String(e?.message ?? '');
       if (msg.toLowerCase().includes('already exists') || e?.status === 409) {
-        const { data } = await entitiesService.findAll();
-        const found = data.find(
-          (x) => x.type === params.type && x.name.toLowerCase() === params.name.toLowerCase(),
+        const existing = await entitiesService.findAllByType(params.type);
+        const found = existing.find(
+          (x) => x.name.toLowerCase() === params.name.toLowerCase(),
         );
         if (found) return found;
       }
