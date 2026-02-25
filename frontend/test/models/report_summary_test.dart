@@ -4,24 +4,41 @@ import 'package:logger/utils/currency_formatter.dart';
 
 void main() {
   group('Reports bugs', () {
-    group('BUG-001: "Estado: custom" raw label', () {
-      // reports_view.dart:220 displays: 'Estado: ${_summary?.status ?? "Activo"}'
-      // The status comes from ReportSummary.fromApi() which reads period['status'].
-      // When the API returns "custom" as the status, it's displayed raw.
-      // The fix should map API status values to user-friendly Spanish labels.
-
-      test('ReportSummary.fromApi passes through raw status from API', () {
+    group('BUG-001: status label localization', () {
+      test('statusLabel maps "active" to "Activo"', () {
         final summary = ReportSummary.fromApi({
           'totals': {'activities': 5, 'expenses': 100.0},
+          'period': {
+            'startDate': '2026-02-01',
+            'endDate': '2026-02-28',
+            'status': 'active',
+          },
+        });
+        expect(summary.statusLabel, equals('Activo'));
+      });
+
+      test('statusLabel maps "locked" to "Bloqueado"', () {
+        final summary = ReportSummary.fromApi({
+          'totals': {'activities': 0, 'expenses': 0},
+          'period': {
+            'startDate': '2026-02-01',
+            'endDate': '2026-02-28',
+            'status': 'locked',
+          },
+        });
+        expect(summary.statusLabel, equals('Bloqueado'));
+      });
+
+      test('statusLabel passes through unknown status values', () {
+        final summary = ReportSummary.fromApi({
+          'totals': {'activities': 0, 'expenses': 0},
           'period': {
             'startDate': '2026-02-01',
             'endDate': '2026-02-28',
             'status': 'custom',
           },
         });
-        // BUG: This raw 'custom' value is displayed as "Estado: custom"
-        // It should be mapped to a user-friendly label
-        expect(summary.status, equals('custom'));
+        expect(summary.statusLabel, equals('custom'));
       });
 
       test('status defaults to "Activo" when missing from API', () {

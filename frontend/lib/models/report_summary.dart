@@ -4,7 +4,14 @@ class ReportSummary {
   final bool isReported;
   final String periodStart;
   final String periodEnd;
-  final String status; // 'Activo', 'Inactivo', etc.
+  final String status;
+
+  static const _statusLabels = <String, String>{
+    'active': 'Activo',
+    'locked': 'Bloqueado',
+  };
+
+  String get statusLabel => _statusLabels[status.toLowerCase()] ?? status;
 
   const ReportSummary({
     required this.totalActivities,

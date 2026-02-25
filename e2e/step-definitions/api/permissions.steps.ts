@@ -72,9 +72,8 @@ Given('another user has created an activity', async function (this: CustomWorld)
       hasExpense: false,
     });
 
-    if (response.status === 201) {
+    expect(response.status).toBe(201);
       this.context.otherUserActivityId = response.data.id;
-    }
   });
 });
 
@@ -95,15 +94,13 @@ Given(
         hasExpense: false,
       });
 
-      if (response.status === 201) {
-        this.context.otherUserActivityId = response.data.id;
-      }
+      expect(response.status).toBe(201);
+      this.context.otherUserActivityId = response.data.id;
     });
   },
 );
 
 Given('a subordinate user has created an activity', async function (this: CustomWorld) {
-  // Create an activity as missionary (subordinate to pastor)
   await asUser(this, 'missionary', async () => {
     const typeId = await getAuthorizedActivityType(this);
     const today = new Date().toISOString().split('T')[0];
@@ -115,16 +112,14 @@ Given('a subordinate user has created an activity', async function (this: Custom
       hasExpense: false,
     });
 
-    if (response.status === 201) {
-      this.context.subordinateActivityId = response.data.id;
-    }
+    expect(response.status).toBe(201);
+    this.context.subordinateActivityId = response.data.id;
   });
 });
 
 Given(
   'a subordinate user has an activity with id {string}',
   async function (this: CustomWorld, _activityId: string) {
-    // Create as missionary and store real ID
     await asUser(this, 'missionary', async () => {
       const typeId = await getAuthorizedActivityType(this);
       const today = new Date().toISOString().split('T')[0];
@@ -136,9 +131,8 @@ Given(
         hasExpense: false,
       });
 
-      if (response.status === 201) {
-        this.context.subordinateActivityId = response.data.id;
-      }
+      expect(response.status).toBe(201);
+      this.context.subordinateActivityId = response.data.id;
     });
   },
 );
@@ -200,7 +194,8 @@ When('I try to access the unrelated entity data', async function (this: CustomWo
 });
 
 When("I try to modify another users activity", async function (this: CustomWorld) {
-  const activityId = this.context.otherUserActivityId || '00000000-0000-4000-a000-000000000001';
+  const activityId = this.context.otherUserActivityId;
+  expect(activityId).toBeDefined();
 
   this.context.lastResponse = await this.apiClient.patch(`${ENDPOINTS.ACTIVITIES}/${activityId}`, {
     description: 'Unauthorized modification attempt',

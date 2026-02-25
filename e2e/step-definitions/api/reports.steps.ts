@@ -2,30 +2,7 @@ import { Given, When, Then, DataTable } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { CustomWorld } from '../../support/world';
 import { ENDPOINTS } from '../../support/api/api-client';
-
-/**
- * Helper to parse DataTable into object
- */
-function parseDataTable(table: DataTable): Record<string, any> {
-  const data: Record<string, any> = {};
-  for (const [key, value] of table.raw()) {
-    if (value === 'true') data[key] = true;
-    else if (value === 'false') data[key] = false;
-    else data[key] = value;
-  }
-  return data;
-}
-
-/**
- * Helper to build query string from object
- */
-function buildQueryString(params: Record<string, any>): string {
-  const query = Object.entries(params)
-    .filter(([, value]) => value !== undefined && value !== null)
-    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
-    .join('&');
-  return query ? `?${query}` : '';
-}
+import { parseDataTable, buildQueryString } from '../../support/step-helpers';
 
 // === SETUP STEPS ===
 

@@ -2,22 +2,7 @@ import { Given, When, Then, DataTable } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { CustomWorld } from '../../support/world';
 import { ENDPOINTS } from '../../support/api/api-client';
-
-/**
- * Helper to parse DataTable into object.
- * Handles placeholder values for entity/role resolution.
- */
-function parseDataTable(table: DataTable): Record<string, any> {
-  const data: Record<string, any> = {};
-  for (const [key, value] of table.raw()) {
-    if (value === 'true') data[key] = true;
-    else if (value === 'false') data[key] = false;
-    else if (value === 'current-entity') data[key] = null; // Resolved later
-    else if (value === 'different-entity') data[key] = null; // Resolved later
-    else data[key] = value;
-  }
-  return data;
-}
+import { parseDataTable } from '../../support/step-helpers';
 
 // === LIST USERS STEPS ===
 

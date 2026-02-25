@@ -11,17 +11,6 @@ import '../models/report_summary.dart';
 import '../models/report_breakdown.dart';
 import '../models/report_period_type.dart';
 
-String _localizeStatus(String? status) {
-  switch (status) {
-    case 'active':
-      return 'Activo';
-    case 'locked':
-      return 'Bloqueado';
-    default:
-      return status ?? 'Activo';
-  }
-}
-
 /// Content-only widget for reports view - shell is handled by AppShell via router
 class ReportsViewContent extends ConsumerStatefulWidget {
   const ReportsViewContent({super.key});
@@ -229,7 +218,7 @@ class _ReportsViewContentState extends ConsumerState<ReportsViewContent> {
                   Row(
                     children: [
                       Text(
-                        'Estado: ${_localizeStatus(_summary?.status)}',
+                        'Estado: ${_summary?.statusLabel ?? "Activo"}',
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
