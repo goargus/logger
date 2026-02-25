@@ -38,7 +38,8 @@ void main() {
     });
 
     test('calculates total pages from total and limit', () {
-      final state = ActivitiesListState.initial().copyWith(total: 45, limit: 20);
+      final state =
+          ActivitiesListState.initial().copyWith(total: 45, limit: 20);
       expect(state.totalPages, 3);
     });
 

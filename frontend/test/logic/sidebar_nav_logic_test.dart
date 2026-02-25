@@ -20,8 +20,7 @@ void main() {
       // Widget-level test requires Chrome platform (package:web dependency).
       // For now, we verify the logic is present by testing the auth state.
 
-      test(
-          'AuthState supports logout (transition to unauthenticated)', () {
+      test('AuthState supports logout (transition to unauthenticated)', () {
         final authenticated = FakeAuthStates.platformAdmin();
         expect(authenticated.isAuthenticated, isTrue);
 

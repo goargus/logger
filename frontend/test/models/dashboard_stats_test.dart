@@ -56,8 +56,8 @@ void main() {
         expect(stats.bibleStudies, equals(1));
       });
 
-      test(
-          'BUG-007: stat card names depend on activity type name patterns', () {
+      test('BUG-007: stat card names depend on activity type name patterns',
+          () {
         // DashboardStats.fromApi checks name.contains('visita') for visits
         // and name.contains('estudio') && name.contains('b') && name.contains('blic')
         // for bible studies. This is fragile string matching.
