@@ -159,7 +159,7 @@ Given('team members have logged activities with expenses', async function (this:
 
 // --- Action Steps ---
 
-When('I request the summary report for the current period', async function (this: CustomWorld) {
+When('I request the summary report for my entity', async function (this: CustomWorld) {
   const entityId = this.context.entityId;
   this.context.lastResponse = await this.apiClient.get(
     `${ENDPOINTS.REPORTS_SUMMARY}?entityId=${entityId}`,
@@ -173,38 +173,10 @@ When('I request the breakdowns report', async function (this: CustomWorld) {
   );
 });
 
-When('I request the compliance report', async function (this: CustomWorld) {
-  const entityId = this.context.entityId;
-  this.context.lastResponse = await this.apiClient.get(
-    `${ENDPOINTS.REPORTS_COMPLIANCE}?entityId=${entityId}`,
-  );
-});
-
-When('I request the trends report', async function (this: CustomWorld) {
-  const entityId = this.context.entityId;
-  this.context.lastResponse = await this.apiClient.get(
-    `${ENDPOINTS.REPORTS_TRENDS}?entityId=${entityId}`,
-  );
-});
-
 When('I request the comparison report', async function (this: CustomWorld) {
   const entityId = this.context.entityId;
   this.context.lastResponse = await this.apiClient.get(
     `${ENDPOINTS.REPORTS_COMPARISON}?entityId=${entityId}`,
-  );
-});
-
-When('I request the rankings report', async function (this: CustomWorld) {
-  const entityId = this.context.entityId;
-  this.context.lastResponse = await this.apiClient.get(
-    `${ENDPOINTS.REPORTS_RANKINGS}?entityId=${entityId}`,
-  );
-});
-
-When('I request the expenses report', async function (this: CustomWorld) {
-  const entityId = this.context.entityId;
-  this.context.lastResponse = await this.apiClient.get(
-    `${ENDPOINTS.REPORTS_EXPENSES}?entityId=${entityId}`,
   );
 });
 

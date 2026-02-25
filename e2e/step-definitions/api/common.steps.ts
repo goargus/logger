@@ -49,6 +49,14 @@ Then('the response status should be {int}', function (this: CustomWorld, statusC
   expect(this.context.lastResponse?.status).toBe(statusCode);
 });
 
+Then(
+  'the response status should be {int} or {int}',
+  function (this: CustomWorld, statusCode1: number, statusCode2: number) {
+    const actualStatus = this.context.lastResponse?.status;
+    expect([statusCode1, statusCode2]).toContain(actualStatus);
+  },
+);
+
 Then('the response should have property {string}', function (this: CustomWorld, propertyName: string) {
   const data = this.context.lastResponse?.data;
   expect(data).toHaveProperty(propertyName);

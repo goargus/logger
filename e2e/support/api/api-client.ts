@@ -72,12 +72,16 @@ export const ENDPOINTS = {
   REPORTS_COMPARISON: '/reports/comparison',
   REPORTS_RANKINGS: '/reports/rankings',
   REPORTS_EXPENSES: '/reports/expenses',
+  REPORTS_USERS: '/reports/users',
+  REPORTS_EXPORT: '/reports/export',
 
   // Entities
   ENTITIES: '/entities',
 
-  // Entity Hierarchy (for hierarchical reports)
-  // Usage: `${ENDPOINTS.ENTITIES}/${entityId}/tree`
-  // Usage: `${ENDPOINTS.ENTITIES}/${entityId}/descendants`
-  // Usage: `${ENDPOINTS.ENTITIES}/${entityId}/children`
+  // Admin
+  ADMIN_DASHBOARD: '/admin/dashboard',
+
+  // Roles - additional
+  ROLES_ASSIGN_BULK: '/roles/assign/bulk',
+  ROLES_USERS_BY_ROLE: '/roles/users-by-role',
 } as const;

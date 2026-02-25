@@ -21,15 +21,15 @@ export class UserRoleAssignment {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @ManyToOne(() => User, { eager: true, onDelete: 'CASCADE' })
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user!: User;
 
-  @ManyToOne(() => Role, { eager: true, onDelete: 'CASCADE' })
+  @ManyToOne(() => Role, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'role_id' })
   role!: Role;
 
-  @ManyToOne(() => OrgEntity, { eager: true, onDelete: 'CASCADE' })
+  @ManyToOne(() => OrgEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'entity_id' })
   entity!: OrgEntity;
 
