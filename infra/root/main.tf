@@ -57,6 +57,7 @@ module "container_apps" {
   auth0_domain               = var.auth0_domain
   auth0_audience             = var.auth0_audience
   auth0_issuer               = var.auth0_issuer
+  cors_origins               = var.cors_origins
   admin_email                = var.admin_email
   admin_username             = var.admin_username
   admin_idp_issuer           = var.admin_idp_issuer

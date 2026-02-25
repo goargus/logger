@@ -1,6 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class EnableTrigramSearchActivities implements MigrationInterface {
+export class EnableTrigramSearchActivities1736200000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query('CREATE EXTENSION IF NOT EXISTS pg_trgm');
     await queryRunner.query(

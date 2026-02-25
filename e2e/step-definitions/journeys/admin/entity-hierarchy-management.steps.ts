@@ -7,16 +7,18 @@ import { ENDPOINTS } from '../../../support/api/api-client';
 
 async function findEntityByName(world: CustomWorld, name: string): Promise<any | null> {
   const response = await world.apiClient.get(ENDPOINTS.ENTITIES);
-  if (response.status === 200 && Array.isArray(response.data)) {
-    return response.data.find((e: any) => e.name.includes(name)) || null;
+  const entities = response.data?.data || response.data;
+  if (response.status === 200 && Array.isArray(entities)) {
+    return entities.find((e: any) => e.name.includes(name)) || null;
   }
   return null;
 }
 
 async function findEntityByType(world: CustomWorld, type: string): Promise<any | null> {
   const response = await world.apiClient.get(ENDPOINTS.ENTITIES);
-  if (response.status === 200 && Array.isArray(response.data)) {
-    return response.data.find((e: any) => e.type === type.toUpperCase()) || null;
+  const entities = response.data?.data || response.data;
+  if (response.status === 200 && Array.isArray(entities)) {
+    return entities.find((e: any) => e.type === type.toUpperCase()) || null;
   }
   return null;
 }
@@ -237,8 +239,9 @@ When('I deactivate the entity', async function (this: CustomWorld) {
 
 When('I list all Unions', async function (this: CustomWorld) {
   const response = await this.apiClient.get(ENDPOINTS.ENTITIES);
-  if (response.status === 200 && Array.isArray(response.data)) {
-    this.context.filteredEntities = response.data.filter((e: any) => e.type === 'UNION');
+  const entitiesList = response.data?.data || response.data;
+  if (response.status === 200 && Array.isArray(entitiesList)) {
+    this.context.filteredEntities = entitiesList.filter((e: any) => e.type === 'UNION');
   }
   this.context.lastResponse = response;
 });
@@ -247,8 +250,9 @@ When('I list all Unions', async function (this: CustomWorld) {
 
 Then('I should see the complete hierarchy tree', function (this: CustomWorld) {
   expect(this.context.lastResponse?.status).toBe(200);
-  expect(Array.isArray(this.context.lastResponse?.data)).toBe(true);
-  expect(this.context.lastResponse?.data.length).toBeGreaterThan(0);
+  const entitiesList = this.context.lastResponse?.data?.data || this.context.lastResponse?.data;
+  expect(Array.isArray(entitiesList)).toBe(true);
+  expect(entitiesList.length).toBeGreaterThan(0);
 });
 
 Then('each level should show its child entities', async function (this: CustomWorld) {
@@ -333,7 +337,8 @@ Then('it should not appear in active entity lists', async function (this: Custom
   const response = await this.apiClient.get(ENDPOINTS.ENTITIES);
 
   if (response.status === 200) {
-    const activeEntities = response.data.filter((e: any) => e.is_active === true);
+    const entitiesList = response.data?.data || response.data;
+    const activeEntities = entitiesList.filter((e: any) => e.is_active === true);
     const found = activeEntities.some((e: any) => e.id === entityId);
     // Depending on API behavior, may or may not filter inactive by default
     // Just verify the entity was deactivated

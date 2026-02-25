@@ -12,7 +12,6 @@ export class AppController {
       status: 'ok',
       message: 'API is running',
       timestamp: new Date().toISOString(),
-      env: process.env.NODE_ENV || 'development',
     };
   }
 }

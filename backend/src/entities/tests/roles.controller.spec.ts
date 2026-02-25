@@ -4,7 +4,7 @@ import { RolesService } from '../../roles/roles.service';
 import { RoleAssignmentService } from '../../roles/role-assignment.service';
 import { CreateRoleDto } from '../../roles/dto/create-role.dto';
 import { UpdateRoleDto } from '../../roles/dto/update-role.dto';
-import { AssignRoleDto, RoleEnum } from '../../roles/dto/assign-role.dto';
+import { AssignRoleDto } from '../../roles/dto/assign-role.dto';
 import { RemoveRoleDto } from '../../roles/dto/remove-role.dto';
 import { PermissionsService } from '../../auth/permissions/permissions.service';
 import { RolesGuard } from '../../auth/roles.guard';
@@ -67,12 +67,15 @@ describe('RolesController', () => {
   });
 
   it('findAll -> should return list', async () => {
-    const list = [{ id: 'uuid-1', name: 'PASTOR' }];
-    rolesService.findAll.mockResolvedValue(list as any);
+    const payload = {
+      data: [{ id: 'uuid-1', name: 'PASTOR' }],
+      pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+    };
+    rolesService.findAll.mockResolvedValue(payload as any);
 
-    const res = await controller.findAll();
+    const res = await controller.findAll({} as any);
     expect(rolesService.findAll).toHaveBeenCalled();
-    expect(res).toEqual(list);
+    expect(res).toEqual(payload);
   });
 
   it('getRoleById -> should return one', async () => {
@@ -105,8 +108,8 @@ describe('RolesController', () => {
     const users = [{ id: 'u1' }, { id: 'u2' }];
     roleAssignmentService.listUsersByRole.mockResolvedValue(users as any);
 
-    const res = await controller.usersByRole(RoleEnum.PASTOR);
-    expect(roleAssignmentService.listUsersByRole).toHaveBeenCalledWith(RoleEnum.PASTOR);
+    const res = await controller.usersByRole('PASTOR');
+    expect(roleAssignmentService.listUsersByRole).toHaveBeenCalledWith('PASTOR');
     expect(res).toEqual(users);
   });
 
@@ -123,7 +126,7 @@ describe('RolesController', () => {
   it('assign -> should create assignment', async () => {
     const dto: AssignRoleDto = {
       userId: '22222222-2222-2222-2222-222222222222',
-      role: RoleEnum.PASTOR,
+      roleId: '44444444-4444-4444-4444-444444444444',
       entityId: '33333333-3333-3333-3333-333333333333',
     };
     const created = { id: 'assign-1' };

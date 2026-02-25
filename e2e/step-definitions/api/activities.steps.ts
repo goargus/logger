@@ -6,6 +6,8 @@ import { parseDataTable } from '../../support/step-helpers';
 
 // === SETUP STEPS ===
 
+const VALID_ROLE_NAMES = ['missionary', 'pastor', 'admin'];
+
 /**
  * Helper to ensure current user can submit activities.
  * Returns an activity type ID the user is authorized to use.
@@ -24,14 +26,24 @@ async function ensureUserCanSubmitActivities(world: CustomWorld): Promise<string
 
   // Fallback: get all activity types (admin may be able to use any)
   const typesResponse = await world.apiClient.get(ENDPOINTS.ACTIVITY_TYPES);
-  if (typesResponse.status !== 200 || typesResponse.data.length === 0) {
-    throw new Error(
-      'No authorized activity types found. Ensure the admin user has a role assignment ' +
-        '(e.g., Misionero) in the user_role_assignments table.',
-    );
+  const activityTypesList = typesResponse.data?.data || typesResponse.data;
+  if (activityTypesList.length === 0) {
+    throw new Error('No activity types found in database');
   }
 
-  return typesResponse.data[0].id;
+  // Find an activity type that requires a role we can assign via the API
+  // (roles like 'president' are not in the RoleEnum and will fail validation)
+  const validActivityType = activityTypesList.find((at: any) => {
+    if (!at.allowed_roles || at.allowed_roles.length === 0) {
+      return true; // No restrictions
+    }
+    // Check if any required role is in our valid roles list
+    return at.allowed_roles.some((role: any) =>
+      VALID_ROLE_NAMES.includes(role.name.toLowerCase()),
+    );
+  });
+
+  return (validActivityType || activityTypesList[0]).id;
 }
 
 Given('I have an authorized activity type', async function (this: CustomWorld) {
@@ -40,7 +52,8 @@ Given('I have an authorized activity type', async function (this: CustomWorld) {
 
   // Get the name
   const typesResponse = await this.apiClient.get(ENDPOINTS.ACTIVITY_TYPES);
-  const activityType = typesResponse.data.find((t: any) => t.id === activityTypeId);
+  const activityTypesList = typesResponse.data?.data || typesResponse.data;
+  const activityType = activityTypesList.find((t: any) => t.id === activityTypeId);
   this.context.activityTypeName = activityType?.name || 'Unknown';
 });
 
@@ -211,7 +224,7 @@ Then('the activity should not be in the list', async function (this: CustomWorld
   const response = await this.apiClient.get(ENDPOINTS.ACTIVITIES);
   expect(response.status).toBe(200);
 
-  const items = response.data.items || response.data;
+  const items = response.data?.data || response.data;
   const found = items.find((item: any) => item.id === notedId);
 
   expect(found).toBeUndefined();

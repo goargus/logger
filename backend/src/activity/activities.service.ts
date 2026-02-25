@@ -15,6 +15,8 @@ import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
 import { ReportingPeriodStatus } from '../reporting-periods/reporting-period-status.enum';
 import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
 import { formatDateToString } from '../common/date.utils';
+import { normalizePagination } from '../common/pagination';
+import { ReportingPeriodException } from '../reporting-periods/reporting-period-exception.entity';
 
 @Injectable()
 export class ActivitiesService {
@@ -23,6 +25,8 @@ export class ActivitiesService {
     @InjectRepository(ActivityType) private readonly typesRepo: Repository<ActivityType>,
     @InjectRepository(ReportingPeriod)
     private readonly reportingPeriodsRepo: Repository<ReportingPeriod>,
+    @InjectRepository(ReportingPeriodException)
+    private readonly exceptionsRepo: Repository<ReportingPeriodException>,
     @InjectRepository(UserRoleAssignment)
     private readonly uraRepo: Repository<UserRoleAssignment>,
   ) {}
@@ -52,18 +56,16 @@ export class ActivitiesService {
         where: { id: activity.reportingPeriodId },
       });
       if (reportingPeriod && reportingPeriod.status === ReportingPeriodStatus.LOCKED) {
-        const hasException = await this.reportingPeriodsRepo.manager
-          .getRepository('reporting_period_exception')
-          .findOne({
-            where: {
-              userId,
-              reportingPeriodId: activity.reportingPeriodId,
-            },
-          });
+        const hasException = await this.exceptionsRepo.findOne({
+          where: {
+            userId,
+            reportingPeriodId: activity.reportingPeriodId,
+          },
+        });
 
         if (hasException) {
           const activityDate = activity.activityDate;
-          const { startDate, endDate } = hasException as any;
+          const { startDate, endDate } = hasException;
           if (activityDate >= startDate && activityDate <= endDate) {
             return;
           }
@@ -116,18 +118,16 @@ export class ActivitiesService {
 
     const reportingPeriod = await this.findReportingPeriodForDate(dto.activityDate);
     if (reportingPeriod && reportingPeriod.status === ReportingPeriodStatus.LOCKED) {
-      const hasException = await this.reportingPeriodsRepo.manager
-        .getRepository('reporting_period_exception')
-        .findOne({
-          where: {
-            userId: actorUserId,
-            reportingPeriodId: reportingPeriod.id,
-          },
-        });
+      const hasException = await this.exceptionsRepo.findOne({
+        where: {
+          userId: actorUserId,
+          reportingPeriodId: reportingPeriod.id,
+        },
+      });
 
       if (hasException) {
         const activityDate = dto.activityDate;
-        const { startDate, endDate } = hasException as any;
+        const { startDate, endDate } = hasException;
         if (!(activityDate >= startDate && activityDate <= endDate)) {
           throw new ForbiddenException('Cannot create activity in a locked reporting period');
         }
@@ -164,8 +164,7 @@ export class ActivitiesService {
       search?: string;
     },
   ): Promise<[Activity[], number]> {
-    const take = Math.min(Math.max(limit, 1), 100);
-    const skip = Math.max(page - 1, 0) * take;
+    const { skip, limit: take } = normalizePagination({ page, limit });
 
     const qb = this.repo
       .createQueryBuilder('activity')
@@ -245,18 +244,16 @@ export class ActivitiesService {
     if (dto.activityDate && dto.activityDate !== a.activityDate) {
       const newReportingPeriod = await this.findReportingPeriodForDate(dto.activityDate);
       if (newReportingPeriod && newReportingPeriod.status === ReportingPeriodStatus.LOCKED) {
-        const hasException = await this.reportingPeriodsRepo.manager
-          .getRepository('reporting_period_exception')
-          .findOne({
-            where: {
-              userId,
-              reportingPeriodId: newReportingPeriod.id,
-            },
-          });
+        const hasException = await this.exceptionsRepo.findOne({
+          where: {
+            userId,
+            reportingPeriodId: newReportingPeriod.id,
+          },
+        });
 
         if (hasException) {
           const activityDate = dto.activityDate;
-          const { startDate, endDate } = hasException as any;
+          const { startDate, endDate } = hasException;
           if (!(activityDate >= startDate && activityDate <= endDate)) {
             throw new ForbiddenException('Cannot move activity to a locked reporting period');
           }

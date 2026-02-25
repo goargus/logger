@@ -13,6 +13,9 @@ import { CreateReportingPeriodDto } from './dto/create-reporting-period.dto';
 import { UpdateReportingPeriodDto } from './dto/update-reporting-period.dto';
 import { CreateExceptionDto } from './dto/create-exception.dto';
 import { ReportingPeriodStatus } from './reporting-period-status.enum';
+import { ListReportingPeriodsQueryDto } from './dto/list-reporting-periods.dto';
+import { PaginatedResult, buildPagination, normalizePagination } from '../common/pagination';
+import { Entity } from '../entities/entity.entity';
 
 @Injectable()
 export class ReportingPeriodsService {
@@ -23,7 +26,28 @@ export class ReportingPeriodsService {
     private readonly repo: Repository<ReportingPeriod>,
     @InjectRepository(ReportingPeriodException)
     private readonly exceptionsRepo: Repository<ReportingPeriodException>,
+    @InjectRepository(Entity)
+    private readonly entityRepo: Repository<Entity>,
   ) {}
+
+  private async getReportingPeriodDays(entityId: string): Promise<number> {
+    const entity = await this.entityRepo.findOne({
+      where: { id: entityId },
+      select: ['reporting_period_days'],
+    });
+    if (entity?.reporting_period_days != null) {
+      return entity.reporting_period_days;
+    }
+    const envDays = process.env.REPORTING_PERIOD_DAYS;
+    if (envDays) {
+      const parsed = parseInt(envDays, 10);
+      if (!isNaN(parsed) && parsed > 0) {
+        return parsed;
+      }
+    }
+
+    return 14;
+  }
 
   async create(dto: CreateReportingPeriodDto, actorUserId: string): Promise<ReportingPeriod> {
     if (dto.startDate >= dto.endDate) {
@@ -91,7 +115,8 @@ export class ReportingPeriodsService {
 
       const today = new Date();
       const startDate = this.formatDate(today);
-      const endDate = this.formatDate(this.addDays(today, 14));
+      const periodDays = await this.getReportingPeriodDays(entityId);
+      const endDate = this.formatDate(this.addDays(today, periodDays));
 
       const period = this.repo.create({
         entityId,
@@ -126,7 +151,8 @@ export class ReportingPeriodsService {
     }
 
     const startDate = this.formatDate(this.addDays(new Date(previousPeriod.endDate), 1));
-    const endDate = this.formatDate(this.addDays(new Date(startDate), 14));
+    const periodDays = await this.getReportingPeriodDays(entityId);
+    const endDate = this.formatDate(this.addDays(new Date(startDate), periodDays));
 
     const period = this.repo.create({
       entityId,
@@ -190,17 +216,19 @@ export class ReportingPeriodsService {
       .getMany();
   }
 
-  async findAll(entityId?: string): Promise<ReportingPeriod[]> {
-    const query = this.repo
+  async findAll(query?: ListReportingPeriodsQueryDto): Promise<PaginatedResult<ReportingPeriod>> {
+    const queryBuilder = this.repo
       .createQueryBuilder('period')
       .leftJoinAndSelect('period.entity', 'entity')
       .orderBy('period.start_date', 'DESC');
 
-    if (entityId) {
-      query.andWhere('period.entity_id = :entityId', { entityId });
+    if (query?.entityId) {
+      queryBuilder.andWhere('period.entity_id = :entityId', { entityId: query.entityId });
     }
 
-    return query.getMany();
+    const { page, limit, skip } = normalizePagination(query);
+    const [data, total] = await queryBuilder.skip(skip).take(limit).getManyAndCount();
+    return { data, pagination: buildPagination(page, limit, total) };
   }
 
   async findOne(id: string): Promise<ReportingPeriod> {

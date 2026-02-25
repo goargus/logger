@@ -13,7 +13,7 @@ import { Role } from './role.entity';
 import { Entity as OrgEntity } from '../entities/entity.entity';
 
 import { UserRoleAssignment } from './user-role-assignment.entity';
-import { AssignRoleDto, RoleEnum } from './dto/assign-role.dto';
+import { AssignRoleDto } from './dto/assign-role.dto';
 import { RemoveRoleDto } from './dto/remove-role.dto';
 import { BulkAssignRoleDto } from './dto/bulk-assign-role.dto';
 import { GetUserEntitiesByRoleDto } from './dto/get-user-entities-by-role.dto';
@@ -74,10 +74,7 @@ export class RoleAssignmentService {
       throw new BadRequestException('Cannot assign roles to inactive users');
     }
 
-    if (!Object.values(RoleEnum).includes(dto.role)) {
-      throw new BadRequestException('Invalid role enum value');
-    }
-    const role = await this.rolesRepo.findOne({ where: { name: ILike(dto.role) } });
+    const role = await this.rolesRepo.findOne({ where: { id: dto.roleId } });
     if (!role) throw new NotFoundException('Role not found');
 
     const entity = await this.entitiesRepo.findOne({ where: { id: dto.entityId } });
@@ -163,10 +160,7 @@ export class RoleAssignmentService {
       throw new BadRequestException('Cannot assign roles to inactive users');
     }
 
-    if (!Object.values(RoleEnum).includes(dto.role)) {
-      throw new BadRequestException('Invalid role enum value');
-    }
-    const role = await this.rolesRepo.findOne({ where: { name: ILike(dto.role) } });
+    const role = await this.rolesRepo.findOne({ where: { id: dto.roleId } });
     if (!role) throw new NotFoundException('Role not found');
 
     const entities = await this.entitiesRepo.find({
@@ -242,7 +236,7 @@ export class RoleAssignmentService {
     const user = await this.usersRepo.findOne({ where: { id: dto.userId } });
     if (!user) throw new NotFoundException('User not found');
 
-    const role = await this.rolesRepo.findOne({ where: { name: ILike(dto.role) } });
+    const role = await this.rolesRepo.findOne({ where: { id: dto.roleId } });
     if (!role) throw new NotFoundException('Role not found');
 
     const assignments = await this.uraRepo.find({

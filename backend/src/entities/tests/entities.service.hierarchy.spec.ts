@@ -19,6 +19,7 @@ function createRepoMock<T extends ObjectLiteral>(): MockRepo<T> {
     update: jest.fn(),
     count: jest.fn(),
     createQueryBuilder: jest.fn(),
+    query: jest.fn(),
   };
 }
 
@@ -171,28 +172,21 @@ describe('EntitiesService - Hierarchy Methods', () => {
   });
 
   describe('findDescendants', () => {
-    it('should return all descendants recursively using BFS', async () => {
+    it('should return all descendants recursively using a CTE', async () => {
       // Setup: Union -> 2 Associations -> 3 Fields total
-      repo.findOne?.mockResolvedValue(unionEntity);
-
-      // Mock find to return children based on parent_id
-      repo.find?.mockImplementation(async ({ where }: any) => {
-        const parentId = where?.parent_id;
-        const isActive = where?.is_active;
-
-        if (parentId === 'union-1' && isActive === true) {
-          return [association1, association2];
-        }
-        if (parentId === 'assoc-1' && isActive === true) {
-          return [field1a, field1b];
-        }
-        if (parentId === 'assoc-2' && isActive === true) {
-          return [field2a];
-        }
-        return [];
-      });
+      repo.query?.mockResolvedValue([
+        unionEntity,
+        association1,
+        association2,
+        field1a,
+        field1b,
+        field2a,
+      ]);
 
       const result = await service.findDescendants('union-1');
+
+      expect(repo.query).toHaveBeenCalled();
+      expect(repo.query?.mock.calls[0][0]).toContain('WITH RECURSIVE entity_tree AS');
 
       // Should return 2 associations + 3 fields = 5 descendants
       expect(result).toHaveLength(5);
@@ -204,8 +198,7 @@ describe('EntitiesService - Hierarchy Methods', () => {
     });
 
     it('should return empty array for leaf entity (Field)', async () => {
-      repo.findOne?.mockResolvedValue(field1a);
-      repo.find?.mockResolvedValue([]);
+      repo.query?.mockResolvedValue([field1a]);
 
       const result = await service.findDescendants('field-1a');
 
@@ -213,27 +206,19 @@ describe('EntitiesService - Hierarchy Methods', () => {
     });
 
     it('should only return active entities', async () => {
-      repo.findOne?.mockResolvedValue(unionEntity);
-
-      // Mock to include inactive association in raw data but filter should exclude it
-      repo.find?.mockImplementation(async ({ where }: any) => {
-        const parentId = where?.parent_id;
-        const isActive = where?.is_active;
-
-        // When is_active filter is applied, only return active entities
-        if (parentId === 'union-1' && isActive === true) {
-          return [association1, association2]; // inactiveAssociation excluded
-        }
-        if (parentId === 'assoc-1' && isActive === true) {
-          return [field1a, field1b];
-        }
-        if (parentId === 'assoc-2' && isActive === true) {
-          return [field2a];
-        }
-        return [];
-      });
+      repo.query?.mockResolvedValue([
+        unionEntity,
+        association1,
+        association2,
+        field1a,
+        field1b,
+        field2a,
+      ]);
 
       const result = await service.findDescendants('union-1');
+
+      expect(repo.query).toHaveBeenCalled();
+      expect(repo.query?.mock.calls[0][0]).toContain('WHERE e.is_active = true');
 
       // Should NOT include inactive association
       expect(result.map((e) => e.id)).not.toContain('assoc-3');
@@ -241,19 +226,13 @@ describe('EntitiesService - Hierarchy Methods', () => {
     });
 
     it('should throw NotFoundException for invalid entity ID', async () => {
-      repo.findOne?.mockResolvedValue(null);
+      repo.query?.mockResolvedValue([]);
 
       await expect(service.findDescendants('invalid-id')).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('should handle single level of children', async () => {
-      repo.findOne?.mockResolvedValue(association1);
-      repo.find?.mockImplementation(async ({ where }: any) => {
-        if (where?.parent_id === 'assoc-1' && where?.is_active === true) {
-          return [field1a, field1b];
-        }
-        return [];
-      });
+      repo.query?.mockResolvedValue([association1, field1a, field1b]);
 
       const result = await service.findDescendants('assoc-1');
 

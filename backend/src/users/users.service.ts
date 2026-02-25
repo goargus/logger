@@ -15,6 +15,8 @@ import { UserStatus } from './user-status.enum';
 import { EntitiesService } from '../entities/entities.service';
 import { RolesService } from '../roles/roles.service';
 import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
+import { PaginatedResult, buildPagination, normalizePagination } from '../common/pagination';
 
 @Injectable()
 export class UsersService {
@@ -71,8 +73,14 @@ export class UsersService {
     return this.findOne(saved.id);
   }
 
-  async findAll(): Promise<User[]> {
-    return this.usersRepo.find({ relations: ['role', 'entity'] });
+  async findAll(query?: PaginationQueryDto): Promise<PaginatedResult<User>> {
+    const { page, limit, skip } = normalizePagination(query);
+    const [data, total] = await this.usersRepo.findAndCount({
+      order: { username: 'ASC' },
+      skip,
+      take: limit,
+    });
+    return { data, pagination: buildPagination(page, limit, total) };
   }
 
   async findOne(id: string): Promise<User> {

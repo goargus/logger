@@ -15,8 +15,9 @@ Given('the organization has existing roles and activity types', async function (
   expect(typesResponse.status).toBe(200);
 
   // Store a role ID for later use
-  if (Array.isArray(rolesResponse.data) && rolesResponse.data.length > 0) {
-    this.context.roleId = rolesResponse.data[0].id;
+  const rolesList = rolesResponse.data?.data || rolesResponse.data;
+  if (Array.isArray(rolesList) && rolesList.length > 0) {
+    this.context.roleId = rolesList[0].id;
   }
 });
 
@@ -80,8 +81,9 @@ When('I create a {string} activity type', async function (this: CustomWorld, typ
   // Ensure we have a role ID for the activity type
   if (!this.context.roleId) {
     const rolesResponse = await this.apiClient.get(ENDPOINTS.ROLES);
-    if (rolesResponse.status === 200 && Array.isArray(rolesResponse.data) && rolesResponse.data.length > 0) {
-      this.context.roleId = rolesResponse.data[0].id;
+    const rolesList = rolesResponse.data?.data || rolesResponse.data;
+    if (rolesResponse.status === 200 && Array.isArray(rolesList) && rolesList.length > 0) {
+      this.context.roleId = rolesList[0].id;
     }
   }
 
@@ -138,7 +140,7 @@ Then('all three roles should be available for assignment', function (this: Custo
 Then('I can assign team members to these roles', async function (this: CustomWorld) {
   const rolesResponse = await this.apiClient.get(ENDPOINTS.ROLES);
   expect(rolesResponse.status).toBe(200);
-  expect(Array.isArray(rolesResponse.data)).toBe(true);
+  expect(Array.isArray(rolesResponse.data?.data || rolesResponse.data)).toBe(true);
 });
 
 Then('team members can log these types of activities', function (this: CustomWorld) {
@@ -149,7 +151,7 @@ Then('team members can log these types of activities', function (this: CustomWor
 Then('activities will be categorized appropriately', async function (this: CustomWorld) {
   const typesResponse = await this.apiClient.get(ENDPOINTS.ACTIVITY_TYPES);
   expect(typesResponse.status).toBe(200);
-  expect(Array.isArray(typesResponse.data)).toBe(true);
+  expect(Array.isArray(typesResponse.data?.data || typesResponse.data)).toBe(true);
 });
 
 Then('the changes should be reflected immediately', function (this: CustomWorld) {

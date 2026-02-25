@@ -24,6 +24,7 @@ function createMockRepo<T extends ObjectLiteral>(): MockRepo<T> {
     create: jest.fn(),
     save: jest.fn(),
     count: jest.fn(),
+    findAndCount: jest.fn(),
     delete: jest.fn(),
   };
 }
@@ -81,6 +82,24 @@ describe('UsersService (create & update)', () => {
     service = module.get<UsersService>(UsersService);
 
     jest.clearAllMocks();
+  });
+
+  describe('findAll', () => {
+    it('returns paginated users with defaults', async () => {
+      usersRepo.findAndCount?.mockResolvedValue([[baseUser], 1]);
+
+      const result = await service.findAll();
+
+      expect(usersRepo.findAndCount).toHaveBeenCalledWith({
+        order: { username: 'ASC' },
+        skip: 0,
+        take: 20,
+      });
+      expect(result).toEqual({
+        data: [baseUser],
+        pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+      });
+    });
   });
 
   describe('create', () => {

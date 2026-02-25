@@ -8,6 +8,7 @@ import { Activity } from './activity.entity';
 import { ActivityType } from '../activities-type/activity-type.entity';
 import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
 import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
+import { ReportingPeriodException } from '../reporting-periods/reporting-period-exception.entity';
 
 import { CreateActivityDto } from './dto/create-activity.dto';
 
@@ -57,6 +58,10 @@ describe('ActivitiesService', () => {
         {
           provide: getRepositoryToken(ReportingPeriod),
           useValue: mockReportingPeriodRepo,
+        },
+        {
+          provide: getRepositoryToken(ReportingPeriodException),
+          useValue: {},
         },
       ],
     }).compile();

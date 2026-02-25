@@ -45,18 +45,24 @@ class _ReportsViewContentState extends ConsumerState<ReportsViewContent> {
       _isLoading = true;
     });
 
-    try {
-      final periodBounds = _calculatePeriodBounds();
-      final periodStart = periodBounds['start']!.toIso8601String();
-      final periodEnd = periodBounds['end']!.toIso8601String();
+    final periodBounds = _calculatePeriodBounds();
+    final periodStart = periodBounds['start']!.toIso8601String();
+    final periodEnd = periodBounds['end']!.toIso8601String();
 
-      final summary = await _reportsService.getPersonalSummary(
+    ReportSummary? summary;
+    BreakdownsComparisonResponse? comparisonBreakdown;
+
+    try {
+      summary = await _reportsService.getPersonalSummary(
         periodStart: periodStart,
         periodEnd: periodEnd,
       );
+    } catch (e) {
+      // Summary failed — continue, we'll show what we can
+    }
 
-      final comparisonBreakdown =
-          await _reportsService.getBreakdownWithComparison(
+    try {
+      comparisonBreakdown = await _reportsService.getBreakdownWithComparison(
         periodType: _periodType,
         year: _year,
         month: _periodType == ReportPeriodType.monthly ? _periodIndex : null,
@@ -64,21 +70,23 @@ class _ReportsViewContentState extends ConsumerState<ReportsViewContent> {
             _periodType == ReportPeriodType.quarterly ? _periodIndex : null,
         half: _periodType == ReportPeriodType.biannual ? _periodIndex : null,
       );
-
-      if (mounted) {
-        setState(() {
-          _summary = summary;
-          _comparisonBreakdown = comparisonBreakdown;
-          _isLoading = false;
-        });
-      }
     } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+      // Breakdown failed — continue, we'll show what we can
+    }
+
+    if (mounted) {
+      setState(() {
+        if (summary != null) _summary = summary;
+        if (comparisonBreakdown != null) {
+          _comparisonBreakdown = comparisonBreakdown;
+        }
+        _isLoading = false;
+      });
+
+      if (summary == null && comparisonBreakdown == null) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al cargar reportes: $e')),
+          const SnackBar(
+              content: Text('Error al cargar reportes. Intente de nuevo.')),
         );
       }
     }
@@ -284,6 +292,14 @@ class _ReportsViewContentState extends ConsumerState<ReportsViewContent> {
                 breakdown: _comparisonBreakdown!.byType,
                 showComparison: true,
                 currencySymbol: ref.watch(currencySymbolProvider),
+              ),
+            if (_comparisonBreakdown == null)
+              const Padding(
+                padding: EdgeInsets.all(12),
+                child: Text(
+                  'No se pudo cargar el desglose de datos para este período.',
+                  style: TextStyle(color: Colors.grey),
+                ),
               ),
           ] else
             const Center(

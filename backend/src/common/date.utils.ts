@@ -1,5 +1,5 @@
 export function getCurrentDateString(): string {
-  return formatDateToString(new Date());
+  return new Date().toISOString().split('T')[0];
 }
 
 export function formatDateToString(date: Date): string {

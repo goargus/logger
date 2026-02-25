@@ -53,6 +53,12 @@ variable "auth0_issuer" {
   description = "Auth0 issuer URL."
 }
 
+variable "cors_origins" {
+  type        = string
+  description = "Comma-separated CORS origins for the API."
+  default     = "https://secretary-backend.pages.dev"
+}
+
 variable "admin_email" {
   type        = string
   description = "Admin user email for bootstrap."
