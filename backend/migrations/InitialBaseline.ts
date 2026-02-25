@@ -1,7 +1,6 @@
 import { MigrationInterface, QueryRunner } from 'typeorm';
 
-export class InitialBaseline1771610587459 implements MigrationInterface {
-  name = 'InitialBaseline1771610587459';
+export class InitialBaseline1700000000000 implements MigrationInterface {
 
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
@@ -45,6 +44,7 @@ export class InitialBaseline1771610587459 implements MigrationInterface {
         "currency_symbol" character varying(10),
         "is_active" boolean NOT NULL DEFAULT true,
         "term_length_years" integer NOT NULL DEFAULT 5,
+        "reporting_period_days" integer,
         "parent_id" uuid,
         "created_at" TIMESTAMP NOT NULL DEFAULT now(),
         "updated_at" TIMESTAMP NOT NULL DEFAULT now(),
