@@ -377,7 +377,7 @@ describe('ActivitiesService - Exception Handling', () => {
       exceptionRepo.findOne.mockResolvedValue(mockException);
 
       await expect(service.updateMine('activity-id', updateDto, 'user-id')).rejects.toThrow(
-        new ForbiddenException('Cannot create activity in a locked reporting period'),
+        new ForbiddenException('Cannot move activity in a locked reporting period'),
       );
     });
   });

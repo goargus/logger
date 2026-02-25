@@ -80,6 +80,7 @@ export class ActivitiesService {
   private async resolveReportingPeriodForDate(
     userId: string,
     date: string,
+    operation: 'create' | 'move' = 'create',
   ): Promise<ReportingPeriod> {
     const entityId = await this.getUserEntityId(userId);
 
@@ -100,7 +101,7 @@ export class ActivitiesService {
 
     const lockedPeriod = await this.findLockedPeriodForDate(entityId, date);
     if (!lockedPeriod) {
-      throw new ForbiddenException('Cannot create activity outside active reporting period');
+      throw new ForbiddenException(`Cannot ${operation} activity outside active reporting period`);
     }
 
     const hasException = await this.exceptionsRepo.findOne({
@@ -111,12 +112,12 @@ export class ActivitiesService {
     });
 
     if (!hasException) {
-      throw new ForbiddenException('Cannot create activity in a locked reporting period');
+      throw new ForbiddenException(`Cannot ${operation} activity in a locked reporting period`);
     }
 
     const { startDate, endDate } = hasException;
     if (!isDateInRange(date, startDate, endDate)) {
-      throw new ForbiddenException('Cannot create activity in a locked reporting period');
+      throw new ForbiddenException(`Cannot ${operation} activity in a locked reporting period`);
     }
 
     return lockedPeriod;
@@ -299,7 +300,7 @@ export class ActivitiesService {
 
     if (dto.activityDate && dto.activityDate !== a.activityDate) {
       const activityDate = this.normalizeDateString(dto.activityDate);
-      const newReportingPeriod = await this.resolveReportingPeriodForDate(userId, activityDate);
+      const newReportingPeriod = await this.resolveReportingPeriodForDate(userId, activityDate, 'move');
       a.reportingPeriodId = newReportingPeriod.id;
       a.activityDate = activityDate;
     }

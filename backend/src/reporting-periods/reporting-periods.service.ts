@@ -209,7 +209,9 @@ export class ReportingPeriodsService {
     }
 
     const nextDate = this.addDays(new Date(previousPeriod.endDate), 1);
-    const { startDate, endDate } = this.getHalfMonthRange(nextDate);
+    const days = await this.getReportingPeriodDays(entityId);
+    const startDate = this.formatDate(nextDate);
+    const endDate = this.formatDate(this.addDays(nextDate, days - 1));
 
     const existing = await this.repo.findOne({
       where: { entityId, startDate, endDate },
@@ -268,8 +270,7 @@ export class ReportingPeriodsService {
     });
 
     for (const period of activePeriods) {
-      const { startDate, endDate } = this.getHalfMonthRange(new Date());
-      if (period.startDate !== startDate || period.endDate !== endDate) {
+      if (today < period.startDate || today > period.endDate) {
         try {
           period.status = ReportingPeriodStatus.LOCKED;
           period.updatedBy = actorUserId;
