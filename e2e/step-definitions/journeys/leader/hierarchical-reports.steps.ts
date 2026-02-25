@@ -7,8 +7,9 @@ import { ENDPOINTS } from '../../../support/api/api-client';
 
 async function findEntityByType(world: CustomWorld, type: string): Promise<any | null> {
   const response = await world.apiClient.get(ENDPOINTS.ENTITIES);
-  if (response.status === 200 && Array.isArray(response.data)) {
-    return response.data.find((e: any) => e.type === type.toUpperCase()) || null;
+  const entities = response.data?.data || response.data;
+  if (response.status === 200 && Array.isArray(entities)) {
+    return entities.find((e: any) => e.type === type.toUpperCase()) || null;
   }
   return null;
 }
@@ -42,8 +43,9 @@ async function ensureEntityExists(
   parentId?: string,
 ): Promise<string> {
   const response = await world.apiClient.get(ENDPOINTS.ENTITIES);
-  if (response.status === 200 && Array.isArray(response.data)) {
-    const existing = response.data.find((e: any) => e.name.includes(name) && e.type === type.toUpperCase());
+  const entities = response.data?.data || response.data;
+  if (response.status === 200 && Array.isArray(entities)) {
+    const existing = entities.find((e: any) => e.name.includes(name) && e.type === type.toUpperCase());
     if (existing) {
       return existing.id;
     }
@@ -101,16 +103,18 @@ async function ensureTestHierarchy(world: CustomWorld): Promise<void> {
 
 async function ensureActivityType(world: CustomWorld, typeName: string): Promise<string> {
   const response = await world.apiClient.get(ENDPOINTS.ACTIVITY_TYPES);
+  const activityTypesList = response.data?.data || response.data;
 
-  if (response.status === 200 && Array.isArray(response.data)) {
-    const existing = response.data.find((t: any) => t.name.includes(typeName));
+  if (response.status === 200 && Array.isArray(activityTypesList)) {
+    const existing = activityTypesList.find((t: any) => t.name.includes(typeName));
     if (existing) {
       return existing.id;
     }
   }
 
   const rolesResponse = await world.apiClient.get(ENDPOINTS.ROLES);
-  const roleId = rolesResponse.data?.[0]?.id;
+  const rolesList = rolesResponse.data?.data || rolesResponse.data;
+  const roleId = rolesList?.[0]?.id;
 
   const timestamp = Date.now();
   const createResponse = await world.apiClient.post(ENDPOINTS.ACTIVITY_TYPES, {
@@ -135,16 +139,17 @@ async function ensureActiveReportingPeriod(world: CustomWorld): Promise<boolean>
 
   // Check if there's already an active period for user's entity
   const periodsResponse = await world.apiClient.get(`${ENDPOINTS.REPORTING_PERIODS}?entityId=${entityId}`);
-  if (periodsResponse.status === 200 && Array.isArray(periodsResponse.data)) {
-    const activePeriod = periodsResponse.data.find((p: any) => p.status === 'active');
+  const periodsList = periodsResponse.data?.data || periodsResponse.data;
+  if (periodsResponse.status === 200 && Array.isArray(periodsList)) {
+    const activePeriod = periodsList.find((p: any) => p.status === 'active');
     if (activePeriod) {
       world.context.activeReportingPeriodId = activePeriod.id;
       return true;
     }
 
     // Try any period if no active one exists
-    if (periodsResponse.data.length > 0) {
-      world.context.activeReportingPeriodId = periodsResponse.data[0].id;
+    if (periodsList.length > 0) {
+      world.context.activeReportingPeriodId = periodsList[0].id;
       return true;
     }
   }

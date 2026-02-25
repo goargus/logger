@@ -24,6 +24,7 @@ function createMockRepo<T extends ObjectLiteral>(): MockRepo<T> {
     create: jest.fn(),
     save: jest.fn(),
     count: jest.fn(),
+    findAndCount: jest.fn(),
     delete: jest.fn(),
   };
 }
@@ -83,6 +84,24 @@ describe('UsersService (create & update)', () => {
     jest.clearAllMocks();
   });
 
+  describe('findAll', () => {
+    it('returns paginated users with defaults', async () => {
+      usersRepo.findAndCount?.mockResolvedValue([[baseUser], 1]);
+
+      const result = await service.findAll();
+
+      expect(usersRepo.findAndCount).toHaveBeenCalledWith({
+        order: { username: 'ASC' },
+        skip: 0,
+        take: 20,
+      });
+      expect(result).toEqual({
+        data: [baseUser],
+        pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+      });
+    });
+  });
+
   describe('create', () => {
     it('creates a user successfully', async () => {
       const dto: CreateUserDto = {
@@ -93,18 +112,21 @@ describe('UsersService (create & update)', () => {
         full_name: 'John Doe',
       };
 
-      usersRepo.findOne?.mockResolvedValue(null);
+      let savedUser: any = null;
+
+      usersRepo.findOne?.mockImplementation(async (opts: any) => {
+        if (opts?.where?.id) return savedUser;
+        if (opts?.where?.email === dto.email) return null;
+        return null;
+      });
       rolesService.findOne.mockResolvedValue({ id: 'r-1', name: 'missionary' } as Role);
       entitiesService.findOne.mockResolvedValue({ id: 'e-1', name: 'Union A' } as OrgEntity);
 
       usersRepo.create?.mockImplementation((data) => ({ ...data }) as User);
-      usersRepo.save?.mockImplementation(async (u) => ({
-        ...baseUser,
-        ...u,
-        id: 'u-1',
-        created_at: now,
-        updated_at: now,
-      }));
+      usersRepo.save?.mockImplementation(async (u) => {
+        savedUser = { ...baseUser, ...u, id: 'u-1', created_at: now, updated_at: now };
+        return savedUser;
+      });
 
       const result = await service.create(dto);
 
@@ -173,17 +195,18 @@ describe('UsersService (create & update)', () => {
 
   describe('update', () => {
     it('updates simple fields (username/email/full_name)', async () => {
+      let lastSaved: any = null;
+
       usersRepo.findOne?.mockImplementation(async (opts: any) => {
-        if (opts?.where?.id === 'u-1') return { ...baseUser };
+        if (opts?.where?.id === 'u-1') return lastSaved ?? { ...baseUser };
         if (opts?.where?.email === 'new@example.com') return null;
         return null;
       });
 
-      usersRepo.save?.mockImplementation(async (u) => ({
-        ...baseUser,
-        ...u,
-        updated_at: now,
-      }));
+      usersRepo.save?.mockImplementation(async (u) => {
+        lastSaved = { ...baseUser, ...u, updated_at: now };
+        return lastSaved;
+      });
 
       const dto: UpdateUserDto = {
         username: 'johnny',
@@ -212,9 +235,14 @@ describe('UsersService (create & update)', () => {
     });
 
     it('updates role_id if the role exists', async () => {
-      usersRepo.findOne?.mockResolvedValue({ ...baseUser });
+      let lastSaved: any = null;
+
+      usersRepo.findOne?.mockImplementation(async () => lastSaved ?? { ...baseUser });
       rolesService.findOne.mockResolvedValue({ id: 'r-2', name: 'pastor' } as Role);
-      usersRepo.save?.mockImplementation(async (u) => ({ ...baseUser, ...u }));
+      usersRepo.save?.mockImplementation(async (u) => {
+        lastSaved = { ...baseUser, ...u };
+        return lastSaved;
+      });
 
       const dto: UpdateUserDto = { role_id: 'r-2' };
 
@@ -235,9 +263,17 @@ describe('UsersService (create & update)', () => {
     });
 
     it('updates entity_id if the entity exists', async () => {
-      usersRepo.findOne?.mockResolvedValue({ ...baseUser });
+      let lastSaved: any = null;
+
+      usersRepo.findOne?.mockImplementation(async (opts: any) => {
+        if (opts?.where?.id === 'u-1') return lastSaved ?? { ...baseUser };
+        return null;
+      });
       entitiesService.findOne.mockResolvedValue({ id: 'e-2' } as OrgEntity);
-      usersRepo.save?.mockImplementation(async (u) => ({ ...baseUser, ...u }));
+      usersRepo.save?.mockImplementation(async (u) => {
+        lastSaved = { ...baseUser, ...u };
+        return lastSaved;
+      });
 
       const dto: UpdateUserDto = { entity_id: 'e-2' };
 

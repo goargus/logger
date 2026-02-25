@@ -9,7 +9,7 @@ Feature: Reviewing Ministry Reports
     And there are completed reporting periods with activities
 
   Scenario: Viewing activity summary for a period
-    When I request the summary report for the current period
+    When I request the summary report for my entity
     Then I should see total activities logged
     And I should see total hours worked
     And I should see the number of active team members

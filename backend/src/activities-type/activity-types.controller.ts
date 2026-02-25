@@ -9,6 +9,7 @@ import {
   Put,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { ActivityTypesService } from './activity-types.service';
@@ -20,6 +21,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { IdentityResolutionService } from '../auth/identity-resolution.service';
 import { Request } from 'express';
 import { JwtValidatedUser } from '../auth/jwt.strategy';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 
 @ApiTags('Activity Types')
 @Controller('activity-types')
@@ -32,8 +34,8 @@ export class ActivityTypesController {
   @Get()
   @ApiOperation({ summary: 'List all activity types' })
   @ApiResponse({ status: 200, description: 'List of all activity types' })
-  async list() {
-    return this.service.findAll();
+  async list(@Query() query: PaginationQueryDto) {
+    return this.service.findAll(query);
   }
 
   @Get('authorized')

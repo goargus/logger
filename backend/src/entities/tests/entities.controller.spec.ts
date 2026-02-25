@@ -125,8 +125,12 @@ describe('EntitiesController', () => {
 
   describe('findAll', () => {
     it('returns all entities', async () => {
-      service.findAll.mockResolvedValue([mockEntity]);
-      await expect(controller.findAll()).resolves.toEqual([mockEntity]);
+      const payload = {
+        data: [mockEntity],
+        pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+      };
+      service.findAll.mockResolvedValue(payload as any);
+      await expect(controller.findAll({} as any)).resolves.toEqual(payload);
     });
   });
 

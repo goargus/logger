@@ -16,6 +16,7 @@ class UsagePolicyStub {
 function createMockRepo<T extends ObjectLiteral>() {
   return {
     find: jest.fn<Promise<T[]>, any>(),
+    findAndCount: jest.fn<Promise<[T[], number]>, any>(),
     findOne: jest.fn<Promise<T | null>, any>(),
     findBy: jest.fn<Promise<T[]>, any>(),
     save: jest.fn<Promise<T>, any>(),
@@ -91,6 +92,22 @@ describe('ActivityTypesService', () => {
     usagePolicy.isInUse.mockResolvedValue(false);
   });
 
+  describe('findAll', () => {
+    it('returns paginated activity types with defaults', async () => {
+      activityTypeRepo.findAndCount.mockResolvedValue([[atype], 1]);
+      const result = await service.findAll();
+      expect(activityTypeRepo.findAndCount).toHaveBeenCalledWith({
+        order: { name: 'ASC' },
+        skip: 0,
+        take: 20,
+      });
+      expect(result).toEqual({
+        data: [atype],
+        pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+      });
+    });
+  });
+
   describe('create', () => {
     it('creates an activity type when name is unique and roles exist', async () => {
       activityTypeRepo.findOne.mockResolvedValue(null);
@@ -137,15 +154,6 @@ describe('ActivityTypesService', () => {
         role_ids: [roleMissionary.id, rolePastor.id],
       };
       await expect(service.create(dto as any)).rejects.toBeInstanceOf(BadRequestException);
-    });
-  });
-
-  describe('findAll', () => {
-    it('returns all activity types', async () => {
-      activityTypeRepo.find.mockResolvedValue([atype]);
-      const result = await service.findAll();
-      expect(activityTypeRepo.find).toHaveBeenCalled();
-      expect(result).toEqual([atype]);
     });
   });
 

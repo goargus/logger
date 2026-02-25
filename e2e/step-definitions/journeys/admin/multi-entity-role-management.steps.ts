@@ -7,16 +7,18 @@ import { ENDPOINTS } from '../../../support/api/api-client';
 
 async function findEntityByName(world: CustomWorld, name: string): Promise<any | null> {
   const response = await world.apiClient.get(ENDPOINTS.ENTITIES);
-  if (response.status === 200 && Array.isArray(response.data)) {
-    return response.data.find((e: any) => e.name.includes(name)) || null;
+  const entities = response.data?.data || response.data;
+  if (response.status === 200 && Array.isArray(entities)) {
+    return entities.find((e: any) => e.name.includes(name)) || null;
   }
   return null;
 }
 
 async function findEntityByType(world: CustomWorld, type: string): Promise<any | null> {
   const response = await world.apiClient.get(ENDPOINTS.ENTITIES);
-  if (response.status === 200 && Array.isArray(response.data)) {
-    return response.data.find((e: any) => e.type === type.toUpperCase()) || null;
+  const entities = response.data?.data || response.data;
+  if (response.status === 200 && Array.isArray(entities)) {
+    return entities.find((e: any) => e.type === type.toUpperCase()) || null;
   }
   return null;
 }
@@ -98,10 +100,11 @@ async function ensureUserExists(world: CustomWorld, name: string): Promise<strin
 
   // Get a role for the user
   const rolesResponse = await world.apiClient.get(ENDPOINTS.ROLES);
-  if (rolesResponse.status !== 200 || !Array.isArray(rolesResponse.data) || rolesResponse.data.length === 0) {
+  const rolesList = rolesResponse.data?.data || rolesResponse.data;
+  if (rolesResponse.status !== 200 || !Array.isArray(rolesList) || rolesList.length === 0) {
     throw new Error('No roles available');
   }
-  const roleId = rolesResponse.data[0].id;
+  const roleId = rolesList[0].id;
 
   const timestamp = Date.now();
   const payload = {

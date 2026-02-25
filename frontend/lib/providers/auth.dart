@@ -14,43 +14,10 @@ import '../services/user.dart';
 import '../auth/session.dart';
 import '../auth/session_interface.dart';
 
+import 'auth_state.dart';
+export 'auth_state.dart';
+
 const bool kAutoRedirectOnBoot = true;
-
-@immutable
-class AuthState {
-  final bool isLoading;
-  final bool isAuthenticated;
-  final Map<String, dynamic>? user;
-  final String? accessToken;
-  final String? lastError;
-
-  const AuthState({
-    required this.isLoading,
-    required this.isAuthenticated,
-    this.user,
-    this.accessToken,
-    this.lastError,
-  });
-
-  factory AuthState.initial() =>
-      const AuthState(isLoading: true, isAuthenticated: false);
-
-  AuthState copyWith({
-    bool? isLoading,
-    bool? isAuthenticated,
-    Map<String, dynamic>? user,
-    String? accessToken,
-    String? lastError,
-  }) {
-    return AuthState(
-      isLoading: isLoading ?? this.isLoading,
-      isAuthenticated: isAuthenticated ?? this.isAuthenticated,
-      user: user ?? this.user,
-      accessToken: accessToken ?? this.accessToken,
-      lastError: lastError,
-    );
-  }
-}
 
 final authNotifierProvider =
     StateNotifierProvider<AuthNotifier, AuthState>((ref) {
@@ -376,27 +343,7 @@ final canViewReportsProvider = Provider<bool>((ref) {
   final authState = ref.watch(authNotifierProvider);
   final primaryRole = authState.user?['primary_role'] as Map<String, dynamic>?;
   final roleName = primaryRole?['name'] as String?;
-
-  const leadershipRoles = [
-    'admin',
-    'System Admin',
-    'Administrador del Sistema',
-    'president',
-    'Union President',
-    'Presidente de Unión',
-    'Association President',
-    'Presidente de Asociación',
-    'Field Director',
-    'Director de Campo',
-    'Union Secretary',
-    'Secretario de Unión',
-    'Association Secretary',
-    'Secretario de Asociación',
-    'Field Secretary',
-    'Secretario de Campo',
-  ];
-
-  return roleName != null && leadershipRoles.contains(roleName);
+  return isLeadershipRole(roleName);
 });
 
 /// Provider for the user's effective currency symbol.
@@ -404,6 +351,5 @@ final canViewReportsProvider = Provider<bool>((ref) {
 /// Defaults to '$' if not available.
 final currencySymbolProvider = Provider<String>((ref) {
   final authState = ref.watch(authNotifierProvider);
-  final currencySymbol = authState.user?['currency_symbol'] as String?;
-  return currencySymbol ?? '\$';
+  return getCurrencySymbol(authState.user);
 });

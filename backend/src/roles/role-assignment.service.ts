@@ -103,7 +103,10 @@ export class RoleAssignmentService {
   }
 
   async remove(dto: RemoveRoleDto, adminUserId?: string) {
-    const assignment = await this.uraRepo.findOne({ where: { id: dto.assignmentId } });
+    const assignment = await this.uraRepo.findOne({
+      where: { id: dto.assignmentId },
+      relations: ['user', 'role', 'entity'],
+    });
     if (!assignment) throw new NotFoundException('Assignment not found');
     await this.uraRepo.remove({ ...assignment, updated_by: adminUserId } as any);
     return { deleted: true };
@@ -116,7 +119,10 @@ export class RoleAssignmentService {
     });
     if (!role) throw new NotFoundException('Role not found');
 
-    const rows = await this.uraRepo.find({ where: { role: { id: role.id } } });
+    const rows = await this.uraRepo.find({
+      where: { role: { id: role.id } },
+      relations: ['user', 'role', 'entity'],
+    });
     const byUser = new Map<string, any>();
     for (const r of rows) byUser.set(r.user.id, r.user);
     return Array.from(byUser.values());
@@ -125,7 +131,10 @@ export class RoleAssignmentService {
   async listUsersByEntity(entityId: string) {
     const entity = await this.entitiesRepo.findOne({ where: { id: entityId } });
     if (!entity) throw new NotFoundException('Entity not found');
-    const rows = await this.uraRepo.find({ where: { entity: { id: entity.id } } });
+    const rows = await this.uraRepo.find({
+      where: { entity: { id: entity.id } },
+      relations: ['user', 'role', 'entity'],
+    });
     const map = new Map<string, { user: any; roles: string[] }>();
     for (const r of rows) {
       const entry = map.get(r.user.id) ?? { user: r.user, roles: [] };
@@ -138,7 +147,10 @@ export class RoleAssignmentService {
   async listAssignmentsForUser(userId: string) {
     const user = await this.usersRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
-    return this.uraRepo.find({ where: { user: { id: userId } } });
+    return this.uraRepo.find({
+      where: { user: { id: userId } },
+      relations: ['user', 'role', 'entity'],
+    });
   }
 
   async bulkAssign(dto: BulkAssignRoleDto, adminUserId?: string) {
@@ -168,6 +180,7 @@ export class RoleAssignmentService {
         role: { id: role.id },
         entity: { id: In(dto.entityIds) },
       },
+      relations: ['user', 'role', 'entity'],
     });
 
     const existingEntityIds = existingAssignments.map((assignment) => assignment.entity.id);
@@ -231,6 +244,7 @@ export class RoleAssignmentService {
         user: { id: user.id },
         role: { id: role.id },
       },
+      relations: ['user', 'role', 'entity'],
     });
 
     return {
@@ -246,7 +260,10 @@ export class RoleAssignmentService {
     if (entityId) where.entity = { id: entityId };
     if (userId) where.user = { id: userId };
 
-    const assignments = await this.uraRepo.find({ where });
+    const assignments = await this.uraRepo.find({
+      where,
+      relations: ['user', 'role', 'entity'],
+    });
 
     if (active !== undefined) {
       const today = getCurrentDateString();
@@ -260,13 +277,19 @@ export class RoleAssignmentService {
   }
 
   async getAssignment(id: string) {
-    const assignment = await this.uraRepo.findOne({ where: { id } });
+    const assignment = await this.uraRepo.findOne({
+      where: { id },
+      relations: ['user', 'role', 'entity'],
+    });
     if (!assignment) throw new NotFoundException('Assignment not found');
     return assignment;
   }
 
   async updateAssignment(id: string, endDate: string, adminUserId?: string) {
-    const assignment = await this.uraRepo.findOne({ where: { id } });
+    const assignment = await this.uraRepo.findOne({
+      where: { id },
+      relations: ['user', 'role', 'entity'],
+    });
     if (!assignment) throw new NotFoundException('Assignment not found');
 
     if (endDate < assignment.start_date) {
@@ -289,7 +312,10 @@ export class RoleAssignmentService {
   }
 
   async deleteAssignment(id: string) {
-    const assignment = await this.uraRepo.findOne({ where: { id } });
+    const assignment = await this.uraRepo.findOne({
+      where: { id },
+      relations: ['user', 'role', 'entity'],
+    });
     if (!assignment) throw new NotFoundException('Assignment not found');
 
     await this.uraRepo.remove(assignment);

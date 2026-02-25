@@ -20,7 +20,7 @@ export class IdentityResolutionService {
 
     const idp = await this.idpRepo.findOne({
       where,
-      relations: ['user'],
+      relations: ['user', 'user.role', 'user.entity'],
     });
 
     if (!idp?.user) {

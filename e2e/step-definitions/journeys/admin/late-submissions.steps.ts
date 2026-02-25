@@ -13,9 +13,10 @@ async function ensureLockedPeriod(world: CustomWorld): Promise<void> {
     `${ENDPOINTS.REPORTING_PERIODS}?entityId=${entityId}`,
   );
 
-  if (listResponse.status === 200 && Array.isArray(listResponse.data)) {
+  const listData = listResponse.data?.data || listResponse.data;
+  if (listResponse.status === 200 && Array.isArray(listData)) {
     // Look for an existing locked period
-    const lockedPeriod = listResponse.data.find((p: any) => p.status === 'locked');
+    const lockedPeriod = listData.find((p: any) => p.status === 'locked');
     if (lockedPeriod) {
       world.context.createdReportingPeriodId = lockedPeriod.id;
       world.context.createdPeriodStartDate = lockedPeriod.startDate;
@@ -24,7 +25,7 @@ async function ensureLockedPeriod(world: CustomWorld): Promise<void> {
     }
 
     // Look for an active period we can lock
-    const activePeriod = listResponse.data.find((p: any) => p.status === 'active');
+    const activePeriod = listData.find((p: any) => p.status === 'active');
     if (activePeriod) {
       await world.apiClient.patch(`${ENDPOINTS.REPORTING_PERIODS}/${activePeriod.id}/lock`);
       world.context.createdReportingPeriodId = activePeriod.id;
@@ -62,11 +63,12 @@ async function ensureLockedPeriod(world: CustomWorld): Promise<void> {
 
 async function ensureTeamMember(world: CustomWorld): Promise<void> {
   const response = await world.apiClient.get(ENDPOINTS.ADMIN_USERS);
-  if (response.status === 200 && Array.isArray(response.data) && response.data.length > 0) {
+  const usersList = response.data?.data || response.data;
+  if (response.status === 200 && Array.isArray(usersList) && usersList.length > 0) {
     const meResponse = await world.apiClient.get(ENDPOINTS.ME);
     const currentUserId = meResponse.data.id;
-    const teamMember = response.data.find((u: any) => u.id !== currentUserId);
-    world.context.teamMemberId = teamMember ? teamMember.id : response.data[0].id;
+    const teamMember = usersList.find((u: any) => u.id !== currentUserId);
+    world.context.teamMemberId = teamMember ? teamMember.id : usersList[0].id;
     world.context.teamMemberName = 'Carlos';
   }
 }

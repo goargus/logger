@@ -67,12 +67,15 @@ describe('RolesController', () => {
   });
 
   it('findAll -> should return list', async () => {
-    const list = [{ id: 'uuid-1', name: 'PASTOR' }];
-    rolesService.findAll.mockResolvedValue(list as any);
+    const payload = {
+      data: [{ id: 'uuid-1', name: 'PASTOR' }],
+      pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+    };
+    rolesService.findAll.mockResolvedValue(payload as any);
 
-    const res = await controller.findAll();
+    const res = await controller.findAll({} as any);
     expect(rolesService.findAll).toHaveBeenCalled();
-    expect(res).toEqual(list);
+    expect(res).toEqual(payload);
   });
 
   it('getRoleById -> should return one', async () => {

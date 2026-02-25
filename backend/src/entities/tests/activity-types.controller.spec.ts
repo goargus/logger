@@ -49,11 +49,17 @@ describe('ActivityTypesController', () => {
   });
 
   it('GET /activity-types calls service.findAll', async () => {
-    serviceMock.findAll.mockResolvedValueOnce(['x']);
+    serviceMock.findAll.mockResolvedValueOnce({
+      data: ['x'],
+      pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+    });
     const controller = app.get(ActivityTypesController);
-    const result = await controller.list();
+    const result = await controller.list({} as any);
     expect(serviceMock.findAll).toHaveBeenCalled();
-    expect(result).toEqual(['x']);
+    expect(result).toEqual({
+      data: ['x'],
+      pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+    });
   });
 
   it('GET /activity-types/:id calls service.findOne', async () => {
