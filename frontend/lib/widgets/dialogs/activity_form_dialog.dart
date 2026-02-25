@@ -153,6 +153,11 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
     });
 
     try {
+      if (_selectedType == null) {
+        setState(() => _error = 'Selecciona un tipo de actividad.');
+        return;
+      }
+
       final iso = _selectedDate.toUtc().toIso8601String();
       final typeId = _selectedType!.id;
       final desc = _descCtrl.text.trim();
