@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logger/providers/auth.dart';
-import 'package:logger/providers/auth_state.dart';
 import 'package:logger/pages/reports_page.dart';
 import '../helpers/fake_auth_state.dart';
 
