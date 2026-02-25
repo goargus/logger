@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:logger/providers/auth.dart';
-import 'package:logger/providers/auth_state.dart';
 import 'package:logger/widgets/dialogs/activity_form_dialog.dart';
 import '../helpers/fake_auth_state.dart';
 

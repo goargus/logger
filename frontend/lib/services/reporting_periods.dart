@@ -30,6 +30,35 @@ class ReportingPeriodsService {
     }
   }
 
+  Future<ReportingPeriodSummary?> getActiveReportingPeriod() async {
+    try {
+      final data = await apiClient.get('reporting-periods');
+      if (data == null) {
+        return null;
+      }
+      final list = data as List<dynamic>;
+      final periods = list
+          .map((item) =>
+              ReportingPeriodSummary.fromJson(item as Map<String, dynamic>))
+          .toList();
+
+      if (periods.isEmpty) {
+        return null;
+      }
+
+      final today = DateTime.now();
+      for (final period in periods) {
+        if (period.isActiveForDate(today)) {
+          return period;
+        }
+      }
+
+      return null;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<bool> isDateLocked(DateTime date) async {
     final ranges = await getLockedDateRanges();
     final dateStr = _formatDate(date);
@@ -77,4 +106,49 @@ class LockedDateRange {
         '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
     return containsDate(dateStr);
   }
+}
+
+class ReportingPeriodSummary {
+  final String id;
+  final String name;
+  final String startDate;
+  final String endDate;
+  final String status;
+  final bool isLocked;
+
+  ReportingPeriodSummary({
+    required this.id,
+    required this.name,
+    required this.startDate,
+    required this.endDate,
+    required this.status,
+    required this.isLocked,
+  });
+
+  factory ReportingPeriodSummary.fromJson(Map<String, dynamic> json) {
+    return ReportingPeriodSummary(
+      id: json['id'] as String,
+      name: json['name'] as String? ?? '',
+      startDate: json['startDate'] as String,
+      endDate: json['endDate'] as String,
+      status: json['status'] as String? ?? '',
+      isLocked: json['isLocked'] as bool? ?? false,
+    );
+  }
+
+  bool get isActive => status.toLowerCase() == 'active' && isLocked == false;
+
+  bool containsDate(String dateStr) {
+    return dateStr.compareTo(startDate) >= 0 && dateStr.compareTo(endDate) <= 0;
+  }
+
+  bool containsDateTime(DateTime date) {
+    final dateStr =
+        '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    return containsDate(dateStr);
+  }
+
+  bool isActiveForDate(DateTime date) => isActive && containsDateTime(date);
+
+  String get label => '$startDate - $endDate';
 }

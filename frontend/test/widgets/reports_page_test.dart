@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:logger/providers/auth.dart';
-import 'package:logger/providers/auth_state.dart';
 import 'package:logger/pages/reports_page.dart';
 import '../helpers/fake_auth_state.dart';
 
@@ -44,8 +43,8 @@ void main() {
     group('Tab visibility based on role', () {
       testWidgets('field worker sees NO tabs (direct report view)',
           (tester) async {
-        await tester
-            .pumpWidget(_buildReportsTest(authState: FakeAuthStates.fieldWorker()));
+        await tester.pumpWidget(
+            _buildReportsTest(authState: FakeAuthStates.fieldWorker()));
         await tester.pumpAndSettle();
 
         // Field worker (Misionero) is NOT a leadership role

@@ -159,9 +159,8 @@ class SidebarNav extends ConsumerWidget {
 
   Widget _buildNavigationLabel(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authNotifierProvider);
-    final entityType =
-        (authState.user?['primary_entity'] as Map<String, dynamic>?)?['type']
-            as String?;
+    final entityType = (authState.user?['primary_entity']
+        as Map<String, dynamic>?)?['type'] as String?;
     final label = switch (entityType) {
       'PLATFORM' => 'Plataforma',
       'UNION' => 'Unión',
