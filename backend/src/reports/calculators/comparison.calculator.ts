@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Activity } from '../../activity/activity.entity';
 import { User } from '../../users/user.entity';
-import { ReportingPeriod } from '../../reporting-periods/reporting-period.entity';
+import { PeriodInfo } from '../../periods/period-calculator';
 import { UserStatus } from '../../users/user-status.enum';
 import { ComparisonResponse } from '../dto/report-responses.dto';
 
@@ -15,8 +15,8 @@ export class ComparisonCalculator {
   ) {}
 
   async calculate(
-    currentPeriod: ReportingPeriod,
-    previousPeriod: ReportingPeriod,
+    currentPeriod: PeriodInfo,
+    previousPeriod: PeriodInfo,
     currentActivities: Activity[],
     previousActivities: Activity[],
     entityIds: string[],
@@ -35,7 +35,7 @@ export class ComparisonCalculator {
       return d.toLocaleDateString('es-ES', { month: 'short', day: 'numeric' });
     };
 
-    const getPeriodData = (period: ReportingPeriod, activities: Activity[]) => {
+    const getPeriodData = (period: PeriodInfo, activities: Activity[]) => {
       const totalExpenses = activities.reduce((sum, a) => {
         return sum + (a.expenseAmount ? parseFloat(a.expenseAmount) : 0);
       }, 0);
@@ -54,7 +54,7 @@ export class ComparisonCalculator {
       const complianceRate = usersExpected > 0 ? usersActive / usersExpected : 0;
 
       return {
-        periodId: period.id,
+        periodId: period.label,
         dates: `${formatDate(period.startDate)}-${formatDate(period.endDate)}`,
         activities: activities.length,
         expenses: Math.round(totalExpenses * 100) / 100,

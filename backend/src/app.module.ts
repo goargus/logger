@@ -12,10 +12,10 @@ import { UsersModule } from './users/users.module';
 import { ActivityTypesModule } from './activities-type/activity-types.module';
 import { IdpIdentitiesModule } from './idp-identities/idp-identities.module';
 import { ActivitiesModule } from './activity/activities.module';
-import { ReportingPeriodsModule } from './reporting-periods/reporting-periods.module';
 import { CaslModule } from './casl/casl.module';
 import { ReportsModule } from './reports/reports.module';
 import { HealthModule } from './health/health.module';
+import { PeriodsModule } from './periods/periods.module';
 import { configValidationSchema } from './config/config.validation';
 
 @Module({
@@ -50,7 +50,7 @@ import { configValidationSchema } from './config/config.validation';
     ActivityTypesModule,
     IdpIdentitiesModule,
     ActivitiesModule,
-    ReportingPeriodsModule,
+    PeriodsModule,
     ReportsModule,
     HealthModule,
   ],

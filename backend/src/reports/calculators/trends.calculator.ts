@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Activity } from '../../activity/activity.entity';
 import { User } from '../../users/user.entity';
-import { ReportingPeriod } from '../../reporting-periods/reporting-period.entity';
+import { PeriodInfo } from '../../periods/period-calculator';
 import { UserStatus } from '../../users/user-status.enum';
 import { TrendsResponse } from '../dto/report-responses.dto';
 
@@ -15,7 +15,7 @@ export class TrendsCalculator {
   ) {}
 
   async calculate(
-    periodsData: Array<{ period: ReportingPeriod; activities: Activity[] }>,
+    periodsData: Array<{ period: PeriodInfo; activities: Activity[] }>,
     entityIds: string[],
     canViewReports: boolean,
     isUserFiltered: boolean,
@@ -46,7 +46,7 @@ export class TrendsCalculator {
       const complianceRate = usersExpected > 0 ? usersSubmitted / usersExpected : 0;
 
       return {
-        periodId: period.id,
+        periodId: period.label,
         startDate: period.startDate,
         endDate: period.endDate,
         activities: activities.length,

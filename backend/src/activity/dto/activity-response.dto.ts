@@ -1,5 +1,4 @@
 import { Activity } from '../activity.entity';
-import { ReportingPeriod } from '../../reporting-periods/reporting-period.entity';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class ActivityResponseDto {
@@ -28,13 +27,7 @@ export class ActivityResponseDto {
   status!: string;
 
   @ApiProperty({ description: 'Whether the activity is locked (cannot be modified)' })
-  locked!: boolean;
-
-  @ApiPropertyOptional({ description: 'UUID of the associated reporting period' })
-  reportingPeriodId?: string | null;
-
-  @ApiPropertyOptional({ description: 'Name of the associated reporting period' })
-  reportingPeriodName?: string | null;
+  isLocked!: boolean;
 
   @ApiProperty({ description: 'Creation timestamp' })
   createdAt!: Date;
@@ -52,8 +45,7 @@ export class ActivityResponseDto {
     a: Activity,
     ownerUsername: string,
     activityTypeName: string,
-    reportingPeriod: ReportingPeriod | null,
-    locked: boolean,
+    isLocked: boolean,
   ): ActivityResponseDto {
     const dto = new ActivityResponseDto();
     dto.id = a.id;
@@ -64,9 +56,7 @@ export class ActivityResponseDto {
     dto.hasExpense = a.hasExpense;
     dto.expenseAmount = a.expenseAmount ?? null;
     dto.status = a.status;
-    dto.locked = locked;
-    dto.reportingPeriodId = a.reportingPeriodId ?? null;
-    dto.reportingPeriodName = reportingPeriod?.name ?? null;
+    dto.isLocked = isLocked;
     dto.createdAt = a.createdAt;
     dto.updatedAt = a.updatedAt;
     dto.ownerUserId = a.userId;

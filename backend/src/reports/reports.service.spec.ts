@@ -5,7 +5,7 @@ import { ReportsService } from './reports.service';
 import { Activity } from '../activity/activity.entity';
 import { User } from '../users/user.entity';
 import { Entity } from '../entities/entity.entity';
-import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
+import { PeriodCalculator } from '../periods/period-calculator';
 import { ActivityType } from '../activities-type/activity-type.entity';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { ReportsAccessService } from './access/reports-access.service';
@@ -29,7 +29,7 @@ describe('ReportsService', () => {
   let activityRepo: Repository<Activity>;
   let userRepo: Repository<User>;
   let entityRepo: Repository<Entity>;
-  let periodRepo: Repository<ReportingPeriod>;
+  let periodCalculator: PeriodCalculator;
   let activityTypeRepo: Repository<ActivityType>;
   let accessService: ReportsAccessService;
   let timeScopeService: ReportsTimeScopeService;
@@ -38,10 +38,13 @@ describe('ReportsService', () => {
 
   const mockQueryBuilder = {
     leftJoinAndSelect: jest.fn().mockReturnThis(),
+    select: jest.fn().mockReturnThis(),
     where: jest.fn().mockReturnThis(),
     andWhere: jest.fn().mockReturnThis(),
+    groupBy: jest.fn().mockReturnThis(),
     getMany: jest.fn(),
     getOne: jest.fn(),
+    getRawMany: jest.fn().mockResolvedValue([]),
   };
 
   beforeEach(async () => {
@@ -117,11 +120,15 @@ describe('ReportsService', () => {
           },
         },
         {
-          provide: getRepositoryToken(ReportingPeriod),
+          provide: PeriodCalculator,
           useValue: {
-            findOne: jest.fn().mockResolvedValue(null),
-            find: jest.fn().mockResolvedValue([]),
-            createQueryBuilder: jest.fn(),
+            getCurrentPeriod: jest.fn().mockReturnValue({
+              startDate: '2024-12-01',
+              endDate: '2024-12-14',
+              periodNumber: 1,
+              label: 'Diciembre 2024 - Período 1',
+            }),
+            getPreviousPeriods: jest.fn().mockReturnValue([]),
           },
         },
         {
@@ -146,7 +153,7 @@ describe('ReportsService', () => {
     activityRepo = module.get<Repository<Activity>>(getRepositoryToken(Activity));
     userRepo = module.get<Repository<User>>(getRepositoryToken(User));
     entityRepo = module.get<Repository<Entity>>(getRepositoryToken(Entity));
-    periodRepo = module.get<Repository<ReportingPeriod>>(getRepositoryToken(ReportingPeriod));
+    periodCalculator = module.get<PeriodCalculator>(PeriodCalculator);
     activityTypeRepo = module.get<Repository<ActivityType>>(getRepositoryToken(ActivityType));
     accessService = module.get<ReportsAccessService>(ReportsAccessService);
     timeScopeService = module.get<ReportsTimeScopeService>(ReportsTimeScopeService);
@@ -165,14 +172,6 @@ describe('ReportsService', () => {
         entity_id: 'entity-1',
         role: { rolePermissions: [] },
         entity: { id: 'entity-1', name: 'Campo Seattle', type: 'FIELD' },
-      };
-
-      const mockPeriod = {
-        id: 'period-1',
-        startDate: '2024-12-01',
-        endDate: '2024-12-14',
-        status: 'active',
-        entityId: 'entity-1',
       };
 
       const mockActivities = [
@@ -198,9 +197,9 @@ describe('ReportsService', () => {
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
       jest.spyOn(entityRepo, 'findOne').mockResolvedValue(mockUser.entity as any);
       jest.spyOn(permissionsService, 'userHasPermission').mockResolvedValue(false);
-      jest.spyOn(timeScopeService, 'getOrDetermineTimeScope').mockResolvedValue({
-        periodIds: [mockPeriod.id],
-        period: mockPeriod as any,
+      jest.spyOn(timeScopeService, 'getOrDetermineTimeScope').mockReturnValue({
+        dateFrom: '2024-12-01',
+        dateTo: '2024-12-14',
       });
       mockQueryBuilder.getMany.mockResolvedValue(mockActivities);
 
@@ -220,14 +219,6 @@ describe('ReportsService', () => {
         entity_id: 'entity-1',
         role: { rolePermissions: [] },
         entity: { id: 'entity-1', name: 'Campo Seattle', type: 'FIELD' },
-      };
-
-      const mockPeriod = {
-        id: 'period-1',
-        startDate: '2024-12-01',
-        endDate: '2024-12-14',
-        status: 'active',
-        entityId: 'entity-1',
       };
 
       const mockActivities = [
@@ -255,9 +246,9 @@ describe('ReportsService', () => {
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
       jest.spyOn(entityRepo, 'findOne').mockResolvedValue(mockUser.entity as any);
-      jest.spyOn(timeScopeService, 'getOrDetermineTimeScope').mockResolvedValue({
-        periodIds: [mockPeriod.id],
-        period: mockPeriod as any,
+      jest.spyOn(timeScopeService, 'getOrDetermineTimeScope').mockReturnValue({
+        dateFrom: '2024-12-01',
+        dateTo: '2024-12-14',
       });
       jest.spyOn(userRepo, 'find').mockResolvedValue(mockUsersInScope as any);
       mockQueryBuilder.getMany.mockResolvedValue(mockActivities);
@@ -280,14 +271,6 @@ describe('ReportsService', () => {
         entity: { id: 'entity-1', name: 'Campo Seattle', type: 'FIELD' },
       };
 
-      const mockPeriod = {
-        id: 'period-1',
-        startDate: '2024-12-01',
-        endDate: '2024-12-14',
-        status: 'active',
-        entityId: 'entity-1',
-      };
-
       const mockActivities = [
         {
           id: 'activity-1',
@@ -307,9 +290,9 @@ describe('ReportsService', () => {
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
       jest.spyOn(entityRepo, 'findOne').mockResolvedValue(mockUser.entity as any);
-      jest.spyOn(timeScopeService, 'getOrDetermineTimeScope').mockResolvedValue({
-        periodIds: [mockPeriod.id],
-        period: mockPeriod as any,
+      jest.spyOn(timeScopeService, 'getOrDetermineTimeScope').mockReturnValue({
+        dateFrom: '2024-12-01',
+        dateTo: '2024-12-14',
       });
       mockQueryBuilder.getMany.mockResolvedValue(mockActivities);
 
@@ -368,14 +351,6 @@ describe('ReportsService', () => {
         entity: { id: 'entity-1' },
       };
 
-      const mockPeriod = {
-        id: 'period-1',
-        startDate: '2024-12-01',
-        endDate: '2024-12-14',
-        status: 'active',
-        entityId: 'entity-1',
-      };
-
       const mockActivities = [
         {
           id: 'activity-1',
@@ -406,7 +381,6 @@ describe('ReportsService', () => {
       ];
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
-      jest.spyOn(periodRepo, 'findOne').mockResolvedValue(mockPeriod as any);
       jest.spyOn(entityRepo, 'findOne').mockResolvedValue({ id: 'entity-1', children: [] } as any);
       jest.spyOn(entityRepo, 'find').mockResolvedValue([]);
       jest.spyOn(userRepo, 'find').mockResolvedValue([
@@ -437,14 +411,6 @@ describe('ReportsService', () => {
         entity: { id: 'entity-1' },
       };
 
-      const mockPeriod = {
-        id: 'period-1',
-        startDate: '2024-12-01',
-        endDate: '2024-12-14',
-        status: 'active',
-        entityId: 'entity-1',
-      };
-
       const mockActivities = [
         {
           id: 'activity-1',
@@ -466,7 +432,6 @@ describe('ReportsService', () => {
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
       jest.spyOn(service as any, 'canViewReports').mockResolvedValue(false);
-      jest.spyOn(periodRepo, 'findOne').mockResolvedValue(mockPeriod as any);
       jest.spyOn(permissionsService, 'userHasPermission').mockResolvedValue(false);
       mockQueryBuilder.getMany.mockResolvedValue(mockActivities);
 
@@ -502,14 +467,6 @@ describe('ReportsService', () => {
         entity: { id: 'entity-1' },
       };
 
-      const mockPeriod = {
-        id: 'period-1',
-        startDate: '2024-12-01',
-        endDate: '2024-12-14',
-        status: 'active',
-        entityId: 'entity-1',
-      };
-
       const mockActivities = [
         {
           id: 'activity-1',
@@ -538,9 +495,9 @@ describe('ReportsService', () => {
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
       jest.spyOn(entityRepo, 'findOne').mockResolvedValue({ id: 'entity-1', children: [] } as any);
-      jest.spyOn(timeScopeService, 'getOrDetermineTimeScope').mockResolvedValue({
-        periodIds: [mockPeriod.id],
-        period: mockPeriod as any,
+      jest.spyOn(timeScopeService, 'getOrDetermineTimeScope').mockReturnValue({
+        dateFrom: '2024-12-01',
+        dateTo: '2024-12-14',
       });
       jest.spyOn(userRepo, 'find').mockResolvedValue(mockUsersInScope as any);
       mockQueryBuilder.getMany.mockResolvedValue(mockActivities);
@@ -568,21 +525,21 @@ describe('ReportsService', () => {
 
       const mockPeriods = [
         {
-          id: 'period-1',
           startDate: '2024-12-01',
           endDate: '2024-12-14',
-          entityId: 'entity-1',
+          periodNumber: 1,
+          label: 'Diciembre 2024 - Período 1',
         },
         {
-          id: 'period-2',
           startDate: '2024-11-17',
           endDate: '2024-11-30',
-          entityId: 'entity-1',
+          periodNumber: 2,
+          label: 'Noviembre 2024 - Período 2',
         },
       ];
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
-      jest.spyOn(periodRepo, 'find').mockResolvedValue(mockPeriods as any);
+      jest.spyOn(periodCalculator, 'getPreviousPeriods').mockReturnValue(mockPeriods);
       jest.spyOn(entityRepo, 'findOne').mockResolvedValue({ id: 'entity-1', children: [] } as any);
       jest.spyOn(entityRepo, 'find').mockResolvedValue([]);
       jest.spyOn(userRepo, 'find').mockResolvedValue([{ id: 'user-1', status: 'active' }] as any);
@@ -597,7 +554,7 @@ describe('ReportsService', () => {
       expect(result.periods[0].expenses).toBe(50);
     });
 
-    it('should return empty trends when no reporting periods exist', async () => {
+    it('should return empty trends when no periods are available', async () => {
       const mockUser = {
         id: 'user-1',
         entity_id: 'entity-1',
@@ -606,7 +563,7 @@ describe('ReportsService', () => {
       };
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
-      jest.spyOn(periodRepo, 'find').mockResolvedValue([]);
+      jest.spyOn(periodCalculator, 'getPreviousPeriods').mockReturnValue([]);
 
       const result = await service.getTrends('user-1', {});
 
@@ -616,7 +573,7 @@ describe('ReportsService', () => {
   });
 
   describe('getComparison', () => {
-    it('should return empty comparison when fewer than 2 reporting periods exist', async () => {
+    it('should use PeriodCalculator fallback when no date ranges provided', async () => {
       const mockUser = {
         id: 'user-1',
         entity_id: 'entity-1',
@@ -625,23 +582,32 @@ describe('ReportsService', () => {
       };
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
-      jest.spyOn(periodRepo, 'find').mockResolvedValue([
+      jest.spyOn(periodCalculator, 'getCurrentPeriod').mockReturnValue({
+        startDate: '2024-12-01',
+        endDate: '2024-12-14',
+        periodNumber: 1,
+        label: 'Diciembre 2024 - Período 1',
+      });
+      jest.spyOn(periodCalculator, 'getPreviousPeriods').mockReturnValue([
         {
-          id: 'period-1',
-          startDate: '2024-12-01',
-          endDate: '2024-12-14',
-          entityId: 'entity-1',
+          startDate: '2024-11-17',
+          endDate: '2024-11-30',
+          periodNumber: 2,
+          label: 'Noviembre 2024 - Período 2',
         },
-      ] as any);
+      ]);
+      jest
+        .spyOn(userRepo, 'find')
+        .mockResolvedValue([{ id: 'user-1', status: 'active', entity_id: 'entity-1' }] as any);
+      mockQueryBuilder.getMany
+        .mockResolvedValueOnce([{ id: 'a1', userId: 'user-1', expenseAmount: '10.00' }] as any)
+        .mockResolvedValueOnce([{ id: 'a2', userId: 'user-1', expenseAmount: '5.00' }] as any);
 
       const result = await service.getComparison('user-1', {});
 
-      expect(result.current.periodId).toBe('');
-      expect(result.previous.periodId).toBe('');
-      expect(result.current.activities).toBe(0);
-      expect(result.previous.activities).toBe(0);
-      expect(result.changes.activities.value).toBe(0);
-      expect(queryFactory.buildActivityQuery).not.toHaveBeenCalled();
+      expect(result.current.periodId).toBe('Diciembre 2024 - Período 1');
+      expect(result.previous.periodId).toBe('Noviembre 2024 - Período 2');
+      expect(queryFactory.buildActivityQuery).toHaveBeenCalledTimes(2);
     });
 
     it('should compare by periodType boundaries when provided', async () => {
@@ -653,7 +619,6 @@ describe('ReportsService', () => {
       };
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
-      jest.spyOn(periodRepo, 'find').mockResolvedValue([]);
       jest
         .spyOn(userRepo, 'find')
         .mockResolvedValue([{ id: 'user-1', status: 'active', entity_id: 'entity-1' }] as any);
@@ -670,7 +635,6 @@ describe('ReportsService', () => {
       expect(result.current.periodId).toContain('current-monthly-2026-2');
       expect(result.previous.periodId).toContain('previous-monthly-2026-1');
       expect(queryFactory.buildActivityQuery).toHaveBeenCalledTimes(2);
-      expect(periodRepo.find).not.toHaveBeenCalled();
     });
 
     it('should compare provided date range with immediately previous range', async () => {
@@ -725,14 +689,6 @@ describe('ReportsService', () => {
         entity: { id: 'entity-1' },
       };
 
-      const mockPeriod = {
-        id: 'period-1',
-        startDate: '2024-12-01',
-        endDate: '2024-12-14',
-        status: 'active',
-        entityId: 'entity-1',
-      };
-
       const mockActivities = [
         {
           id: 'activity-1',
@@ -748,8 +704,26 @@ describe('ReportsService', () => {
       ];
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
-      jest.spyOn(periodRepo, 'findOne').mockResolvedValue(mockPeriod as any);
-      jest.spyOn(periodRepo, 'find').mockResolvedValue([mockPeriod, mockPeriod, mockPeriod] as any);
+      jest.spyOn(periodCalculator, 'getPreviousPeriods').mockReturnValue([
+        {
+          startDate: '2024-12-01',
+          endDate: '2024-12-14',
+          periodNumber: 1,
+          label: 'Diciembre 2024 - Período 1',
+        },
+        {
+          startDate: '2024-11-17',
+          endDate: '2024-11-30',
+          periodNumber: 2,
+          label: 'Noviembre 2024 - Período 2',
+        },
+        {
+          startDate: '2024-11-01',
+          endDate: '2024-11-16',
+          periodNumber: 1,
+          label: 'Noviembre 2024 - Período 1',
+        },
+      ]);
       jest.spyOn(entityRepo, 'findOne').mockResolvedValue({ id: 'entity-1', children: [] } as any);
       jest
         .spyOn(entityRepo, 'find')
@@ -779,14 +753,6 @@ describe('ReportsService', () => {
         entity_id: 'entity-1',
         role: { rolePermissions: [] },
         entity: { id: 'entity-1' },
-      };
-
-      const mockPeriod = {
-        id: 'period-1',
-        startDate: '2024-12-01',
-        endDate: '2024-12-14',
-        status: 'active',
-        entityId: 'entity-1',
       };
 
       const mockActivities = [
@@ -819,7 +785,6 @@ describe('ReportsService', () => {
       ];
 
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
-      jest.spyOn(periodRepo, 'findOne').mockResolvedValue(mockPeriod as any);
       jest.spyOn(entityRepo, 'findOne').mockResolvedValue({ id: 'entity-1', children: [] } as any);
       jest.spyOn(entityRepo, 'find').mockResolvedValue([]);
       mockQueryBuilder.getMany.mockResolvedValue(mockActivities);

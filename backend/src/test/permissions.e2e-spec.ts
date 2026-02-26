@@ -50,11 +50,6 @@ describe('Permissions System (e2e)', () => {
       expect(Permission.ACTIVITY_TYPE_READ).toBe('activity-type:read');
     });
 
-    it('should have Permission enum with reporting-period permissions', () => {
-      expect(Permission.REPORTING_PERIOD_READ).toBe('reporting-period:read');
-      expect(Permission.REPORTING_PERIOD_READ_HIERARCHY).toBe('reporting-period:read:hierarchy');
-    });
-
     it('should have Permission enum with system admin permission', () => {
       expect(Permission.SYSTEM_ADMIN).toBe('system:admin');
     });

@@ -21,15 +21,14 @@ import { UpdateActivityDto } from './dto/update-activity.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { IdentityResolutionService } from '../auth/identity-resolution.service';
 import { ActivityResponseDto } from './dto/activity-response.dto';
-import { ReportingPeriodsService } from '../reporting-periods/reporting-periods.service';
 import { buildPagination } from '../common/pagination';
 import { Request } from 'express';
-import { Repository, In } from 'typeorm';
+import { In } from 'typeorm';
+import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from '../users/user.entity';
 import { ActivityType } from '../activities-type/activity-type.entity';
-import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
-import { Activity } from './activity.entity';
+import { LockService } from '../periods/lock.service';
 
 @ApiTags('Activities')
 @ApiBearerAuth('JWT-auth')
@@ -39,39 +38,10 @@ export class ActivitiesController {
   constructor(
     private readonly activities: ActivitiesService,
     private readonly identity: IdentityResolutionService,
-    private readonly reportingPeriods: ReportingPeriodsService,
+    private readonly lockService: LockService,
     @InjectRepository(User) private readonly usersRepo: Repository<User>,
     @InjectRepository(ActivityType) private readonly typesRepo: Repository<ActivityType>,
-    @InjectRepository(ReportingPeriod)
-    private readonly reportingPeriodsRepo: Repository<ReportingPeriod>,
   ) {}
-
-  private async getReportingPeriodForActivity(activity: any): Promise<ReportingPeriod | null> {
-    if (!activity.reportingPeriodId) return null;
-    return this.reportingPeriodsRepo.findOne({ where: { id: activity.reportingPeriodId } });
-  }
-
-  private async calculateLockedStatus(
-    activity: Activity,
-    userId: string,
-    reportingPeriod: ReportingPeriod | null,
-  ): Promise<boolean> {
-    if (!reportingPeriod || !reportingPeriod.isLocked) {
-      return false;
-    }
-
-    if (!activity.reportingPeriodId) {
-      return false;
-    }
-
-    const hasException = await this.reportingPeriods.hasUserExceptionForDate(
-      userId,
-      activity.reportingPeriodId,
-      activity.activityDate,
-    );
-
-    return !hasException;
-  }
 
   @Post()
   @ApiOperation({ summary: 'Create a new activity' })
@@ -88,21 +58,14 @@ export class ActivitiesController {
 
     const created = await this.activities.create(dto, user.id);
 
-    const [owner, type, reportingPeriod] = await Promise.all([
+    const [owner, type] = await Promise.all([
       this.usersRepo.findOneByOrFail({ id: created.userId }),
       this.typesRepo.findOneByOrFail({ id: created.activityTypeId }),
-      this.getReportingPeriodForActivity(created),
     ]);
 
-    const locked = await this.calculateLockedStatus(created, user.id, reportingPeriod);
+    const isLocked = await this.lockService.isDateLocked(owner.entity_id, created.activityDate);
 
-    return ActivityResponseDto.fromEntity(
-      created,
-      owner.username,
-      (type as any).name,
-      reportingPeriod,
-      locked,
-    );
+    return ActivityResponseDto.fromEntity(created, owner.username, (type as any).name, isLocked);
   }
 
   @Get()
@@ -161,7 +124,7 @@ export class ActivitiesController {
 
     const [items, total] = await this.activities.findMine(user.id, page, limit, filters);
 
-    const [owner, typesMap, reportingPeriodsMap] = await Promise.all([
+    const [owner, typesMap] = await Promise.all([
       this.usersRepo.findOneByOrFail({ id: user.id }),
       (async () => {
         const ids = [...new Set(items.map((i) => i.activityTypeId))];
@@ -169,24 +132,19 @@ export class ActivitiesController {
         const types = await this.typesRepo.find({ where: { id: In(ids) } });
         return new Map(types.map((t) => [t.id, (t as any).name]));
       })(),
-      (async () => {
-        const ids = [...new Set(items.map((i) => i.reportingPeriodId).filter(Boolean))];
-        if (!ids.length) return new Map<string, ReportingPeriod>();
-        const periods = await this.reportingPeriodsRepo.find({ where: { id: In(ids) } });
-        return new Map(periods.map((p) => [p.id, p]));
-      })(),
     ]);
 
     const itemsWithLocked = await Promise.all(
       items.map(async (a) => {
-        const reportingPeriod = reportingPeriodsMap.get(a.reportingPeriodId || '') ?? null;
-        const locked = await this.calculateLockedStatus(a, user.id, reportingPeriod);
+        const isLocked = await this.lockService.isDateLocked(
+          owner.entity_id,
+          a.activityDate,
+        );
         return ActivityResponseDto.fromEntity(
           a,
           owner.username,
           typesMap.get(a.activityTypeId) ?? '',
-          reportingPeriod,
-          locked,
+          isLocked,
         );
       }),
     );
@@ -206,21 +164,14 @@ export class ActivitiesController {
     const user = await this.identity.resolveUserBySubAndIssuer(sub, iss);
 
     const a = await this.activities.findOneMine(id, user.id);
-    const [owner, type, reportingPeriod] = await Promise.all([
+    const [owner, type] = await Promise.all([
       this.usersRepo.findOneByOrFail({ id: a.userId }),
       this.typesRepo.findOneByOrFail({ id: a.activityTypeId }),
-      this.getReportingPeriodForActivity(a),
     ]);
 
-    const locked = await this.calculateLockedStatus(a, user.id, reportingPeriod);
+    const isLocked = await this.lockService.isDateLocked(owner.entity_id, a.activityDate);
 
-    return ActivityResponseDto.fromEntity(
-      a,
-      owner.username,
-      (type as any).name,
-      reportingPeriod,
-      locked,
-    );
+    return ActivityResponseDto.fromEntity(a, owner.username, (type as any).name, isLocked);
   }
 
   @Patch(':id')
@@ -241,20 +192,18 @@ export class ActivitiesController {
     const user = await this.identity.resolveUserBySubAndIssuer(sub, iss);
 
     const updated = await this.activities.updateMine(id, dto, user.id);
-    const [owner, type, reportingPeriod] = await Promise.all([
+    const [owner, type] = await Promise.all([
       this.usersRepo.findOneByOrFail({ id: updated.userId }),
       this.typesRepo.findOneByOrFail({ id: updated.activityTypeId }),
-      this.getReportingPeriodForActivity(updated),
     ]);
 
-    const locked = await this.calculateLockedStatus(updated, user.id, reportingPeriod);
+    const isLocked = await this.lockService.isDateLocked(owner.entity_id, updated.activityDate);
 
     return ActivityResponseDto.fromEntity(
       updated,
       owner.username,
       (type as any).name,
-      reportingPeriod,
-      locked,
+      isLocked,
     );
   }
 

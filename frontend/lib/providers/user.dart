@@ -25,11 +25,11 @@ class UserState {
   }
 }
 
-class UserNotifier extends StateNotifier<UserState> {
-  UserNotifier() : super(const UserState());
-
-  // TODO: Implement user data fetching and management
-  // This will be implemented in the next phase
+class UserNotifier extends Notifier<UserState> {
+  @override
+  UserState build() {
+    return const UserState();
+  }
 
   void setUser(AppUser user) {
     state = state.copyWith(
@@ -59,9 +59,7 @@ class UserNotifier extends StateNotifier<UserState> {
   }
 }
 
-final userProvider = StateNotifierProvider<UserNotifier, UserState>((ref) {
-  return UserNotifier();
-});
+final userProvider = NotifierProvider<UserNotifier, UserState>(UserNotifier.new);
 
 // Computed providers for easy access to user properties
 final currentUserProvider = Provider<AppUser?>((ref) {

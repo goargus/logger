@@ -3,9 +3,6 @@ import {
   ConflictException,
   Injectable,
   NotFoundException,
-  Inject,
-  forwardRef,
-  Optional,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Not, Repository } from 'typeorm';
@@ -17,7 +14,6 @@ import { CreateEntityDto } from './dto/create-entity.dto';
 import { UpdateEntityDto } from './dto/update-entity.dto';
 import { HierarchyValidationService } from './hierarchy-validation.service';
 import { EntityTreeNode } from './dto/entity-tree.dto';
-import { ReportingPeriodsService } from '../reporting-periods/reporting-periods.service';
 import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 import { PaginatedResult, buildPagination, normalizePagination } from '../common/pagination';
 
@@ -27,9 +23,6 @@ export class EntitiesService {
     @InjectRepository(Entity)
     private readonly repo: Repository<Entity>,
     private readonly hierarchyValidation: HierarchyValidationService,
-    @Optional()
-    @Inject(forwardRef(() => ReportingPeriodsService))
-    private readonly reportingPeriodsService?: ReportingPeriodsService,
   ) {}
 
   private normalizeName(name?: string) {

@@ -43,7 +43,7 @@ class MonthlyExpensesNotifier extends AsyncNotifier<MonthlyExpense> {
 
   Future<void> refresh() async {
     // Preserve current year/month from state, fallback to current date
-    final currentData = state.valueOrNull;
+    final currentData = state.value;
     final year = currentData?.year ?? DateTime.now().year;
     final month = currentData?.month ?? DateTime.now().month;
 
@@ -64,6 +64,5 @@ class MonthlyExpensesNotifier extends AsyncNotifier<MonthlyExpense> {
 }
 
 final monthlyExpensesProvider =
-    AsyncNotifierProvider<MonthlyExpensesNotifier, MonthlyExpense>(() {
-  return MonthlyExpensesNotifier();
-});
+    AsyncNotifierProvider<MonthlyExpensesNotifier, MonthlyExpense>(
+        MonthlyExpensesNotifier.new);

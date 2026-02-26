@@ -4,7 +4,7 @@ import { Repository, In } from 'typeorm';
 import { Activity } from '../../activity/activity.entity';
 import { User } from '../../users/user.entity';
 import { Entity } from '../../entities/entity.entity';
-import { ReportingPeriod } from '../../reporting-periods/reporting-period.entity';
+import { PeriodInfo } from '../../periods/period-calculator';
 import { UserStatus } from '../../users/user-status.enum';
 import { ActivityStatus } from '../../activity/activity-status.enum';
 import { RankingsResponse } from '../dto/report-responses.dto';
@@ -23,7 +23,7 @@ export class RankingsCalculator {
   async calculate(
     activities: Activity[],
     entityIds: string[],
-    recentPeriods: ReportingPeriod[],
+    recentPeriods: PeriodInfo[],
     limit: number,
   ): Promise<RankingsResponse> {
     const userPerformance = new Map<
@@ -102,6 +102,7 @@ export class RankingsCalculator {
       entity: string;
       periodsInactive: number;
     }> = [];
+
     if (recentPeriods.length > 0) {
       const usersInScope = await this.userRepo.find({
         where: { entity_id: In(entityIds), status: UserStatus.ACTIVE },
@@ -109,27 +110,35 @@ export class RankingsCalculator {
       });
 
       const userIds = usersInScope.map((u) => u.id);
-      const periodIds = recentPeriods.map((p) => p.id);
 
-      const allActivities = await this.activityRepo.find({
-        where: {
-          userId: In(userIds),
-          reportingPeriodId: In(periodIds),
-          status: ActivityStatus.ACTIVE,
-        },
-        select: ['userId', 'reportingPeriodId'],
-      });
+      // For each recent period, query activities by date range instead of FK
+      const periodActivitiesMap = new Map<number, Set<string>>();
 
-      const activitySet = new Set<string>();
-      for (const activity of allActivities) {
-        activitySet.add(`${activity.userId}:${activity.reportingPeriodId}`);
+      for (let i = 0; i < recentPeriods.length; i++) {
+        const period = recentPeriods[i];
+        const periodActivities = await this.activityRepo
+          .createQueryBuilder('activity')
+          .select('activity.userId')
+          .where('activity.userId IN (:...userIds)', { userIds })
+          .andWhere('activity.status = :status', { status: ActivityStatus.ACTIVE })
+          .andWhere('activity.activityDate BETWEEN :startDate AND :endDate', {
+            startDate: period.startDate,
+            endDate: period.endDate,
+          })
+          .groupBy('activity.userId')
+          .getRawMany();
+
+        const activeUserIds = new Set<string>(
+          periodActivities.map((a: { activity_userId: string }) => a.activity_userId),
+        );
+        periodActivitiesMap.set(i, activeUserIds);
       }
 
       for (const user of usersInScope) {
         let periodsInactive = 0;
-        for (const period of recentPeriods) {
-          const hasActivity = activitySet.has(`${user.id}:${period.id}`);
-          if (!hasActivity) {
+        for (let i = 0; i < recentPeriods.length; i++) {
+          const activeUserIds = periodActivitiesMap.get(i)!;
+          if (!activeUserIds.has(user.id)) {
             periodsInactive++;
           } else {
             break;

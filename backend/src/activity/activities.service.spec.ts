@@ -7,10 +7,8 @@ import { ActivitiesService } from './activities.service';
 import { Activity } from './activity.entity';
 import { ActivityType } from '../activities-type/activity-type.entity';
 import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
-import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
-import { ReportingPeriodException } from '../reporting-periods/reporting-period-exception.entity';
 import { User } from '../users/user.entity';
-import { ReportingPeriodsService } from '../reporting-periods/reporting-periods.service';
+import { LockService } from '../periods/lock.service';
 
 import { CreateActivityDto } from './dto/create-activity.dto';
 
@@ -35,18 +33,12 @@ describe('ActivitiesService', () => {
     find: jest.fn(),
   };
 
-  const mockReportingPeriodRepo = {
-    findOne: jest.fn(),
-    find: jest.fn(),
-    createQueryBuilder: jest.fn(),
-  };
-
   const mockUserRepo = {
     findOne: jest.fn(),
   };
 
-  const mockReportingPeriodsService = {
-    ensureCurrentPeriodForEntity: jest.fn(),
+  const mockLockService = {
+    isDateAvailableForUser: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -66,20 +58,12 @@ describe('ActivitiesService', () => {
           useValue: mockUserRoleAssignmentRepo,
         },
         {
-          provide: getRepositoryToken(ReportingPeriod),
-          useValue: mockReportingPeriodRepo,
-        },
-        {
-          provide: getRepositoryToken(ReportingPeriodException),
-          useValue: { findOne: jest.fn() },
-        },
-        {
           provide: getRepositoryToken(User),
           useValue: mockUserRepo,
         },
         {
-          provide: ReportingPeriodsService,
-          useValue: mockReportingPeriodsService,
+          provide: LockService,
+          useValue: mockLockService,
         },
       ],
     }).compile();
@@ -93,25 +77,7 @@ describe('ActivitiesService', () => {
 
   beforeEach(() => {
     mockUserRepo.findOne.mockResolvedValue({ id: 'user-123', entity_id: 'entity-1' });
-    mockReportingPeriodRepo.findOne.mockResolvedValue({
-      id: 'period-1',
-      entityId: 'entity-1',
-      startDate: '2023-12-01',
-      endDate: '2023-12-31',
-      status: 'active',
-    });
-    mockReportingPeriodRepo.createQueryBuilder.mockReturnValue({
-      where: jest.fn().mockReturnThis(),
-      andWhere: jest.fn().mockReturnThis(),
-      getOne: jest.fn().mockResolvedValue(null),
-    });
-    mockReportingPeriodsService.ensureCurrentPeriodForEntity.mockResolvedValue({
-      id: 'period-1',
-      entityId: 'entity-1',
-      startDate: '2023-12-01',
-      endDate: '2023-12-31',
-      status: 'active',
-    });
+    mockLockService.isDateAvailableForUser.mockResolvedValue(true);
   });
 
   describe('canUserSubmitActivityType', () => {
@@ -278,12 +244,6 @@ describe('ActivitiesService', () => {
       // Mock authorization check to pass
       mockUserRoleAssignmentRepo.findOne.mockResolvedValue(mockUserRoleAssignment);
 
-      // Mock reporting period check
-      mockReportingPeriodRepo.createQueryBuilder.mockReturnValue({
-        where: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue(null),
-      } as any);
-
       // Mock activity creation
       mockActivityRepo.create.mockReturnValue(mockCreatedActivity);
       mockActivityRepo.save.mockResolvedValue(mockCreatedActivity);
@@ -319,12 +279,6 @@ describe('ActivitiesService', () => {
         .mockResolvedValueOnce(mockActivityType)
         .mockResolvedValueOnce(mockActivityType);
       mockUserRoleAssignmentRepo.findOne.mockResolvedValue(mockUserRoleAssignment);
-
-      // Mock reporting period check
-      mockReportingPeriodRepo.createQueryBuilder.mockReturnValue({
-        where: jest.fn().mockReturnThis(),
-        getOne: jest.fn().mockResolvedValue(null),
-      } as any);
 
       mockActivityRepo.create.mockReturnValue(mockCreatedActivity);
       mockActivityRepo.save.mockResolvedValue(mockCreatedActivity);

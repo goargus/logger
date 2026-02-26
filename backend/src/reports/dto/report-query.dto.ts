@@ -14,13 +14,6 @@ import { ReportPeriodType } from '../enums/report-period-type.enum';
 
 export class ReportQueryDto {
   @ApiPropertyOptional({
-    description: 'Filter by specific reporting period UUID',
-  })
-  @IsOptional()
-  @IsUUID()
-  periodId?: string;
-
-  @ApiPropertyOptional({
     description: 'Start date for date range filter',
     example: '2024-01-01',
   })

@@ -6,7 +6,6 @@ import { User } from '../src/users/user.entity';
 import { Activity } from '../src/activity/activity.entity';
 import { ActivityType } from '../src/activities-type/activity-type.entity';
 import { ActivityStatus } from '../src/activity/activity-status.enum';
-import { ReportingPeriod } from '../src/reporting-periods/reporting-period.entity';
 import { Role } from '../src/roles/role.entity';
 
 const MISSIONARY_ACTIVITY_TYPES = [
@@ -86,7 +85,6 @@ function generateActivitiesForYear(
   profile: WorkerProfile,
   activityTypes: ActivityType[],
   startDate: Date,
-  reportingPeriodId: string | null,
 ): Partial<Activity>[] {
   const activities: Partial<Activity>[] = [];
   const currentDate = new Date(startDate);
@@ -223,7 +221,6 @@ function generateActivitiesForYear(
           hasExpense,
           expenseAmount,
           userId,
-          reportingPeriodId,
           createdBy: userId,
           updatedBy: userId,
           status: ActivityStatus.ACTIVE,
@@ -246,7 +243,6 @@ async function run() {
   const userRepo = dataSource.getRepository(User);
   const activityRepo = dataSource.getRepository(Activity);
   const activityTypeRepo = dataSource.getRepository(ActivityType);
-  const reportingPeriodRepo = dataSource.getRepository(ReportingPeriod);
   const roleRepo = dataSource.getRepository(Role);
 
   try {
@@ -267,12 +263,6 @@ async function run() {
     }
 
     console.log(`Found ${missionaryActivityTypes.length} activity types for missionaries\n`);
-
-    const adminUsers = await userRepo.find({ relations: ['entity', 'role'], take: 1 });
-    if (adminUsers.length === 0) {
-      throw new Error('No existing users found. Please seed basic structure first.');
-    }
-    const adminUserId = adminUsers[0].id;
 
     const workers: { user: User; profile: WorkerProfile }[] = [];
 
@@ -300,37 +290,6 @@ async function run() {
     endDate.setFullYear(endDate.getFullYear() + 1);
     endDate.setDate(endDate.getDate() - 1);
 
-    const reportingPeriods: Map<string, ReportingPeriod> = new Map();
-
-    for (const { user } of workers) {
-      if (!reportingPeriods.has(user.entity_id)) {
-        let reportingPeriod = await reportingPeriodRepo.findOne({
-          where: {
-            entityId: user.entity_id,
-            name: 'Simulación Anual 2026',
-          },
-        });
-
-        if (!reportingPeriod) {
-          reportingPeriod = reportingPeriodRepo.create({
-            entityId: user.entity_id,
-            name: 'Simulación Anual 2026',
-            description: 'Período de reporte para la simulación de un año completo',
-            startDate: formatDate(startDate),
-            endDate: formatDate(endDate),
-            createdBy: adminUserId,
-            updatedBy: adminUserId,
-          });
-          await reportingPeriodRepo.save(reportingPeriod);
-          console.log(`Created reporting period for: ${user.entity.name}`);
-        } else {
-          console.log(`Using existing reporting period for: ${user.entity.name}`);
-        }
-
-        reportingPeriods.set(user.entity_id, reportingPeriod);
-      }
-    }
-
     console.log('\nGenerating activities for one year...\n');
 
     let totalActivitiesCreated = 0;
@@ -345,14 +304,11 @@ async function run() {
         continue;
       }
 
-      const reportingPeriod = reportingPeriods.get(worker.entity_id)!;
-
       const activities = generateActivitiesForYear(
         worker.id,
         profile,
         missionaryActivityTypes,
         startDate,
-        reportingPeriod.id,
       );
 
       const BATCH_SIZE = 100;

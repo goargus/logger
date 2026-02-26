@@ -3,7 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ReportsService } from './reports.service';
 import { User } from '../users/user.entity';
-import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
+import { PeriodCalculator } from '../periods/period-calculator';
 import { ReportsAccessService } from './access/reports-access.service';
 import { ReportsTimeScopeService } from './time/reports-time-scope.service';
 import { ReportsActivityQueryFactory } from './query/reports-activity-query.factory';
@@ -75,8 +75,16 @@ describe('ReportsService - getUsersReport', () => {
           },
         },
         {
-          provide: getRepositoryToken(ReportingPeriod),
-          useValue: { find: jest.fn() },
+          provide: PeriodCalculator,
+          useValue: {
+            getCurrentPeriod: jest.fn().mockReturnValue({
+              startDate: '2024-01-01',
+              endDate: '2024-01-14',
+              periodNumber: 1,
+              label: 'Enero 2024 - Período 1',
+            }),
+            getPreviousPeriods: jest.fn().mockReturnValue([]),
+          },
         },
         {
           provide: ReportsAccessService,
@@ -90,7 +98,7 @@ describe('ReportsService - getUsersReport', () => {
         {
           provide: ReportsTimeScopeService,
           useValue: {
-            getOrDetermineTimeScope: jest.fn().mockResolvedValue({
+            getOrDetermineTimeScope: jest.fn().mockReturnValue({
               dateFrom: '2024-01-01',
               dateTo: '2024-01-31',
             }),
@@ -138,7 +146,7 @@ describe('ReportsService - getUsersReport', () => {
     it('should throw ForbiddenException if user does not have canViewReports permission', async () => {
       // Override the global mock to return false for this test
       permissionsService.userHasPermission = jest.fn().mockResolvedValue(false);
-      
+
       userRepo.findOne.mockResolvedValue(mockRegularUser as any);
       permissionsService.userHasPermission.mockResolvedValue(false);
 

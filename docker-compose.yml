@@ -28,7 +28,7 @@ services:
     working_dir: /app
     command: >
       sh -c "
-        npm install &&
+        npm install --legacy-peer-deps &&
         npm run admin:bootstrap
       "
     environment:
@@ -78,13 +78,14 @@ services:
       AUTH0_AUDIENCE: logger
       AUTH0_ISSUER: https://dev-ohuspam6fnmh4tgt.us.auth0.com/
       CORS_ORIGINS: http://localhost:3000,http://localhost:8080
+      PERIOD_FREQUENCY: 2
       ADMIN_EMAIL: hndoss@gmail.com
       ADMIN_USERNAME: "hndoss"
       ADMIN_IDP_ISSUER: https://dev-ohuspam6fnmh4tgt.us.auth0.com/
       ADMIN_IDP_SUBJECT: auth0|688c59c6ec2186db091c74eb
     command: >
       sh -c "
-        npm install &&
+        npm install --legacy-peer-deps &&
         npx nest build &&
         npx nest start --watch
       "

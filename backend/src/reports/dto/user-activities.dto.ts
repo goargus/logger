@@ -1,6 +1,5 @@
 import {
   IsOptional,
-  IsUUID,
   IsDateString,
   IsInt,
   Min,
@@ -9,13 +8,6 @@ import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UserActivitiesQueryDto {
-  @ApiPropertyOptional({
-    description: 'Filter by specific reporting period UUID',
-  })
-  @IsOptional()
-  @IsUUID()
-  periodId?: string;
-
   @ApiPropertyOptional({
     description: 'Start date for date range filter',
     example: '2024-01-01',

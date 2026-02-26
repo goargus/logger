@@ -27,7 +27,6 @@ const LEADERSHIP_PERMISSIONS: Permission[] = [
   Permission.ACTIVITY_READ_HIERARCHY,
   Permission.ENTITY_READ_HIERARCHY,
   Permission.USER_READ_HIERARCHY,
-  Permission.REPORTING_PERIOD_READ_HIERARCHY,
   Permission.ROLE_READ,
   Permission.ACTIVITY_TYPE_READ,
 ];
@@ -47,7 +46,6 @@ const MISSIONARY_PERMISSIONS: Permission[] = [
   Permission.USER_READ_OWN,
   Permission.ACTIVITY_TYPE_READ,
   Permission.ENTITY_READ,
-  Permission.REPORTING_PERIOD_READ,
 ];
 
 async function seedRolesAndActivities() {

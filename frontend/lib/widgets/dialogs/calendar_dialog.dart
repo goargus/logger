@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../services/reporting_periods.dart';
+import '../../models/availability.dart';
+import '../../services/periods_service.dart';
 
 class CalendarDialog extends StatefulWidget {
   final DateTime initialDate;
   final DateTime firstDate;
   final DateTime lastDate;
-  final ReportingPeriodsService reportingPeriodsService;
+  final PeriodsService periodsService;
 
   const CalendarDialog({
     super.key,
     required this.initialDate,
     required this.firstDate,
     required this.lastDate,
-    required this.reportingPeriodsService,
+    required this.periodsService,
   });
 
   @override
@@ -23,56 +24,49 @@ class CalendarDialog extends StatefulWidget {
 class _CalendarDialogState extends State<CalendarDialog> {
   late DateTime _focusedMonth;
   DateTime? _selected;
-  List<LockedDateRange> _lockedRanges = [];
-  ReportingPeriodSummary? _activePeriod;
+  AvailabilityResponse? _availability;
   bool _isLoading = true;
   String? _errorMessage;
-  String? _periodErrorMessage;
 
   @override
   void initState() {
     super.initState();
     _focusedMonth = DateTime(widget.initialDate.year, widget.initialDate.month);
     _selected = widget.initialDate;
-    _loadReportingContext();
+    _loadAvailability();
   }
 
-  Future<void> _loadReportingContext() async {
-    String? lockedError;
-    String? periodError;
-    List<LockedDateRange> ranges = [];
-    ReportingPeriodSummary? activePeriod;
+  String _monthKey(DateTime month) {
+    return '${month.year}-${month.month.toString().padLeft(2, '0')}';
+  }
 
-    try {
-      ranges = await widget.reportingPeriodsService.getLockedDateRanges();
-    } catch (e) {
-      lockedError = 'Error al cargar restricciones de fechas';
-    }
-
-    try {
-      activePeriod =
-          await widget.reportingPeriodsService.getActiveReportingPeriod();
-    } catch (e) {
-      periodError = 'No se pudo cargar el período activo';
-    }
-
-    if (!mounted) return;
-
+  Future<void> _loadAvailability() async {
     setState(() {
-      _lockedRanges = ranges;
-      _activePeriod = activePeriod;
-      _errorMessage = lockedError;
-      _periodErrorMessage =
-          periodError ?? (activePeriod == null ? 'Sin período activo' : null);
-      _isLoading = false;
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
-      if (_selected != null) {
-        if (_lockedRanges.any((range) => range.containsDateTime(_selected!)) ||
-            !_isWithinActivePeriod(_selected!)) {
+    try {
+      final availability =
+          await widget.periodsService.getAvailability(_monthKey(_focusedMonth));
+
+      if (!mounted) return;
+
+      setState(() {
+        _availability = availability;
+        _isLoading = false;
+
+        if (_selected != null && !availability.isDateAvailable(_selected!)) {
           _selected = null;
         }
-      }
-    });
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Error al cargar disponibilidad de fechas';
+        _isLoading = false;
+      });
+    }
   }
 
   bool _isWithinSelectableRange(DateTime date) {
@@ -84,37 +78,17 @@ class _CalendarDialogState extends State<CalendarDialog> {
     return !day.isBefore(first) && !day.isAfter(last);
   }
 
-  bool _isWithinActivePeriod(DateTime date) {
-    if (_activePeriod == null) {
+  bool _isDateAvailable(DateTime date) {
+    if (_availability == null) {
       return false;
     }
-    return _activePeriod!.containsDateTime(date);
+    return _availability!.isDateAvailable(date);
   }
 
-  LockedDateRange? _lockedRangeForDate(DateTime date) {
-    if (_activePeriod != null && _activePeriod!.containsDateTime(date)) {
-      return null;
-    }
-    for (final range in _lockedRanges) {
-      if (range.containsDateTime(date)) {
-        return range;
-      }
-    }
-    return null;
-  }
-
-  void _showLockedDateFeedback() {
+  void _showUnavailableDateFeedback() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('Esta fecha pertenece a un periodo bloqueado'),
-      ),
-    );
-  }
-
-  void _showOutOfPeriodFeedback() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Esta fecha está fuera del período activo'),
+        content: Text('Esta fecha no está disponible para registro'),
       ),
     );
   }
@@ -123,12 +97,45 @@ class _CalendarDialogState extends State<CalendarDialog> {
     setState(() {
       _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month - 1);
     });
+    _loadAvailability();
   }
 
   void _nextMonth() {
     setState(() {
       _focusedMonth = DateTime(_focusedMonth.year, _focusedMonth.month + 1);
     });
+    _loadAvailability();
+  }
+
+  String _formatCurrentPeriod() {
+    final period = _availability?.currentPeriod;
+    if (period == null) {
+      return '';
+    }
+    try {
+      final start =
+          DateFormat('d MMM', 'es_ES').format(DateTime.parse(period.startDate));
+      final end = DateFormat('d MMM yyyy', 'es_ES')
+          .format(DateTime.parse(period.endDate));
+      return '$start - $end';
+    } catch (e) {
+      return '${period.startDate} - ${period.endDate}';
+    }
+  }
+
+  int _countUnavailableDays() {
+    if (_availability == null) return 0;
+    final year = _focusedMonth.year;
+    final month = _focusedMonth.month;
+    final daysInMonth = DateUtils.getDaysInMonth(year, month);
+    int unavailable = 0;
+    for (int day = 1; day <= daysInMonth; day++) {
+      final date = DateTime(year, month, day);
+      if (!_availability!.isDateAvailable(date)) {
+        unavailable++;
+      }
+    }
+    return unavailable;
   }
 
   @override
@@ -138,8 +145,7 @@ class _CalendarDialogState extends State<CalendarDialog> {
     final today =
         DateFormat('d \'de\' MMMM, y', 'es_ES').format(DateTime.now());
     final localizations = MaterialLocalizations.of(context);
-    final visibleLockedRanges =
-        _lockedRanges.where((range) => !_overlapsActivePeriod(range)).toList();
+    final unavailableCount = _isLoading ? 0 : _countUnavailableDays();
 
     return Dialog(
       insetPadding: const EdgeInsets.all(16),
@@ -208,15 +214,14 @@ class _CalendarDialogState extends State<CalendarDialog> {
                     alignment: Alignment.centerLeft,
                     child: Text(
                       _isLoading
-                          ? 'Cargando restricciones...'
-                          : (_errorMessage != null ||
-                                  _periodErrorMessage != null)
-                              ? 'Restricciones con advertencias'
-                              : _activePeriod != null
-                                  ? 'Período activo: ${_formatActivePeriod()}'
-                                  : _lockedRanges.isEmpty
+                          ? 'Cargando disponibilidad...'
+                          : _errorMessage != null
+                              ? 'Error al cargar disponibilidad'
+                              : _availability?.currentPeriod != null
+                                  ? 'Período activo: ${_formatCurrentPeriod()}'
+                                  : unavailableCount == 0
                                       ? 'Todas las fechas disponibles'
-                                      : '${_lockedRanges.length} período(s) bloqueado(s)',
+                                      : '$unavailableCount día(s) no disponible(s)',
                       style: TextStyle(
                         color: Theme.of(context)
                             .textTheme
@@ -233,36 +238,34 @@ class _CalendarDialogState extends State<CalendarDialog> {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color:
-                        (_errorMessage != null || _periodErrorMessage != null)
-                            ? Theme.of(context)
-                                .colorScheme
-                                .errorContainer
-                                .withValues(alpha: 0.6)
-                            : _lockedRanges.isNotEmpty
-                                ? Theme.of(context).colorScheme.errorContainer
-                                : Theme.of(context).colorScheme.surface,
+                    color: _errorMessage != null
+                        ? Theme.of(context)
+                            .colorScheme
+                            .errorContainer
+                            .withValues(alpha: 0.6)
+                        : unavailableCount > 0
+                            ? Theme.of(context).colorScheme.errorContainer
+                            : Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: Theme.of(context).dividerColor),
                   ),
                   child: Icon(
-                    (_errorMessage != null || _periodErrorMessage != null)
+                    _errorMessage != null
                         ? Icons.warning_amber_outlined
-                        : _lockedRanges.isNotEmpty
+                        : unavailableCount > 0
                             ? Icons.lock_outline
                             : Icons.filter_list,
-                    color:
-                        (_errorMessage != null || _periodErrorMessage != null)
+                    color: _errorMessage != null
+                        ? Theme.of(context).colorScheme.error
+                        : unavailableCount > 0
                             ? Theme.of(context).colorScheme.error
-                            : _lockedRanges.isNotEmpty
-                                ? Theme.of(context).colorScheme.error
-                                : Theme.of(context).colorScheme.primary,
+                            : Theme.of(context).colorScheme.primary,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            if (_errorMessage != null || _periodErrorMessage != null)
+            if (_errorMessage != null)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(12),
@@ -289,13 +292,7 @@ class _CalendarDialogState extends State<CalendarDialog> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        _errorMessage != null && _periodErrorMessage != null
-                            ? 'No se pudieron cargar restricciones ni el período activo.'
-                            : _errorMessage != null
-                                ? 'No se pudieron cargar los períodos bloqueados. Algunas fechas podrían estar bloqueadas.'
-                                : _periodErrorMessage == 'Sin período activo'
-                                    ? 'No se encontró un período activo. Algunas fechas podrían no estar disponibles.'
-                                    : 'No se pudo cargar el período activo. Algunas fechas podrían no estar disponibles.',
+                        'No se pudo cargar la disponibilidad. Algunas fechas podrían no estar disponibles.',
                         style: TextStyle(
                           fontSize: 12,
                           color: Theme.of(context).colorScheme.error,
@@ -365,30 +362,23 @@ class _CalendarDialogState extends State<CalendarDialog> {
                         final isSelected = _selected != null &&
                             DateUtils.isSameDay(day, _selected);
                         final isWithinRange = _isWithinSelectableRange(day);
-                        final isWithinActivePeriod = _isWithinActivePeriod(day);
-                        final lockedRange = _lockedRangeForDate(day);
-                        final isLocked = lockedRange != null;
-                        final isOutOfPeriod = !isWithinActivePeriod;
+                        final isAvailable = _isDateAvailable(day);
+                        final isUnavailable = !isAvailable;
                         final isTappable = isWithinRange;
 
                         return _DayCell(
                           date: day,
                           isToday: isToday,
                           isSelected: isSelected,
-                          isLocked: isLocked,
-                          isOutOfPeriod: isOutOfPeriod,
+                          isUnavailable: isUnavailable,
                           isDisabled: !isWithinRange,
                           isTappable: isTappable,
                           onTap: () {
                             if (!isWithinRange) {
                               return;
                             }
-                            if (isLocked) {
-                              _showLockedDateFeedback();
-                              return;
-                            }
-                            if (isOutOfPeriod) {
-                              _showOutOfPeriodFeedback();
+                            if (isUnavailable) {
+                              _showUnavailableDateFeedback();
                               return;
                             }
                             setState(() => _selected = day);
@@ -400,64 +390,6 @@ class _CalendarDialogState extends State<CalendarDialog> {
                 ),
               ),
             const SizedBox(height: 12),
-            if (visibleLockedRanges.isNotEmpty) ...[
-              Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.errorContainer,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .error
-                        .withValues(alpha: 0.3),
-                  ),
-                ),
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.lock_outline,
-                          size: 16,
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Períodos bloqueados:',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    ...visibleLockedRanges.map((range) {
-                      final start = DateFormat('d MMM', 'es_ES')
-                          .format(DateTime.parse(range.startDate));
-                      final end = DateFormat('d MMM yyyy', 'es_ES')
-                          .format(DateTime.parse(range.endDate));
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 4),
-                        child: Text(
-                          '• $start - $end: ${range.periodName}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color:
-                                Theme.of(context).colorScheme.onErrorContainer,
-                          ),
-                        ),
-                      );
-                    }),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
             Container(
               width: double.infinity,
               decoration: BoxDecoration(
@@ -504,38 +436,6 @@ class _CalendarDialogState extends State<CalendarDialog> {
   String _capitalize(String s) =>
       s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 
-  bool _overlapsActivePeriod(LockedDateRange range) {
-    if (_activePeriod == null) {
-      return false;
-    }
-    try {
-      final activeStart = DateTime.parse(_activePeriod!.startDate);
-      final activeEnd = DateTime.parse(_activePeriod!.endDate);
-      final lockedStart = DateTime.parse(range.startDate);
-      final lockedEnd = DateTime.parse(range.endDate);
-      return !(lockedEnd.isBefore(activeStart) ||
-          lockedStart.isAfter(activeEnd));
-    } catch (e) {
-      return false;
-    }
-  }
-
-  String _formatActivePeriod() {
-    final period = _activePeriod;
-    if (period == null) {
-      return '';
-    }
-    try {
-      final start =
-          DateFormat('d MMM', 'es_ES').format(DateTime.parse(period.startDate));
-      final end = DateFormat('d MMM yyyy', 'es_ES')
-          .format(DateTime.parse(period.endDate));
-      return '$start - $end';
-    } catch (e) {
-      return period.label;
-    }
-  }
-
   List<String> _orderedWeekdays(MaterialLocalizations localizations) {
     final labels = localizations.narrowWeekdays;
     final firstDay = localizations.firstDayOfWeekIndex;
@@ -572,8 +472,7 @@ class _DayCell extends StatelessWidget {
     required this.date,
     required this.isToday,
     required this.isSelected,
-    required this.isLocked,
-    required this.isOutOfPeriod,
+    required this.isUnavailable,
     required this.isDisabled,
     required this.isTappable,
     required this.onTap,
@@ -582,8 +481,7 @@ class _DayCell extends StatelessWidget {
   final DateTime date;
   final bool isToday;
   final bool isSelected;
-  final bool isLocked;
-  final bool isOutOfPeriod;
+  final bool isUnavailable;
   final bool isDisabled;
   final bool isTappable;
   final VoidCallback onTap;
@@ -593,24 +491,19 @@ class _DayCell extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final baseTextColor = Theme.of(context).textTheme.bodySmall?.color;
     final disabledColor = baseTextColor?.withValues(alpha: 0.35);
-    final lockedColor = scheme.error.withValues(alpha: 0.6);
-    final outOfPeriodColor = scheme.onSurface.withValues(alpha: 0.35);
+    final unavailableColor = scheme.onSurface.withValues(alpha: 0.35);
     final textColor = isSelected
         ? scheme.onPrimary
-        : isLocked
-            ? lockedColor
-            : isOutOfPeriod
-                ? outOfPeriodColor
-                : isDisabled
-                    ? disabledColor
-                    : baseTextColor;
+        : isUnavailable
+            ? unavailableColor
+            : isDisabled
+                ? disabledColor
+                : baseTextColor;
     final background = isSelected
         ? scheme.primary
-        : isLocked
-            ? scheme.errorContainer.withValues(alpha: 0.35)
-            : isOutOfPeriod
-                ? scheme.surfaceContainerHighest.withValues(alpha: 0.4)
-                : Colors.transparent;
+        : isUnavailable
+            ? scheme.surfaceContainerHighest.withValues(alpha: 0.4)
+            : Colors.transparent;
     final borderColor =
         isToday ? scheme.primary.withValues(alpha: 0.6) : Colors.transparent;
 
@@ -634,30 +527,19 @@ class _DayCell extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     color: textColor,
-                    decoration: (isLocked || isOutOfPeriod)
-                        ? TextDecoration.lineThrough
-                        : null,
+                    decoration:
+                        isUnavailable ? TextDecoration.lineThrough : null,
                   ),
                 ),
               ),
-              if (isLocked)
-                Positioned(
-                  right: 4,
-                  bottom: 4,
-                  child: Icon(
-                    Icons.lock_outline,
-                    size: 12,
-                    color: lockedColor,
-                  ),
-                ),
-              if (isOutOfPeriod && !isLocked)
+              if (isUnavailable)
                 Positioned(
                   right: 4,
                   bottom: 4,
                   child: Icon(
                     Icons.block,
                     size: 12,
-                    color: outOfPeriodColor,
+                    color: unavailableColor,
                   ),
                 ),
             ],

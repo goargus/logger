@@ -105,7 +105,7 @@ describe('ReportsController', () => {
       mockIdentityService.resolveUserBySubAndIssuer.mockResolvedValue(mockUser);
       mockReportsService.getSummary.mockResolvedValue({} as any);
 
-      const query = { periodId: 'period-1', entityId: 'entity-1' };
+      const query = { entityId: 'entity-1', dateFrom: '2024-01-01', dateTo: '2024-01-31' };
       await controller.getSummary(mockRequest as any, query);
 
       expect(reportsService.getSummary).toHaveBeenCalledWith('user-1', query);

@@ -6,32 +6,29 @@ import {
   ManyToOne,
   JoinColumn,
   Unique,
-  Index,
 } from 'typeorm';
 import { User } from '../users/user.entity';
-import { ReportingPeriod } from './reporting-period.entity';
+import { Entity as OrganizationalEntity } from '../entities/entity.entity';
 
-@Entity({ name: 'reporting_period_exception' })
-@Unique(['user', 'reportingPeriod'])
-export class ReportingPeriodException {
+@Entity({ name: 'period_exception' })
+@Unique(['userId', 'entityId', 'startDate', 'endDate'])
+export class PeriodException {
   @PrimaryGeneratedColumn('uuid')
   id!: string;
 
-  @Index()
   @Column({ type: 'uuid', name: 'user_id' })
   userId!: string;
 
-  @ManyToOne(() => User, { eager: false, nullable: false, onDelete: 'CASCADE' })
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user!: User;
 
-  @Index()
-  @Column({ type: 'uuid', name: 'reporting_period_id' })
-  reportingPeriodId!: string;
+  @Column({ type: 'uuid', name: 'entity_id' })
+  entityId!: string;
 
-  @ManyToOne(() => ReportingPeriod, { eager: false, nullable: false, onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'reporting_period_id' })
-  reportingPeriod!: ReportingPeriod;
+  @ManyToOne(() => OrganizationalEntity, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'entity_id' })
+  entity!: OrganizationalEntity;
 
   @Column({ type: 'date', name: 'start_date' })
   startDate!: string;
@@ -44,10 +41,6 @@ export class ReportingPeriodException {
 
   @Column({ type: 'uuid', name: 'granted_by' })
   grantedBy!: string;
-
-  @ManyToOne(() => User, { eager: false, nullable: false })
-  @JoinColumn({ name: 'granted_by' })
-  grantedByUser!: User;
 
   @CreateDateColumn({ type: 'timestamptz', name: 'granted_at' })
   grantedAt!: Date;

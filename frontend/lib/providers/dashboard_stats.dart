@@ -10,16 +10,19 @@ final dashboardStatsServiceProvider = Provider<DashboardStatsService>((ref) {
   });
 });
 
-class DashboardStatsNotifier extends StateNotifier<AsyncValue<DashboardStats>> {
-  DashboardStatsNotifier(this.service) : super(const AsyncValue.loading());
-
-  final DashboardStatsService service;
+class DashboardStatsNotifier extends AsyncNotifier<DashboardStats> {
+  @override
+  Future<DashboardStats> build() async {
+    // Start with no data; callers use refresh() to load
+    throw UnimplementedError('Call refresh() to load dashboard stats');
+  }
 
   Future<void> fetch(
       {String? periodStart, String? periodEnd, String? userId}) async {
     state = const AsyncValue.loading();
 
     try {
+      final service = ref.read(dashboardStatsServiceProvider);
       final data = await service.getDashboardStats(
         periodStart: periodStart,
         periodEnd: periodEnd,
@@ -48,8 +51,5 @@ class DashboardStatsNotifier extends StateNotifier<AsyncValue<DashboardStats>> {
 }
 
 final dashboardStatsProvider =
-    StateNotifierProvider<DashboardStatsNotifier, AsyncValue<DashboardStats>>(
-        (ref) {
-  final service = ref.watch(dashboardStatsServiceProvider);
-  return DashboardStatsNotifier(service);
-});
+    AsyncNotifierProvider<DashboardStatsNotifier, DashboardStats>(
+        DashboardStatsNotifier.new);

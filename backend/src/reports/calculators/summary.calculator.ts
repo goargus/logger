@@ -4,7 +4,6 @@ import { Repository, In } from 'typeorm';
 import { Activity } from '../../activity/activity.entity';
 import { User } from '../../users/user.entity';
 import { Entity } from '../../entities/entity.entity';
-import { ReportingPeriod } from '../../reporting-periods/reporting-period.entity';
 import { UserStatus } from '../../users/user-status.enum';
 import { SummaryResponse } from '../dto/report-responses.dto';
 
@@ -24,7 +23,6 @@ export class SummaryCalculator {
     canViewReports: boolean,
     isUserFiltered: boolean,
     timeScope: {
-      period?: ReportingPeriod;
       dateFrom?: string;
       dateTo?: string;
     },
@@ -61,19 +59,12 @@ export class SummaryCalculator {
     }
 
     return {
-      period: timeScope.period
-        ? {
-            id: timeScope.period.id,
-            startDate: timeScope.period.startDate,
-            endDate: timeScope.period.endDate,
-            status: timeScope.period.status,
-          }
-        : {
-            id: '',
-            startDate: timeScope.dateFrom || '',
-            endDate: timeScope.dateTo || '',
-            status: 'custom',
-          },
+      period: {
+        id: '',
+        startDate: timeScope.dateFrom || '',
+        endDate: timeScope.dateTo || '',
+        status: 'custom',
+      },
       scope,
       entity: {
         id: entity.id,
