@@ -28,7 +28,7 @@ services:
     working_dir: /app
     command: >
       sh -c "
-        npm install &&
+        npm install --legacy-peer-deps &&
         npm run admin:bootstrap
       "
     environment:
@@ -85,7 +85,7 @@ services:
       ADMIN_IDP_SUBJECT: auth0|688c59c6ec2186db091c74eb
     command: >
       sh -c "
-        npm install &&
+        npm install --legacy-peer-deps &&
         npx nest build &&
         npx nest start --watch
       "
