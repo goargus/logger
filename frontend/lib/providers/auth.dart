@@ -67,9 +67,8 @@ class AuthNotifier extends Notifier<AuthState> {
     try {
       final existingToken = web.window.localStorage.getItem('auth_token');
       final uri = Uri.parse(web.window.location.href);
-      final hasAuthCode =
-          uri.queryParameters.containsKey('code') &&
-              uri.queryParameters.containsKey('state');
+      final hasAuthCode = uri.queryParameters.containsKey('code') &&
+          uri.queryParameters.containsKey('state');
 
       if (hasAuthCode) {
         if (existingToken != null && existingToken.isNotEmpty) {
