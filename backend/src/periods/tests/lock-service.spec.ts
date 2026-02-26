@@ -78,9 +78,7 @@ describe('LockService', () => {
 
     it('returns true for locked date with valid exception', async () => {
       adminLockRepo.findOne.mockResolvedValue(null);
-      exceptionRepo.find.mockResolvedValue([
-        { startDate: '2026-03-01', endDate: '2026-03-15' },
-      ]);
+      exceptionRepo.find.mockResolvedValue([{ startDate: '2026-03-01', endDate: '2026-03-15' }]);
       // Mar 10 is in a past period (locked), but user has exception
       expect(await service.isDateAvailableForUser('entity-1', 'user-1', '2026-03-10')).toBe(true);
     });
@@ -93,9 +91,7 @@ describe('LockService', () => {
 
     it('returns false when exception does not cover the date', async () => {
       adminLockRepo.findOne.mockResolvedValue(null);
-      exceptionRepo.find.mockResolvedValue([
-        { startDate: '2026-03-01', endDate: '2026-03-05' },
-      ]);
+      exceptionRepo.find.mockResolvedValue([{ startDate: '2026-03-01', endDate: '2026-03-05' }]);
       expect(await service.isDateAvailableForUser('entity-1', 'user-1', '2026-03-10')).toBe(false);
     });
   });
@@ -111,16 +107,12 @@ describe('LockService', () => {
         endDate: '2026-03-31',
       });
       // Only current period is available (no exceptions for locked first half)
-      expect(result.availableDates).toEqual([
-        { startDate: '2026-03-16', endDate: '2026-03-31' },
-      ]);
+      expect(result.availableDates).toEqual([{ startDate: '2026-03-16', endDate: '2026-03-31' }]);
     });
 
     it('merges exception windows into available dates', async () => {
       adminLockRepo.findOne.mockResolvedValue(null);
-      exceptionRepo.find.mockResolvedValue([
-        { startDate: '2026-03-01', endDate: '2026-03-05' },
-      ]);
+      exceptionRepo.find.mockResolvedValue([{ startDate: '2026-03-01', endDate: '2026-03-05' }]);
 
       const result = await service.getAvailability('entity-1', 'user-1', '2026-03');
       expect(result.availableDates).toEqual([
@@ -145,9 +137,7 @@ describe('LockService', () => {
       const result = await service.getAvailability('entity-1', 'user-1', '2026-03');
       // Current period is Mar 16-31, but locked through Mar 20
       // Available: Mar 21-31
-      expect(result.availableDates).toEqual([
-        { startDate: '2026-03-21', endDate: '2026-03-31' },
-      ]);
+      expect(result.availableDates).toEqual([{ startDate: '2026-03-21', endDate: '2026-03-31' }]);
     });
   });
 

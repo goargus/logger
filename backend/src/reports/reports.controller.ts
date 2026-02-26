@@ -1,5 +1,12 @@
 import { Controller, Get, Param, Query, Req, Res, UseGuards, Header } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiProduces } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiProduces,
+} from '@nestjs/swagger';
 import { ReportsService } from './reports.service';
 import { ReportQueryDto, RankingsQueryDto } from './dto/report-query.dto';
 import {

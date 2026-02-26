@@ -8,10 +8,7 @@ import { User } from '../users/user.entity';
 import { CaslModule } from '../casl/casl.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Entity, User]),
-    CaslModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Entity, User]), CaslModule],
   controllers: [EntitiesController],
   providers: [EntitiesService, HierarchyValidationService],
   exports: [EntitiesService, HierarchyValidationService],

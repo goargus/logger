@@ -48,12 +48,18 @@ export async function fetchEntityHierarchyIds(
   rootId: string,
 ): Promise<string[]> {
   const cte = buildEntityTreeCte({ includePath: false, onlyActiveDescendants: false });
-  const rows = await repo.query(`${cte}
-SELECT id FROM entity_tree;`, [rootId]);
+  const rows = await repo.query(
+    `${cte}
+SELECT id FROM entity_tree;`,
+    [rootId],
+  );
   return rows.map((row: { id: string }) => row.id);
 }
 
-export async function fetchActiveDescendants(repo: Repository<Entity>, rootId: string): Promise<Entity[]> {
+export async function fetchActiveDescendants(
+  repo: Repository<Entity>,
+  rootId: string,
+): Promise<Entity[]> {
   const cte = buildEntityTreeCte({ includePath: true, onlyActiveDescendants: true });
   const rows = await repo.query(
     `${cte}
