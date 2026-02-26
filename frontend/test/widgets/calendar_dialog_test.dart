@@ -4,15 +4,14 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
 import 'package:logger/core/api_client.dart';
-import 'package:logger/services/reporting_periods.dart';
+import 'package:logger/models/availability.dart';
+import 'package:logger/services/periods_service.dart';
 import 'package:logger/widgets/dialogs/calendar_dialog.dart';
 
-class FakeReportingPeriodsService extends ReportingPeriodsService {
-  FakeReportingPeriodsService({
-    required this.lockedRanges,
-    required this.activePeriod,
-    this.throwLocked = false,
-    this.throwActive = false,
+class FakePeriodsService extends PeriodsService {
+  FakePeriodsService({
+    required this.availability,
+    this.throwOnLoad = false,
   }) : super(
           apiClient: ApiClient(
             baseUrl: 'http://localhost',
@@ -20,25 +19,15 @@ class FakeReportingPeriodsService extends ReportingPeriodsService {
           ),
         );
 
-  final List<LockedDateRange> lockedRanges;
-  final ReportingPeriodSummary? activePeriod;
-  final bool throwLocked;
-  final bool throwActive;
+  final AvailabilityResponse availability;
+  final bool throwOnLoad;
 
   @override
-  Future<List<LockedDateRange>> getLockedDateRanges() async {
-    if (throwLocked) {
-      throw Exception('locked ranges failed');
+  Future<AvailabilityResponse> getAvailability(String month) async {
+    if (throwOnLoad) {
+      throw Exception('availability failed');
     }
-    return lockedRanges;
-  }
-
-  @override
-  Future<ReportingPeriodSummary?> getActiveReportingPeriod() async {
-    if (throwActive) {
-      throw Exception('active period failed');
-    }
-    return activePeriod;
+    return availability;
   }
 }
 
@@ -48,55 +37,56 @@ void main() {
     await initializeDateFormatting('es_ES');
   });
 
-  testWidgets('locked date shows styling and feedback', (tester) async {
-    final service = FakeReportingPeriodsService(
-      lockedRanges: [
-        LockedDateRange(
-          startDate: '2026-01-05',
-          endDate: '2026-01-05',
-          periodName: 'Periodo bloqueado',
+  testWidgets('unavailable date shows styling and feedback', (tester) async {
+    // Jan 5 is NOT in available dates, so it should be unavailable
+    final service = FakePeriodsService(
+      availability: AvailabilityResponse(
+        currentPeriod: DateRange(
+          startDate: '2026-02-01',
+          endDate: '2026-02-28',
         ),
-      ],
-      activePeriod: ReportingPeriodSummary(
-        id: 'active-1',
-        name: 'Febrero 2026',
-        startDate: '2026-02-01',
-        endDate: '2026-02-28',
-        status: 'active',
-        isLocked: false,
+        availableDates: [
+          DateRange(
+            startDate: '2026-01-01',
+            endDate: '2026-01-04',
+          ),
+          DateRange(
+            startDate: '2026-01-06',
+            endDate: '2026-01-31',
+          ),
+        ],
       ),
     );
 
     await _pumpDialog(tester, service, DateTime(2026, 1, 1));
 
-    final lockedText = find.byWidgetPredicate((widget) {
+    final unavailableText = find.byWidgetPredicate((widget) {
       if (widget is Text && widget.data == '5') {
         return widget.style?.decoration == TextDecoration.lineThrough;
       }
       return false;
     });
-    expect(lockedText, findsOneWidget);
-    expect(find.byIcon(Icons.lock_outline), findsWidgets);
+    expect(unavailableText, findsOneWidget);
+    expect(find.byIcon(Icons.block), findsWidgets);
 
     await tester.tap(find.text('5'));
     await tester.pump();
     expect(
-      find.text('Esta fecha pertenece a un periodo bloqueado'),
+      find.text('Esta fecha no está disponible para registro'),
       findsOneWidget,
     );
   });
 
-  testWidgets('out-of-period date shows blocked styling and feedback',
+  testWidgets('unavailable date in month with no available dates',
       (tester) async {
-    final service = FakeReportingPeriodsService(
-      lockedRanges: const [],
-      activePeriod: ReportingPeriodSummary(
-        id: 'active-1',
-        name: 'Enero 2026',
-        startDate: '2026-01-01',
-        endDate: '2026-01-31',
-        status: 'active',
-        isLocked: false,
+    // December 2025 has no available dates
+    final service = FakePeriodsService(
+      availability: AvailabilityResponse(
+        currentPeriod: DateRange(
+          startDate: '2026-01-01',
+          endDate: '2026-01-31',
+        ),
+        availableDates: const [],
       ),
     );
 
@@ -114,74 +104,62 @@ void main() {
     await tester.tap(find.text('15'));
     await tester.pump();
     expect(
-      find.text('Esta fecha está fuera del período activo'),
+      find.text('Esta fecha no está disponible para registro'),
       findsOneWidget,
     );
   });
 
   testWidgets('API failure shows warning banner', (tester) async {
-    final service = FakeReportingPeriodsService(
-      lockedRanges: const [],
-      activePeriod: ReportingPeriodSummary(
-        id: 'active-1',
-        name: 'Enero 2026',
-        startDate: '2026-01-01',
-        endDate: '2026-01-31',
-        status: 'active',
-        isLocked: false,
+    final service = FakePeriodsService(
+      availability: AvailabilityResponse(
+        currentPeriod: null,
+        availableDates: const [],
       ),
-      throwLocked: true,
+      throwOnLoad: true,
     );
 
     await _pumpDialog(tester, service, DateTime(2026, 1, 1));
 
     expect(
       find.text(
-          'No se pudieron cargar los períodos bloqueados. Algunas fechas podrían estar bloqueadas.'),
+          'No se pudo cargar la disponibilidad. Algunas fechas podrían no estar disponibles.'),
       findsOneWidget,
     );
   });
 
-  testWidgets('no active period blocks all dates', (tester) async {
-    final service = FakeReportingPeriodsService(
-      lockedRanges: const [],
-      activePeriod: null,
+  testWidgets('no available dates blocks all dates', (tester) async {
+    final service = FakePeriodsService(
+      availability: AvailabilityResponse(
+        currentPeriod: null,
+        availableDates: const [],
+      ),
     );
 
     await _pumpDialog(tester, service, DateTime(2026, 1, 1));
-
-    expect(
-      find.text(
-          'No se encontró un período activo. Algunas fechas podrían no estar disponibles.'),
-      findsOneWidget,
-    );
 
     expect(find.byIcon(Icons.block), findsWidgets);
 
     await tester.tap(find.text('5'));
     await tester.pump();
     expect(
-      find.text('Esta fecha está fuera del período activo'),
+      find.text('Esta fecha no está disponible para registro'),
       findsOneWidget,
     );
   });
 
-  testWidgets('active period overrides locked ranges', (tester) async {
-    final service = FakeReportingPeriodsService(
-      lockedRanges: [
-        LockedDateRange(
-          startDate: '2026-01-01',
-          endDate: '2026-12-31',
-          periodName: 'Simulacion Anual',
+  testWidgets('available dates are selectable', (tester) async {
+    final service = FakePeriodsService(
+      availability: AvailabilityResponse(
+        currentPeriod: DateRange(
+          startDate: '2026-02-22',
+          endDate: '2026-03-07',
         ),
-      ],
-      activePeriod: ReportingPeriodSummary(
-        id: 'active-1',
-        name: 'Periodo activo',
-        startDate: '2026-02-22',
-        endDate: '2026-03-07',
-        status: 'active',
-        isLocked: false,
+        availableDates: [
+          DateRange(
+            startDate: '2026-02-22',
+            endDate: '2026-02-28',
+          ),
+        ],
       ),
     );
 
@@ -198,7 +176,7 @@ void main() {
 }
 
 Widget _wrapDialog(
-  ReportingPeriodsService service,
+  PeriodsService service,
   DateTime initialDate,
 ) {
   return MaterialApp(
@@ -217,7 +195,7 @@ Widget _wrapDialog(
         initialDate: initialDate,
         firstDate: DateTime(2000),
         lastDate: DateTime(2100),
-        reportingPeriodsService: service,
+        periodsService: service,
       ),
     ),
   );
@@ -225,7 +203,7 @@ Widget _wrapDialog(
 
 Future<void> _pumpDialog(
   WidgetTester tester,
-  ReportingPeriodsService service,
+  PeriodsService service,
   DateTime initialDate,
 ) async {
   await tester.binding.setSurfaceSize(const Size(600, 900));
