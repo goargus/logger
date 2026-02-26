@@ -36,7 +36,7 @@ class ReportingPeriodsService {
       if (data == null) {
         return null;
       }
-      final list = data as List<dynamic>;
+      final list = data['data'] as List<dynamic>;
       final periods = list
           .map((item) =>
               ReportingPeriodSummary.fromJson(item as Map<String, dynamic>))
