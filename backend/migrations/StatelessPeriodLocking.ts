@@ -2,9 +2,9 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 
 export class StatelessPeriodLocking1740700000000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // 1. Create new tables
+    // 1. Create new tables (IF NOT EXISTS for idempotency)
     await queryRunner.query(`
-      CREATE TABLE "admin_lock" (
+      CREATE TABLE IF NOT EXISTS "admin_lock" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
         "entity_id" uuid NOT NULL,
         "lock_date" date NOT NULL,
@@ -17,7 +17,7 @@ export class StatelessPeriodLocking1740700000000 implements MigrationInterface {
     `);
 
     await queryRunner.query(`
-      CREATE TABLE "period_exception" (
+      CREATE TABLE IF NOT EXISTS "period_exception" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
         "user_id" uuid NOT NULL,
         "entity_id" uuid NOT NULL,
@@ -33,19 +33,24 @@ export class StatelessPeriodLocking1740700000000 implements MigrationInterface {
       )
     `);
 
-    // 2. Migrate existing exceptions from old table
+    // 2. Migrate existing exceptions from old table (if it exists)
     await queryRunner.query(`
-      INSERT INTO "period_exception" ("user_id", "entity_id", "start_date", "end_date", "reason", "granted_by")
-      SELECT
-        rpe."user_id",
-        rp."entity_id",
-        rpe."start_date",
-        rpe."end_date",
-        rpe."reason",
-        rpe."granted_by"
-      FROM "reporting_period_exception" rpe
-      JOIN "reporting_period" rp ON rpe."reporting_period_id" = rp."id"
-      ON CONFLICT DO NOTHING
+      DO $$
+      BEGIN
+        IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'reporting_period_exception') THEN
+          INSERT INTO "period_exception" ("user_id", "entity_id", "start_date", "end_date", "reason", "granted_by")
+          SELECT
+            rpe."user_id",
+            rp."entity_id",
+            rpe."start_date",
+            rpe."end_date",
+            rpe."reason",
+            rpe."granted_by"
+          FROM "reporting_period_exception" rpe
+          JOIN "reporting_period" rp ON rpe."reporting_period_id" = rp."id"
+          ON CONFLICT DO NOTHING;
+        END IF;
+      END $$
     `);
 
     // 3. Drop FK and column from activity

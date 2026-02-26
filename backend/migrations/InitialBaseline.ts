@@ -3,6 +3,14 @@ import { MigrationInterface, QueryRunner } from 'typeorm';
 export class InitialBaseline1700000000000 implements MigrationInterface {
 
   public async up(queryRunner: QueryRunner): Promise<void> {
+    // Skip if tables already exist (DB was created by synchronize before migrations existed)
+    const tableExists = await queryRunner.query(
+      `SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'roles'`,
+    );
+    if (tableExists.length > 0) {
+      return;
+    }
+
     await queryRunner.query('CREATE EXTENSION IF NOT EXISTS "uuid-ossp"');
     await queryRunner.query('CREATE EXTENSION IF NOT EXISTS "citext"');
 
