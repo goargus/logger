@@ -20,19 +20,21 @@ export 'auth_state.dart';
 const bool kAutoRedirectOnBoot = true;
 
 final authNotifierProvider =
-    StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  return AuthNotifier();
-});
+    NotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);
 
-class AuthNotifier extends StateNotifier<AuthState> {
-  AuthNotifier() : super(AuthState.initial()) {
-    _bootstrap();
-  }
-
+class AuthNotifier extends Notifier<AuthState> {
   final SessionInterface _session = Session();
 
   bool _bootstrapped = false;
   bool _isRedirecting = false;
+
+  @override
+  AuthState build() {
+    _bootstrapped = false;
+    _isRedirecting = false;
+    _bootstrap();
+    return AuthState.initial();
+  }
 
   String _generateCodeVerifier() {
     const charset =

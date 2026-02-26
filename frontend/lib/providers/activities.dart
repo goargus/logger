@@ -41,6 +41,5 @@ class RecentActivitiesNotifier extends AsyncNotifier<List<Activity>> {
 }
 
 final recentActivitiesProvider =
-    AsyncNotifierProvider<RecentActivitiesNotifier, List<Activity>>(() {
-  return RecentActivitiesNotifier();
-});
+    AsyncNotifierProvider<RecentActivitiesNotifier, List<Activity>>(
+        RecentActivitiesNotifier.new);

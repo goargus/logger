@@ -179,22 +179,23 @@ class HierarchyReportsState {
 }
 
 /// Notifier for managing hierarchy reports state
-class HierarchyReportsNotifier extends StateNotifier<HierarchyReportsState> {
-  HierarchyReportsNotifier({
-    required this.entityService,
-    required this.reportsService,
-  }) : super(HierarchyReportsState.initial());
-
-  final EntityService entityService;
-  final ReportsService reportsService;
+class HierarchyReportsNotifier extends Notifier<HierarchyReportsState> {
+  late EntityService entityService;
+  late ReportsService reportsService;
 
   /// Timer for debouncing period navigation
   Timer? _debounceTimer;
 
   @override
-  void dispose() {
-    _debounceTimer?.cancel();
-    super.dispose();
+  HierarchyReportsState build() {
+    entityService = ref.watch(entityServiceProvider);
+    reportsService = ref.watch(reportsServiceProvider);
+
+    ref.onDispose(() {
+      _debounceTimer?.cancel();
+    });
+
+    return HierarchyReportsState.initial();
   }
 
   /// Load all reports in parallel for better performance
@@ -489,16 +490,8 @@ final entityServiceProvider = Provider<EntityService>((ref) {
 
 /// Provider for hierarchy reports state
 final hierarchyReportsProvider =
-    StateNotifierProvider<HierarchyReportsNotifier, HierarchyReportsState>(
-        (ref) {
-  final entityService = ref.watch(entityServiceProvider);
-  final reportsService = ref.watch(reportsServiceProvider);
-
-  return HierarchyReportsNotifier(
-    entityService: entityService,
-    reportsService: reportsService,
-  );
-});
+    NotifierProvider<HierarchyReportsNotifier, HierarchyReportsState>(
+        HierarchyReportsNotifier.new);
 
 /// Provider for reports service (if not already defined elsewhere)
 final reportsServiceProvider = Provider<ReportsService>((ref) {

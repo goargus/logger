@@ -81,6 +81,5 @@ class ActivitiesListNotifier extends AsyncNotifier<ActivitiesListState> {
 }
 
 final activitiesListProvider =
-    AsyncNotifierProvider<ActivitiesListNotifier, ActivitiesListState>(() {
-  return ActivitiesListNotifier();
-});
+    AsyncNotifierProvider<ActivitiesListNotifier, ActivitiesListState>(
+        ActivitiesListNotifier.new);

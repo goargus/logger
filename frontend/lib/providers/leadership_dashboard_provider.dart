@@ -5,24 +5,13 @@ import '../models/report_period_type.dart';
 import '../services/reports_service.dart';
 import 'auth.dart';
 
-final leadershipDashboardProvider = StateNotifierProvider<
-    LeadershipDashboardNotifier, AsyncValue<LeadershipDashboardData>>(
-  (ref) {
-    final authState = ref.watch(authNotifierProvider);
-    Future<String> getAccessToken() async => authState.accessToken ?? '';
-
-    return LeadershipDashboardNotifier(
-      reportsService: ReportsService.localhost(getAccessToken),
-    );
-  },
-);
+final leadershipDashboardProvider =
+    AsyncNotifierProvider<LeadershipDashboardNotifier, LeadershipDashboardData>(
+        LeadershipDashboardNotifier.new);
 
 class LeadershipDashboardNotifier
-    extends StateNotifier<AsyncValue<LeadershipDashboardData>> {
-  LeadershipDashboardNotifier({required this.reportsService})
-      : super(const AsyncValue.loading());
-
-  final ReportsService reportsService;
+    extends AsyncNotifier<LeadershipDashboardData> {
+  late ReportsService reportsService;
 
   ReportPeriodType _periodType = ReportPeriodType.monthly;
   int _year = DateTime.now().year;
@@ -31,6 +20,16 @@ class LeadershipDashboardNotifier
   ReportPeriodType get periodType => _periodType;
   int get year => _year;
   int get periodIndex => _periodIndex;
+
+  @override
+  Future<LeadershipDashboardData> build() async {
+    final authState = ref.watch(authNotifierProvider);
+    Future<String> getAccessToken() async => authState.accessToken ?? '';
+    reportsService = ReportsService.localhost(getAccessToken);
+
+    // Start in loading state; callers use loadDashboard() to fetch
+    throw UnimplementedError('Call loadDashboard() to load data');
+  }
 
   Map<String, String> _calculatePeriodBounds() {
     DateTime start;
@@ -99,18 +98,14 @@ class LeadershipDashboardNotifier
         ),
       ]);
 
-      if (mounted) {
-        state = AsyncValue.data(LeadershipDashboardData(
-          trends: results[0] as TrendsResponse,
-          comparison: results[1] as ComparisonResponse,
-          rankings: results[2] as RankingsResponse,
-          expenses: results[3] as ExpensesResponse,
-        ));
-      }
+      state = AsyncValue.data(LeadershipDashboardData(
+        trends: results[0] as TrendsResponse,
+        comparison: results[1] as ComparisonResponse,
+        rankings: results[2] as RankingsResponse,
+        expenses: results[3] as ExpensesResponse,
+      ));
     } catch (e, stack) {
-      if (mounted) {
-        state = AsyncValue.error(e, stack);
-      }
+      state = AsyncValue.error(e, stack);
     }
   }
 
