@@ -35,7 +35,7 @@ function formatDate(year: number, month: number, day: number): string {
 }
 
 function buildLabel(year: number, month: number, periodNumber: number): string {
-  return `${SPANISH_MONTHS[month - 1]} ${year} - Periodo ${periodNumber}`;
+  return `${SPANISH_MONTHS[month - 1]} ${year} - Período ${periodNumber}`;
 }
 
 function parseDate(dateStr: string): { year: number; month: number; day: number } {

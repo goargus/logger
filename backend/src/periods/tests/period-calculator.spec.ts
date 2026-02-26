@@ -14,7 +14,7 @@ describe('PeriodCalculator', () => {
         startDate: '2026-03-01',
         endDate: '2026-03-15',
         periodNumber: 1,
-        label: 'Marzo 2026 - Periodo 1',
+        label: 'Marzo 2026 - Período 1',
       });
     });
 
@@ -26,7 +26,7 @@ describe('PeriodCalculator', () => {
         startDate: '2026-03-16',
         endDate: '2026-03-31',
         periodNumber: 2,
-        label: 'Marzo 2026 - Periodo 2',
+        label: 'Marzo 2026 - Período 2',
       });
     });
 
@@ -39,7 +39,7 @@ describe('PeriodCalculator', () => {
         startDate: '2026-02-15',
         endDate: '2026-02-28',
         periodNumber: 2,
-        label: 'Febrero 2026 - Periodo 2',
+        label: 'Febrero 2026 - Período 2',
       });
     });
 
@@ -52,7 +52,7 @@ describe('PeriodCalculator', () => {
         startDate: '2028-02-15',
         endDate: '2028-02-29',
         periodNumber: 2,
-        label: 'Febrero 2028 - Periodo 2',
+        label: 'Febrero 2028 - Período 2',
       });
     });
 
@@ -64,7 +64,7 @@ describe('PeriodCalculator', () => {
         startDate: '2026-03-01',
         endDate: '2026-03-31',
         periodNumber: 1,
-        label: 'Marzo 2026 - Periodo 1',
+        label: 'Marzo 2026 - Período 1',
       });
     });
 
@@ -78,7 +78,7 @@ describe('PeriodCalculator', () => {
         startDate: '2026-03-21',
         endDate: '2026-03-31',
         periodNumber: 3,
-        label: 'Marzo 2026 - Periodo 3',
+        label: 'Marzo 2026 - Período 3',
       });
     });
 
@@ -92,7 +92,7 @@ describe('PeriodCalculator', () => {
         startDate: '2026-03-22',
         endDate: '2026-03-31',
         periodNumber: 4,
-        label: 'Marzo 2026 - Periodo 4',
+        label: 'Marzo 2026 - Período 4',
       });
     });
 
@@ -106,7 +106,7 @@ describe('PeriodCalculator', () => {
         startDate: '2026-04-22',
         endDate: '2026-04-30',
         periodNumber: 4,
-        label: 'Abril 2026 - Periodo 4',
+        label: 'Abril 2026 - Período 4',
       });
     });
 
@@ -139,7 +139,7 @@ describe('PeriodCalculator', () => {
         startDate: '2026-03-01',
         endDate: '2026-03-15',
         periodNumber: 1,
-        label: 'Marzo 2026 - Periodo 1',
+        label: 'Marzo 2026 - Período 1',
       });
     });
   });
@@ -188,13 +188,13 @@ describe('PeriodCalculator', () => {
         startDate: '2026-03-01',
         endDate: '2026-03-15',
         periodNumber: 1,
-        label: 'Marzo 2026 - Periodo 1',
+        label: 'Marzo 2026 - Período 1',
       });
       expect(periods[1]).toEqual<PeriodInfo>({
         startDate: '2026-03-16',
         endDate: '2026-03-31',
         periodNumber: 2,
-        label: 'Marzo 2026 - Periodo 2',
+        label: 'Marzo 2026 - Período 2',
       });
     });
 
@@ -207,7 +207,7 @@ describe('PeriodCalculator', () => {
         startDate: '2026-03-01',
         endDate: '2026-03-31',
         periodNumber: 1,
-        label: 'Marzo 2026 - Periodo 1',
+        label: 'Marzo 2026 - Período 1',
       });
     });
   });
@@ -225,19 +225,19 @@ describe('PeriodCalculator', () => {
         startDate: '2026-03-01',
         endDate: '2026-03-15',
         periodNumber: 1,
-        label: 'Marzo 2026 - Periodo 1',
+        label: 'Marzo 2026 - Período 1',
       });
       expect(periods[1]).toEqual<PeriodInfo>({
         startDate: '2026-02-15',
         endDate: '2026-02-28',
         periodNumber: 2,
-        label: 'Febrero 2026 - Periodo 2',
+        label: 'Febrero 2026 - Período 2',
       });
       expect(periods[2]).toEqual<PeriodInfo>({
         startDate: '2026-02-01',
         endDate: '2026-02-14',
         periodNumber: 1,
-        label: 'Febrero 2026 - Periodo 1',
+        label: 'Febrero 2026 - Período 1',
       });
     });
 
@@ -253,13 +253,13 @@ describe('PeriodCalculator', () => {
         startDate: '2025-12-16',
         endDate: '2025-12-31',
         periodNumber: 2,
-        label: 'Diciembre 2025 - Periodo 2',
+        label: 'Diciembre 2025 - Período 2',
       });
       expect(periods[1]).toEqual<PeriodInfo>({
         startDate: '2025-12-01',
         endDate: '2025-12-15',
         periodNumber: 1,
-        label: 'Diciembre 2025 - Periodo 1',
+        label: 'Diciembre 2025 - Período 1',
       });
     });
   });
