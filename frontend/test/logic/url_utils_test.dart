@@ -12,7 +12,8 @@ void main() {
     test('preserves other query params', () {
       final uri = Uri.parse(
           'http://localhost:8080/?code=abc&state=xyz&tab=reports&view=monthly');
-      expect(stripAuthCallbackParams(uri), equals('/?tab=reports&view=monthly'));
+      expect(
+          stripAuthCallbackParams(uri), equals('/?tab=reports&view=monthly'));
     });
 
     test('preserves path when auth params are removed', () {
@@ -22,8 +23,7 @@ void main() {
     });
 
     test('returns URI unchanged when no auth params present', () {
-      final uri =
-          Uri.parse('http://localhost:8080/dashboard?tab=reports');
+      final uri = Uri.parse('http://localhost:8080/dashboard?tab=reports');
       expect(stripAuthCallbackParams(uri), equals('/dashboard?tab=reports'));
     });
 
