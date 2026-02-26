@@ -37,7 +37,7 @@ async function bootstrap() {
   const config = new DocumentBuilder()
     .setTitle('Secretary API')
     .setDescription(
-      'Activity Management System API for tracking organizational activities and reporting periods',
+      'Activity Management System API for tracking organizational activities',
     )
     .setVersion('1.0')
     .addBearerAuth(
