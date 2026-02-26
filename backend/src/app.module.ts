@@ -16,6 +16,7 @@ import { ReportingPeriodsModule } from './reporting-periods/reporting-periods.mo
 import { CaslModule } from './casl/casl.module';
 import { ReportsModule } from './reports/reports.module';
 import { HealthModule } from './health/health.module';
+import { PeriodsModule } from './periods/periods.module';
 import { configValidationSchema } from './config/config.validation';
 
 @Module({
@@ -51,6 +52,7 @@ import { configValidationSchema } from './config/config.validation';
     IdpIdentitiesModule,
     ActivitiesModule,
     ReportingPeriodsModule,
+    PeriodsModule,
     ReportsModule,
     HealthModule,
   ],
