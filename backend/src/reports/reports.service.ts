@@ -7,8 +7,8 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../users/user.entity';
-import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
 import { Activity } from '../activity/activity.entity';
+import { PeriodCalculator, PeriodInfo } from '../periods/period-calculator';
 import { ReportQueryDto, RankingsQueryDto } from './dto/report-query.dto';
 import { PermissionsService } from '../auth/permissions/permissions.service';
 import { Permission } from '../auth/permissions/permission.enum';
@@ -56,8 +56,7 @@ export class ReportsService {
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
-    @InjectRepository(ReportingPeriod)
-    private readonly periodRepo: Repository<ReportingPeriod>,
+    private readonly periodCalculator: PeriodCalculator,
     private readonly accessService: ReportsAccessService,
     private readonly timeScopeService: ReportsTimeScopeService,
     private readonly queryFactory: ReportsActivityQueryFactory,
@@ -129,24 +128,13 @@ export class ReportsService {
     };
   }
 
-  private createComparisonPeriod(start: Date, end: Date, id: string): ReportingPeriod {
+  private createComparisonPeriodInfo(start: Date, end: Date, id: string): PeriodInfo {
     return {
-      id,
-      entityId: '',
-      entity: {} as any,
-      name: id,
-      description: null,
       startDate: start.toISOString().split('T')[0],
       endDate: end.toISOString().split('T')[0],
-      status: 'active' as any,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      createdBy: '',
-      updatedBy: '',
-      isLocked: false,
-      containsDate: () => false,
-      activities: [],
-    } as ReportingPeriod;
+      periodNumber: 0,
+      label: id,
+    };
   }
 
   private resolveComparisonDateRanges(query: ReportQueryDto): {
@@ -263,7 +251,7 @@ export class ReportsService {
       }
     }
 
-    const timeScope = await this.timeScopeService.getOrDetermineTimeScope(query, actor.entity_id);
+    const timeScope = this.timeScopeService.getOrDetermineTimeScope(query, actor.entity_id);
     const { entityIds, filterUserId, isUserFiltered } = await this.resolveReportScope(
       actorUserId,
       query,
@@ -337,7 +325,7 @@ export class ReportsService {
       }
     }
 
-    const timeScope = await this.timeScopeService.getOrDetermineTimeScope(query, actor.entity_id);
+    const timeScope = this.timeScopeService.getOrDetermineTimeScope(query, actor.entity_id);
     const { entityIds, filterUserId, isUserFiltered } = await this.resolveReportScope(
       actorUserId,
       query,
@@ -383,7 +371,7 @@ export class ReportsService {
     }
 
     const entityIds = await this.accessService.getEntityHierarchy(targetEntityId);
-    const timeScope = await this.timeScopeService.getOrDetermineTimeScope(query, actor.entity_id);
+    const timeScope = this.timeScopeService.getOrDetermineTimeScope(query, actor.entity_id);
 
     const qb = this.queryFactory.buildActivityQuery(actorUserId, entityIds, timeScope);
     const activities = await qb.getMany();
@@ -416,11 +404,7 @@ export class ReportsService {
       throw new ForbiddenException('You do not have permission to view entity reports');
     }
 
-    const periods = await this.periodRepo.find({
-      where: { entityId: targetEntityId },
-      order: { startDate: 'DESC' },
-      take: 5,
-    });
+    const periods = this.periodCalculator.getPreviousPeriods(5);
 
     if (periods.length === 0) {
       return { periods: [] };
@@ -438,7 +422,7 @@ export class ReportsService {
         const qb = this.queryFactory.buildActivityQuery(
           actorUserId,
           entityIds,
-          { periodIds: [period.id] },
+          { dateFrom: period.startDate, dateTo: period.endDate },
           filterUserId,
         );
         const activities = await qb.getMany();
@@ -483,18 +467,18 @@ export class ReportsService {
     );
     const resolvedRanges = this.resolveComparisonDateRanges(query);
 
-    let currentPeriod: ReportingPeriod;
-    let previousPeriod: ReportingPeriod;
+    let currentPeriod: PeriodInfo;
+    let previousPeriod: PeriodInfo;
     let currentActivities: Activity[];
     let previousActivities: Activity[];
 
     if (resolvedRanges) {
-      currentPeriod = this.createComparisonPeriod(
+      currentPeriod = this.createComparisonPeriodInfo(
         resolvedRanges.current.start,
         resolvedRanges.current.end,
         resolvedRanges.current.id,
       );
-      previousPeriod = this.createComparisonPeriod(
+      previousPeriod = this.createComparisonPeriodInfo(
         resolvedRanges.previous.start,
         resolvedRanges.previous.end,
         resolvedRanges.previous.id,
@@ -522,22 +506,21 @@ export class ReportsService {
       );
       previousActivities = await previousQb.getMany();
     } else {
-      const periods = await this.periodRepo.find({
-        where: { entityId: targetEntityId },
-        order: { startDate: 'DESC' },
-        take: 2,
-      });
+      // Use PeriodCalculator to get current and previous period
+      const currentPeriodInfo = this.periodCalculator.getCurrentPeriod();
+      const previousPeriods = this.periodCalculator.getPreviousPeriods(1);
 
-      if (periods.length < 2) {
+      if (previousPeriods.length === 0) {
         return this.buildEmptyComparisonResponse();
       }
 
-      [currentPeriod, previousPeriod] = periods;
+      currentPeriod = currentPeriodInfo;
+      previousPeriod = previousPeriods[0];
 
       const currentQb = this.queryFactory.buildActivityQuery(
         actorUserId,
         entityIds,
-        { periodIds: [currentPeriod.id] },
+        { dateFrom: currentPeriod.startDate, dateTo: currentPeriod.endDate },
         filterUserId,
       );
       currentActivities = await currentQb.getMany();
@@ -545,7 +528,7 @@ export class ReportsService {
       const previousQb = this.queryFactory.buildActivityQuery(
         actorUserId,
         entityIds,
-        { periodIds: [previousPeriod.id] },
+        { dateFrom: previousPeriod.startDate, dateTo: previousPeriod.endDate },
         filterUserId,
       );
       previousActivities = await previousQb.getMany();
@@ -589,17 +572,13 @@ export class ReportsService {
     }
 
     const entityIds = await this.accessService.getEntityHierarchy(targetEntityId);
-    const timeScope = await this.timeScopeService.getOrDetermineTimeScope(query, actor.entity_id);
+    const timeScope = this.timeScopeService.getOrDetermineTimeScope(query, actor.entity_id);
     const limit = query.limit ?? query.topN ?? 5;
 
     const qb = this.queryFactory.buildActivityQuery(actorUserId, entityIds, timeScope);
     const activities = await qb.getMany();
 
-    const recentPeriods = await this.periodRepo.find({
-      where: { entityId: targetEntityId },
-      order: { startDate: 'DESC' },
-      take: 3,
-    });
+    const recentPeriods = this.periodCalculator.getPreviousPeriods(3);
 
     return this.rankingsCalculator.calculate(activities, entityIds, recentPeriods, limit);
   }
@@ -641,7 +620,7 @@ export class ReportsService {
       }
     }
 
-    const timeScope = await this.timeScopeService.getOrDetermineTimeScope(query, actor.entity_id);
+    const timeScope = this.timeScopeService.getOrDetermineTimeScope(query, actor.entity_id);
     const { entityIds, filterUserId, isUserFiltered } = await this.resolveReportScope(
       actorUserId,
       query,
@@ -809,11 +788,10 @@ export class ReportsService {
     }
 
     // Build time scope
-    const timeScope = query.periodId
-      ? { periodIds: [query.periodId] }
-      : query.dateFrom && query.dateTo
+    const timeScope =
+      query.dateFrom && query.dateTo
         ? { dateFrom: query.dateFrom, dateTo: query.dateTo }
-        : await this.timeScopeService.getOrDetermineTimeScope({}, targetUser.entity_id);
+        : this.timeScopeService.getOrDetermineTimeScope({}, targetUser.entity_id);
 
     // Query activities for the target user
     const qb = this.queryFactory.buildActivityQuery(
@@ -920,11 +898,10 @@ export class ReportsService {
     const filterUserId = isEntityReport ? undefined : actorUserId;
 
     // Determine time scope
-    const timeScope = query.periodId
-      ? { periodIds: [query.periodId] }
-      : query.dateFrom && query.dateTo
+    const timeScope =
+      query.dateFrom && query.dateTo
         ? { dateFrom: query.dateFrom, dateTo: query.dateTo }
-        : await this.timeScopeService.getOrDetermineTimeScope({}, actor.entity_id);
+        : this.timeScopeService.getOrDetermineTimeScope({}, actor.entity_id);
 
     const dateStr = new Date().toISOString().split('T')[0];
     let data: string | object;
@@ -971,7 +948,6 @@ export class ReportsService {
           entityId: query.entityId,
           dateFrom: query.dateFrom,
           dateTo: query.dateTo,
-          periodId: query.periodId,
           includeHierarchyBreakdown: query.includeHierarchy ?? true,
         };
         const summary = await this.getSummary(actorUserId, summaryQuery);
@@ -997,7 +973,6 @@ export class ReportsService {
           entityId: query.entityId,
           dateFrom: query.dateFrom,
           dateTo: query.dateTo,
-          periodId: query.periodId,
         };
         const compliance = await this.getCompliance(actorUserId, complianceQuery);
 
@@ -1064,11 +1039,10 @@ export class ReportsService {
     });
 
     // Determine time scope
-    const timeScope = query.periodId
-      ? { periodIds: [query.periodId] }
-      : query.dateFrom && query.dateTo
+    const timeScope =
+      query.dateFrom && query.dateTo
         ? { dateFrom: query.dateFrom, dateTo: query.dateTo }
-        : await this.timeScopeService.getOrDetermineTimeScope({}, actor.entity_id);
+        : this.timeScopeService.getOrDetermineTimeScope({}, actor.entity_id);
 
     // Get activities for all users in hierarchy to calculate metrics
     const activitiesQb = this.queryFactory.buildActivityQuery(actorUserId, entityIds, timeScope);

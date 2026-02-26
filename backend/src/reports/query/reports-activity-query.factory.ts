@@ -14,7 +14,7 @@ export class ReportsActivityQueryFactory {
   buildActivityQuery(
     actorUserId: string,
     entityIds: string[],
-    timeScope: { periodIds?: string[]; dateFrom?: string; dateTo?: string },
+    timeScope: { dateFrom?: string; dateTo?: string },
     filterUserId?: string,
   ): SelectQueryBuilder<Activity> {
     const qb = this.activityRepo
@@ -30,11 +30,7 @@ export class ReportsActivityQueryFactory {
       qb.andWhere('user.entity_id IN (:...entityIds)', { entityIds });
     }
 
-    if (timeScope.periodIds) {
-      qb.andWhere('activity.reportingPeriodId IN (:...periodIds)', {
-        periodIds: timeScope.periodIds,
-      });
-    } else if (timeScope.dateFrom && timeScope.dateTo) {
+    if (timeScope.dateFrom && timeScope.dateTo) {
       qb.andWhere('activity.activityDate BETWEEN :dateFrom AND :dateTo', {
         dateFrom: timeScope.dateFrom,
         dateTo: timeScope.dateTo,

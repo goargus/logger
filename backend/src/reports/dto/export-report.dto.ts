@@ -54,13 +54,6 @@ export class ExportReportQueryDto {
   dateTo?: string;
 
   @ApiPropertyOptional({
-    description: 'Filter by specific reporting period UUID',
-  })
-  @IsOptional()
-  @IsUUID()
-  periodId?: string;
-
-  @ApiPropertyOptional({
     description: 'Include hierarchy breakdown in export',
     default: true,
   })

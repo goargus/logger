@@ -47,11 +47,6 @@ export class UsersReportQueryDto {
   @IsDateString()
   dateTo?: string;
 
-  @ApiPropertyOptional({ description: 'Filter by reporting period UUID' })
-  @IsOptional()
-  @IsUUID()
-  periodId?: string;
-
   @ApiPropertyOptional({ description: 'Page number', default: 1 })
   @IsOptional()
   @Type(() => Number)

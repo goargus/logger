@@ -3,7 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ReportsService } from './reports.service';
 import { User } from '../users/user.entity';
-import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
+import { PeriodCalculator } from '../periods/period-calculator';
 import { Activity } from '../activity/activity.entity';
 import { ReportsAccessService } from './access/reports-access.service';
 import { ReportsTimeScopeService } from './time/reports-time-scope.service';
@@ -63,7 +63,7 @@ describe('ReportsService - Hierarchy Features', () => {
   ] as unknown as Activity[];
 
   const mockSummaryResponse = {
-    period: { id: 'period-1', startDate: '2024-01-01', endDate: '2024-01-14', status: 'active' },
+    period: { id: '', startDate: '2024-01-01', endDate: '2024-01-14', status: 'custom' },
     scope: 'entity' as const,
     entity: { id: 'entity-1', name: 'Test Union', type: 'UNION' },
     totals: {
@@ -115,9 +115,15 @@ describe('ReportsService - Hierarchy Features', () => {
           },
         },
         {
-          provide: getRepositoryToken(ReportingPeriod),
+          provide: PeriodCalculator,
           useValue: {
-            find: jest.fn(),
+            getCurrentPeriod: jest.fn().mockReturnValue({
+              startDate: '2024-01-01',
+              endDate: '2024-01-14',
+              periodNumber: 1,
+              label: 'Enero 2024 - Período 1',
+            }),
+            getPreviousPeriods: jest.fn().mockReturnValue([]),
           },
         },
         {
@@ -131,7 +137,10 @@ describe('ReportsService - Hierarchy Features', () => {
         {
           provide: ReportsTimeScopeService,
           useValue: {
-            getOrDetermineTimeScope: jest.fn().mockResolvedValue({ periodIds: ['period-1'] }),
+            getOrDetermineTimeScope: jest.fn().mockReturnValue({
+              dateFrom: '2024-01-01',
+              dateTo: '2024-01-14',
+            }),
           },
         },
         {
@@ -251,7 +260,7 @@ describe('ReportsService - Hierarchy Features', () => {
     it('should not include hierarchy breakdown when user cannot view reports', async () => {
       // Override the global mock to return false for this test
       permissionsService.userHasPermission = jest.fn().mockResolvedValue(false);
-      
+
       userRepo.findOne = jest.fn().mockResolvedValue(actorWithoutReports);
       permissionsService.userHasPermission.mockResolvedValue(false);
 

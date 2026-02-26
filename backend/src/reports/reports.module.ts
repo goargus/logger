@@ -5,10 +5,10 @@ import { ReportsService } from './reports.service';
 import { Activity } from '../activity/activity.entity';
 import { User } from '../users/user.entity';
 import { Entity } from '../entities/entity.entity';
-import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
 import { ActivityType } from '../activities-type/activity-type.entity';
 import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
 import { AuthModule } from '../auth/auth.modules';
+import { PeriodsModule } from '../periods/periods.module';
 import { ReportsAccessService } from './access/reports-access.service';
 import { ReportsTimeScopeService } from './time/reports-time-scope.service';
 import { ReportsActivityQueryFactory } from './query/reports-activity-query.factory';
@@ -30,11 +30,11 @@ import { CsvExporter } from './export/csv-exporter';
       Activity,
       User,
       Entity,
-      ReportingPeriod,
       ActivityType,
       UserRoleAssignment,
     ]),
     AuthModule,
+    PeriodsModule,
   ],
   controllers: [ReportsController],
   providers: [
