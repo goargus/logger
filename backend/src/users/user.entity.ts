@@ -49,7 +49,6 @@ export class User {
 
   @ManyToOne(() => Role, (r) => r.users, {
     nullable: false,
-    eager: true,
     onDelete: 'RESTRICT',
   })
   @JoinColumn({ name: 'role_id' })
@@ -61,7 +60,6 @@ export class User {
 
   @ManyToOne(() => OrgEntity, (e) => e.users, {
     nullable: false,
-    eager: true,
     onDelete: 'RESTRICT',
   })
   @JoinColumn({ name: 'entity_id' })

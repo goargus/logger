@@ -71,7 +71,7 @@ class SidebarNav extends ConsumerWidget {
                   mainAxisSize: MainAxisSize.max,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildNavigationLabel(context),
+                    _buildNavigationLabel(context, ref),
                     _buildNavItem(
                       context,
                       icon: Icons.dashboard,
@@ -157,7 +157,18 @@ class SidebarNav extends ConsumerWidget {
     );
   }
 
-  Widget _buildNavigationLabel(BuildContext context) {
+  Widget _buildNavigationLabel(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authNotifierProvider);
+    final entityType = (authState.user?['primary_entity']
+        as Map<String, dynamic>?)?['type'] as String?;
+    final label = switch (entityType) {
+      'PLATFORM' => 'Plataforma',
+      'UNION' => 'Unión',
+      'ASSOCIATION' => 'Asociación',
+      'FIELD' => 'Campo',
+      _ => 'Navegación',
+    };
+
     return Padding(
       padding: const EdgeInsetsDirectional.fromSTEB(
         LayoutConstants.spacing16,
@@ -166,7 +177,7 @@ class SidebarNav extends ConsumerWidget {
         0.0,
       ),
       child: Text(
-        'Platform Navigation',
+        label,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
               color: Colors.white70,
               letterSpacing: 0.0,

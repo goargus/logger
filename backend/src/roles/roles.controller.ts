@@ -20,12 +20,13 @@ import { UpdateRoleDto } from './dto/update-role.dto';
 import { RolesGuard } from '../auth/roles.guard';
 import { Roles } from '../auth/roles.decorator';
 import { RoleAssignmentService } from './role-assignment.service';
-import { AssignRoleDto, RoleEnum } from './dto/assign-role.dto';
+import { AssignRoleDto } from './dto/assign-role.dto';
 import { RemoveRoleDto } from './dto/remove-role.dto';
 import { BulkAssignRoleDto } from './dto/bulk-assign-role.dto';
 import { GetUserEntitiesByRoleDto } from './dto/get-user-entities-by-role.dto';
 import { UpdateAssignmentDto } from './dto/update-assignment.dto';
 import { AssignmentResponseDto } from './dto/assignment-response.dto';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
 
 @ApiTags('Roles')
 @ApiBearerAuth('JWT-auth')
@@ -94,8 +95,8 @@ export class RolesController {
 
   @Get()
   @Roles('admin')
-  findAll() {
-    return this.rolesService.findAll();
+  findAll(@Query() query: PaginationQueryDto) {
+    return this.rolesService.findAll(query);
   }
 
   @Get('id/:id')

@@ -16,6 +16,7 @@ function createRepoMock<T extends ObjectLiteral>(): MockRepo<T> {
     create: jest.fn(),
     save: jest.fn(),
     find: jest.fn(),
+    findAndCount: jest.fn(),
     findOne: jest.fn(),
     delete: jest.fn(),
     update: jest.fn(),
@@ -117,9 +118,17 @@ describe('EntitiesService', () => {
   });
 
   describe('findAll', () => {
-    it('returns all entities', async () => {
-      repo.find?.mockResolvedValue([baseEntity]);
-      await expect(service.findAll()).resolves.toEqual([baseEntity]);
+    it('returns paginated entities with defaults', async () => {
+      repo.findAndCount?.mockResolvedValue([[baseEntity], 1]);
+      await expect(service.findAll()).resolves.toEqual({
+        data: [baseEntity],
+        pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+      });
+      expect(repo.findAndCount).toHaveBeenCalledWith({
+        order: { name: 'ASC' },
+        skip: 0,
+        take: 20,
+      });
     });
   });
 

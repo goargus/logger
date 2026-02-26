@@ -8,6 +8,9 @@ import { Activity } from './activity.entity';
 import { ActivityType } from '../activities-type/activity-type.entity';
 import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
 import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
+import { ReportingPeriodException } from '../reporting-periods/reporting-period-exception.entity';
+import { User } from '../users/user.entity';
+import { ReportingPeriodsService } from '../reporting-periods/reporting-periods.service';
 
 import { CreateActivityDto } from './dto/create-activity.dto';
 
@@ -38,6 +41,14 @@ describe('ActivitiesService', () => {
     createQueryBuilder: jest.fn(),
   };
 
+  const mockUserRepo = {
+    findOne: jest.fn(),
+  };
+
+  const mockReportingPeriodsService = {
+    ensureCurrentPeriodForEntity: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -58,6 +69,18 @@ describe('ActivitiesService', () => {
           provide: getRepositoryToken(ReportingPeriod),
           useValue: mockReportingPeriodRepo,
         },
+        {
+          provide: getRepositoryToken(ReportingPeriodException),
+          useValue: { findOne: jest.fn() },
+        },
+        {
+          provide: getRepositoryToken(User),
+          useValue: mockUserRepo,
+        },
+        {
+          provide: ReportingPeriodsService,
+          useValue: mockReportingPeriodsService,
+        },
       ],
     }).compile();
 
@@ -66,6 +89,29 @@ describe('ActivitiesService', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
+  });
+
+  beforeEach(() => {
+    mockUserRepo.findOne.mockResolvedValue({ id: 'user-123', entity_id: 'entity-1' });
+    mockReportingPeriodRepo.findOne.mockResolvedValue({
+      id: 'period-1',
+      entityId: 'entity-1',
+      startDate: '2023-12-01',
+      endDate: '2023-12-31',
+      status: 'active',
+    });
+    mockReportingPeriodRepo.createQueryBuilder.mockReturnValue({
+      where: jest.fn().mockReturnThis(),
+      andWhere: jest.fn().mockReturnThis(),
+      getOne: jest.fn().mockResolvedValue(null),
+    });
+    mockReportingPeriodsService.ensureCurrentPeriodForEntity.mockResolvedValue({
+      id: 'period-1',
+      entityId: 'entity-1',
+      startDate: '2023-12-01',
+      endDate: '2023-12-31',
+      status: 'active',
+    });
   });
 
   describe('canUserSubmitActivityType', () => {

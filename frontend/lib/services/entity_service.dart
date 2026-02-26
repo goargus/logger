@@ -58,7 +58,7 @@ class EntityService {
   Future<List<EntityInfo>> getAllEntities() async {
     try {
       final data = await apiClient.get('entities');
-      final items = data as List<dynamic>? ?? [];
+      final items = data['data'] as List<dynamic>? ?? [];
       return items
           .map((item) => EntityInfo.fromApi(item as Map<String, dynamic>))
           .toList();

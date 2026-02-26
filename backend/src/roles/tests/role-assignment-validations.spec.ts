@@ -8,7 +8,7 @@ import { User } from '../../users/user.entity';
 import { Role } from '../role.entity';
 import { Entity as OrgEntity } from '../../entities/entity.entity';
 import { UserStatus } from '../../users/user-status.enum';
-import { AssignRoleDto, RoleEnum } from '../dto/assign-role.dto';
+import { AssignRoleDto } from '../dto/assign-role.dto';
 
 describe('RoleAssignmentService - Validations', () => {
   let service: RoleAssignmentService;
@@ -101,7 +101,7 @@ describe('RoleAssignmentService - Validations', () => {
     it('should prevent creating overlapping assignments with exact same dates', async () => {
       const dto: AssignRoleDto = {
         userId: 'user-id',
-        role: RoleEnum.MISSIONARY,
+        roleId: 'role-id',
         entityId: 'entity-id',
         startDate: '2025-01-01',
       };
@@ -132,12 +132,13 @@ describe('RoleAssignmentService - Validations', () => {
           'An overlapping assignment already exists for this user, role, and entity from 2025-01-01 to 2029-12-31',
         ),
       );
+      expect(rolesRepo.findOne).toHaveBeenCalledWith({ where: { id: dto.roleId } });
     });
 
     it('should prevent creating assignment that starts during existing assignment', async () => {
       const dto: AssignRoleDto = {
         userId: 'user-id',
-        role: RoleEnum.MISSIONARY,
+        roleId: 'role-id',
         entityId: 'entity-id',
         startDate: '2026-06-01', // Starts during existing 2025-2029 assignment
       };
@@ -168,7 +169,7 @@ describe('RoleAssignmentService - Validations', () => {
     it('should prevent creating assignment that ends during existing assignment', async () => {
       const dto: AssignRoleDto = {
         userId: 'user-id',
-        role: RoleEnum.MISSIONARY,
+        roleId: 'role-id',
         entityId: 'entity-id',
         startDate: '2024-01-01', // Would end 2028-12-31, overlapping with 2025-2029
       };
@@ -199,7 +200,7 @@ describe('RoleAssignmentService - Validations', () => {
     it('should prevent creating assignment that completely overlaps existing assignment', async () => {
       const dto: AssignRoleDto = {
         userId: 'user-id',
-        role: RoleEnum.MISSIONARY,
+        roleId: 'role-id',
         entityId: 'entity-id',
         startDate: '2024-01-01', // 2024-2028 completely overlaps 2025-2027
       };
@@ -230,7 +231,7 @@ describe('RoleAssignmentService - Validations', () => {
     it('should allow creating assignment that starts after existing assignment ends', async () => {
       const dto: AssignRoleDto = {
         userId: 'user-id',
-        role: RoleEnum.MISSIONARY,
+        roleId: 'role-id',
         entityId: 'entity-id',
         startDate: '2030-01-01', // Starts after existing ends
       };
@@ -261,7 +262,7 @@ describe('RoleAssignmentService - Validations', () => {
     it('should allow creating assignment that ends before existing assignment starts', async () => {
       const dto: AssignRoleDto = {
         userId: 'user-id',
-        role: RoleEnum.MISSIONARY,
+        roleId: 'role-id',
         entityId: 'entity-id',
         startDate: '2020-01-01', // Ends 2024-12-31, before existing starts
       };
@@ -292,7 +293,7 @@ describe('RoleAssignmentService - Validations', () => {
     it('should allow same user to have same role in different entities', async () => {
       const dto: AssignRoleDto = {
         userId: 'user-id',
-        role: RoleEnum.MISSIONARY,
+        roleId: 'role-id',
         entityId: 'different-entity-id',
         startDate: '2025-01-01',
       };
@@ -320,6 +321,21 @@ describe('RoleAssignmentService - Validations', () => {
       });
 
       await expect(service.assign(dto)).resolves.toBeDefined();
+    });
+
+    it('should throw NotFoundException when role id does not exist', async () => {
+      const dto: AssignRoleDto = {
+        userId: 'user-id',
+        roleId: 'missing-role-id',
+        entityId: 'entity-id',
+        startDate: '2025-01-01',
+      };
+
+      usersRepo.findOne.mockResolvedValue(mockUser);
+      rolesRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.assign(dto)).rejects.toThrow('Role not found');
+      expect(rolesRepo.findOne).toHaveBeenCalledWith({ where: { id: dto.roleId } });
     });
   });
 

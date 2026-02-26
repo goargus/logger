@@ -1,8 +1,9 @@
 import { PartialType } from '@nestjs/swagger';
 import { CreateActivityDto } from './create-activity.dto';
-import { IsOptional, IsUUID } from 'class-validator';
+import { IsDateString, IsOptional, IsUUID } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsNotFutureActivityDate } from '../validators/is-not-future-activity-date.decorator';
 
 export class UpdateActivityDto extends PartialType(CreateActivityDto) {
   @ApiPropertyOptional({ description: 'UUID of the activity type' })
@@ -14,6 +15,10 @@ export class UpdateActivityDto extends PartialType(CreateActivityDto) {
   @ApiPropertyOptional({ description: 'Date of the activity in ISO 8601 format' })
   @Transform(({ obj }) => obj.activityDate ?? obj.activity_date)
   @IsOptional()
+  @IsDateString()
+  @IsNotFutureActivityDate({
+    message: 'Activity date cannot be in the future',
+  })
   activityDate?: string;
 
   @ApiPropertyOptional({ description: 'Optional description of the activity' })

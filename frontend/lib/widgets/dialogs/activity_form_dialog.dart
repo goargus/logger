@@ -78,7 +78,6 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
     );
 
     _rolesFuture = _typeService.fetchUserRoles();
-    _typesFuture = _typeService.fetchAll();
 
     if (isEditMode) {
       final activity = widget.existingActivity!;
@@ -154,6 +153,11 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
     });
 
     try {
+      if (_selectedType == null) {
+        setState(() => _error = 'Selecciona un tipo de actividad.');
+        return;
+      }
+
       final iso = _selectedDate.toUtc().toIso8601String();
       final typeId = _selectedType!.id;
       final desc = _descCtrl.text.trim();
@@ -514,7 +518,9 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
                         ),
                         const Spacer(),
                         FilledButton.icon(
-                          onPressed: _submitting ? null : _submit,
+                          onPressed: _submitting || _selectedType == null
+                              ? null
+                              : _submit,
                           icon: _submitting
                               ? const SizedBox(
                                   height: 16,

@@ -10,6 +10,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { ILike, Not, Repository } from 'typeorm';
 import { Entity, EntityType } from './entity.entity';
+import { fetchActiveDescendants } from './entity-hierarchy.query';
 
 const DEFAULT_CURRENCY_SYMBOL = '$';
 import { CreateEntityDto } from './dto/create-entity.dto';
@@ -17,6 +18,8 @@ import { UpdateEntityDto } from './dto/update-entity.dto';
 import { HierarchyValidationService } from './hierarchy-validation.service';
 import { EntityTreeNode } from './dto/entity-tree.dto';
 import { ReportingPeriodsService } from '../reporting-periods/reporting-periods.service';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto';
+import { PaginatedResult, buildPagination, normalizePagination } from '../common/pagination';
 
 @Injectable()
 export class EntitiesService {
@@ -73,8 +76,14 @@ export class EntitiesService {
     return saved;
   }
 
-  async findAll(): Promise<Entity[]> {
-    return this.repo.find({ order: { name: 'ASC' } });
+  async findAll(query?: PaginationQueryDto): Promise<PaginatedResult<Entity>> {
+    const { page, limit, skip } = normalizePagination(query);
+    const [data, total] = await this.repo.findAndCount({
+      order: { name: 'ASC' },
+      skip,
+      take: limit,
+    });
+    return { data, pagination: buildPagination(page, limit, total) };
   }
 
   async findOne(id: string): Promise<Entity> {
@@ -220,32 +229,19 @@ export class EntitiesService {
   }
 
   /**
-   * Find all descendant entities recursively using BFS.
+   * Find all descendant entities recursively.
    * Only returns active entities.
    * @param id - The root entity ID
    * @returns Array of all descendant entities (not including root)
    */
   async findDescendants(id: string): Promise<Entity[]> {
-    // Verify the entity exists
-    await this.findOne(id);
+    const rows = await fetchActiveDescendants(this.repo, id);
 
-    const descendants: Entity[] = [];
-    const queue: string[] = [id];
-
-    while (queue.length > 0) {
-      const currentId = queue.shift()!;
-      const children = await this.repo.find({
-        where: { parent_id: currentId, is_active: true },
-        order: { name: 'ASC' },
-      });
-
-      for (const child of children) {
-        descendants.push(child);
-        queue.push(child.id);
-      }
+    if (rows.length === 0) {
+      throw new NotFoundException('Entity not found');
     }
 
-    return descendants;
+    return rows.filter((entity) => entity.id !== id);
   }
 
   /**

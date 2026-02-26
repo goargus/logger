@@ -2,49 +2,38 @@ import { Given, When, Then, DataTable } from '@cucumber/cucumber';
 import { expect } from '@playwright/test';
 import { CustomWorld } from '../../support/world';
 import { ENDPOINTS } from '../../support/api/api-client';
-
-/**
- * Helper to parse DataTable into object
- */
-function parseDataTable(table: DataTable): Record<string, any> {
-  const data: Record<string, any> = {};
-  for (const [key, value] of table.raw()) {
-    // Convert string booleans
-    if (value === 'true') data[key] = true;
-    else if (value === 'false') data[key] = false;
-    else data[key] = value;
-  }
-  return data;
-}
+import { parseDataTable } from '../../support/step-helpers';
 
 // === SETUP STEPS ===
 
-/**
- * Valid role names that can be assigned via the API
- * These must match the RoleEnum in the backend
- */
 const VALID_ROLE_NAMES = ['missionary', 'pastor', 'admin'];
 
 /**
- * Helper to ensure current user can submit activities
- * Assigns a role if needed (admin users don't have role assignments by default)
+ * Helper to ensure current user can submit activities.
+ * Returns an activity type ID the user is authorized to use.
+ *
+ * NOTE: The admin user needs a role assignment (e.g., Misionero) seeded
+ * in the DB to access activity types. The RoleEnum in the assignment API
+ * uses English names that don't match the Spanish DB role names, so role
+ * assignment must be done via DB seeding, not the API.
  */
 async function ensureUserCanSubmitActivities(world: CustomWorld): Promise<string> {
-  // Check if user already has authorized activity types
+  // Check if user has authorized activity types
   const authorizedResponse = await world.apiClient.get(ENDPOINTS.ACTIVITY_TYPES_AUTHORIZED);
   if (authorizedResponse.status === 200 && authorizedResponse.data.length > 0) {
     return authorizedResponse.data[0].id;
   }
 
-  // Get all activity types
+  // Fallback: get all activity types (admin may be able to use any)
   const typesResponse = await world.apiClient.get(ENDPOINTS.ACTIVITY_TYPES);
-  if (typesResponse.data.length === 0) {
+  const activityTypesList = typesResponse.data?.data || typesResponse.data;
+  if (activityTypesList.length === 0) {
     throw new Error('No activity types found in database');
   }
 
   // Find an activity type that requires a role we can assign via the API
   // (roles like 'president' are not in the RoleEnum and will fail validation)
-  const validActivityType = typesResponse.data.find((at: any) => {
+  const validActivityType = activityTypesList.find((at: any) => {
     if (!at.allowed_roles || at.allowed_roles.length === 0) {
       return true; // No restrictions
     }
@@ -54,49 +43,7 @@ async function ensureUserCanSubmitActivities(world: CustomWorld): Promise<string
     );
   });
 
-  if (!validActivityType) {
-    throw new Error('No activity types found with assignable roles');
-  }
-
-  // If activity type has no restrictions, use it directly
-  if (!validActivityType.allowed_roles || validActivityType.allowed_roles.length === 0) {
-    return validActivityType.id;
-  }
-
-  // Find a valid role to assign
-  const roleToAssign = validActivityType.allowed_roles.find((role: any) =>
-    VALID_ROLE_NAMES.includes(role.name.toLowerCase()),
-  );
-
-  if (!roleToAssign) {
-    throw new Error('Could not find a valid role to assign');
-  }
-
-  // Get current user info
-  const meResponse = await world.apiClient.get(ENDPOINTS.ME);
-  const userId = meResponse.data.id;
-
-  // Get user's entity
-  const entityId = meResponse.data.primary_entity?.id;
-  if (!entityId) {
-    throw new Error('User has no entity assigned');
-  }
-
-  // Assign the role (API expects uppercase enum value)
-  const assignResponse = await world.apiClient.post('/roles/assign', {
-    userId,
-    role: roleToAssign.name.toUpperCase(),
-    entityId,
-  });
-
-  if (assignResponse.status !== 201 && assignResponse.status !== 200) {
-    // Role might already be assigned, that's ok
-    if (assignResponse.status !== 409) {
-      console.log('Warning: Could not assign role:', assignResponse.status, assignResponse.data);
-    }
-  }
-
-  return validActivityType.id;
+  return (validActivityType || activityTypesList[0]).id;
 }
 
 Given('I have an authorized activity type', async function (this: CustomWorld) {
@@ -105,7 +52,8 @@ Given('I have an authorized activity type', async function (this: CustomWorld) {
 
   // Get the name
   const typesResponse = await this.apiClient.get(ENDPOINTS.ACTIVITY_TYPES);
-  const activityType = typesResponse.data.find((t: any) => t.id === activityTypeId);
+  const activityTypesList = typesResponse.data?.data || typesResponse.data;
+  const activityType = activityTypesList.find((t: any) => t.id === activityTypeId);
   this.context.activityTypeName = activityType?.name || 'Unknown';
 });
 
@@ -234,6 +182,26 @@ When(
   },
 );
 
+When(
+  'I try to update the other users activity with:',
+  async function (this: CustomWorld, table: DataTable) {
+    const data = parseDataTable(table);
+    const id = this.context.otherUserActivityId;
+    expect(id).toBeDefined();
+    this.context.lastResponse = await this.apiClient.patch(`${ENDPOINTS.ACTIVITIES}/${id}`, data);
+  },
+);
+
+When(
+  'I try to update the subordinate users activity with:',
+  async function (this: CustomWorld, table: DataTable) {
+    const data = parseDataTable(table);
+    const id = this.context.subordinateActivityId;
+    expect(id).toBeDefined();
+    this.context.lastResponse = await this.apiClient.patch(`${ENDPOINTS.ACTIVITIES}/${id}`, data);
+  },
+);
+
 // === DELETE STEPS ===
 
 When('I delete the current activity', async function (this: CustomWorld) {
@@ -256,7 +224,7 @@ Then('the activity should not be in the list', async function (this: CustomWorld
   const response = await this.apiClient.get(ENDPOINTS.ACTIVITIES);
   expect(response.status).toBe(200);
 
-  const items = response.data.items || response.data;
+  const items = response.data?.data || response.data;
   const found = items.find((item: any) => item.id === notedId);
 
   expect(found).toBeUndefined();

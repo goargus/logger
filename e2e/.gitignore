@@ -7,9 +7,9 @@ dist/
 # Environment files
 .env
 
-# Test reports
-reports/
-!reports/.gitkeep
+# Test reports (root-level only, not features/api/reports/)
+/reports/
+!/reports/.gitkeep
 
 # Playwright
 playwright-report/

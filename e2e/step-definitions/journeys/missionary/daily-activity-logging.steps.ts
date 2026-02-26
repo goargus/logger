@@ -8,9 +8,10 @@ import { getTestUser } from '../../../support/auth/test-users';
 
 async function ensureActivityType(world: CustomWorld, typeName: string): Promise<string> {
   const response = await world.apiClient.get(ENDPOINTS.ACTIVITY_TYPES);
+  const activityTypesList = response.data?.data || response.data;
 
-  if (response.status === 200 && Array.isArray(response.data)) {
-    const existing = response.data.find((t: any) => t.name.includes(typeName));
+  if (response.status === 200 && Array.isArray(activityTypesList)) {
+    const existing = activityTypesList.find((t: any) => t.name.includes(typeName));
     if (existing) {
       return existing.id;
     }
@@ -18,7 +19,8 @@ async function ensureActivityType(world: CustomWorld, typeName: string): Promise
 
   // Get a role for the activity type
   const rolesResponse = await world.apiClient.get(ENDPOINTS.ROLES);
-  const roleId = rolesResponse.data?.[0]?.id;
+  const rolesList = rolesResponse.data?.data || rolesResponse.data;
+  const roleId = rolesList?.[0]?.id;
 
   const timestamp = Date.now();
   const createResponse = await world.apiClient.post(ENDPOINTS.ACTIVITY_TYPES, {
@@ -41,9 +43,10 @@ async function ensureActivePeriod(world: CustomWorld): Promise<string> {
     `${ENDPOINTS.REPORTING_PERIODS}?entityId=${entityId}`,
   );
 
-  if (listResponse.status === 200 && Array.isArray(listResponse.data)) {
+  const periodsList = listResponse.data?.data || listResponse.data;
+  if (listResponse.status === 200 && Array.isArray(periodsList)) {
     // Look for an existing active period
-    const activePeriod = listResponse.data.find((p: any) => p.status === 'active');
+    const activePeriod = periodsList.find((p: any) => p.status === 'active');
     if (activePeriod) {
       world.context.activePeriodId = activePeriod.id;
       world.context.activePeriodStartDate = activePeriod.startDate;
@@ -52,7 +55,7 @@ async function ensureActivePeriod(world: CustomWorld): Promise<string> {
     }
 
     // Unlock a locked period if one exists
-    const lockedPeriod = listResponse.data.find((p: any) => p.status === 'locked');
+    const lockedPeriod = periodsList.find((p: any) => p.status === 'locked');
     if (lockedPeriod) {
       await world.apiClient.patch(`${ENDPOINTS.REPORTING_PERIODS}/${lockedPeriod.id}/unlock`);
       world.context.activePeriodId = lockedPeriod.id;
@@ -223,10 +226,7 @@ When('I delete the activity', async function (this: CustomWorld) {
   // Store count before deletion
   const beforeResponse = await this.apiClient.get(ENDPOINTS.ACTIVITIES);
 
-  // Handle both array and paginated response
-  const activities = Array.isArray(beforeResponse.data)
-    ? beforeResponse.data
-    : beforeResponse.data?.data || [];
+  const activities = beforeResponse.data?.data || [];
 
   this.context.activityCountBefore = activities.length;
 
@@ -245,8 +245,7 @@ Then('it should appear in my activity list for this period', async function (thi
   const response = await this.apiClient.get(ENDPOINTS.ACTIVITIES);
   expect(response.status).toBe(200);
 
-  // Handle both array and paginated response
-  const activities = Array.isArray(response.data) ? response.data : response.data?.data || [];
+  const activities = response.data?.data || [];
 
   const activityId = this.context.lastActivityId;
   const found = activities.some((a: any) => a.id === activityId);
@@ -257,8 +256,7 @@ Then('I should have {int} activities recorded for this period', async function (
   const response = await this.apiClient.get(ENDPOINTS.ACTIVITIES);
   expect(response.status).toBe(200);
 
-  // Handle both array and paginated response
-  const activities = Array.isArray(response.data) ? response.data : response.data?.data || [];
+  const activities = response.data?.data || [];
 
   // Count activities from this test session
   const createdIds = this.context.createdActivities || [];
@@ -274,10 +272,7 @@ Then('each activity should have the correct type', function (this: CustomWorld) 
 Then('I should see all my logged activities', function (this: CustomWorld) {
   expect(this.context.lastResponse?.status).toBe(200);
 
-  // Handle both array and paginated response
-  const activities = Array.isArray(this.context.lastResponse?.data)
-    ? this.context.lastResponse?.data
-    : this.context.lastResponse?.data?.data || [];
+  const activities = this.context.lastResponse?.data?.data || [];
 
   expect(Array.isArray(activities)).toBe(true);
   expect(activities.length).toBeGreaterThan(0);
@@ -286,10 +281,7 @@ Then('I should see all my logged activities', function (this: CustomWorld) {
 Then('they should be organized by date', function (this: CustomWorld) {
   expect(this.context.lastResponse?.status).toBe(200);
 
-  // Handle both array and paginated response
-  const activities = Array.isArray(this.context.lastResponse?.data)
-    ? this.context.lastResponse?.data
-    : this.context.lastResponse?.data?.data || [];
+  const activities = this.context.lastResponse?.data?.data || [];
 
   // Activities should have activityDate field
   for (const activity of activities) {
@@ -325,8 +317,7 @@ Then('it should be removed from my activity list', async function (this: CustomW
   const activityId = this.context.lastActivityId;
   const response = await this.apiClient.get(ENDPOINTS.ACTIVITIES);
 
-  // Handle both array and paginated response
-  const activities = Array.isArray(response.data) ? response.data : response.data?.data || [];
+  const activities = response.data?.data || [];
 
   // Activity should be archived/removed
   const found = activities.some((a: any) => a.id === activityId && a.status === 'active');
@@ -336,8 +327,7 @@ Then('it should be removed from my activity list', async function (this: CustomW
 Then('my activity count should decrease by one', async function (this: CustomWorld) {
   const response = await this.apiClient.get(ENDPOINTS.ACTIVITIES);
 
-  // Handle both array and paginated response
-  const activities = Array.isArray(response.data) ? response.data : response.data?.data || [];
+  const activities = response.data?.data || [];
   const currentCount = activities.length;
 
   // Count should be less than or equal to before (archived activities may be filtered)

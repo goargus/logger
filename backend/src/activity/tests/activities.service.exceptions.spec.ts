@@ -11,6 +11,9 @@ import { ActivityStatus } from '../activity-status.enum';
 import { ReportingPeriodStatus } from '../../reporting-periods/reporting-period-status.enum';
 import { CreateActivityDto } from '../dto/create-activity.dto';
 import { UpdateActivityDto } from '../dto/update-activity.dto';
+import { ReportingPeriodException } from '../../reporting-periods/reporting-period-exception.entity';
+import { User } from '../../users/user.entity';
+import { ReportingPeriodsService } from '../../reporting-periods/reporting-periods.service';
 
 describe('ActivitiesService - Exception Handling', () => {
   let service: ActivitiesService;
@@ -18,7 +21,10 @@ describe('ActivitiesService - Exception Handling', () => {
   let activityTypeRepo: jest.Mocked<Repository<ActivityType>>;
   let reportingPeriodRepo: jest.Mocked<Repository<ReportingPeriod>>;
   let userRoleAssignmentRepo: jest.Mocked<Repository<UserRoleAssignment>>;
-  let mockExceptionRepo: any;
+  let exceptionRepo: jest.Mocked<Repository<ReportingPeriodException>>;
+  let userRepo: jest.Mocked<Repository<User>>;
+  let reportingPeriodsService: ReportingPeriodsService;
+  let activePeriod: ReportingPeriod;
 
   const mockActivity: Activity = {
     id: 'activity-id',
@@ -62,22 +68,21 @@ describe('ActivitiesService - Exception Handling', () => {
     updatedBy: 'admin-id',
   } as ReportingPeriod;
 
-  const mockException = {
+  const mockException: ReportingPeriodException = {
     id: 'exception-id',
     userId: 'user-id',
+    user: {} as any,
     reportingPeriodId: 'locked-period-id',
+    reportingPeriod: {} as any,
     startDate: '2024-01-01',
     endDate: '2024-01-05',
     reason: 'Late submission approved',
     grantedBy: 'admin-id',
+    grantedByUser: {} as any,
     grantedAt: new Date(),
-  };
+  } as ReportingPeriodException;
 
   beforeEach(async () => {
-    mockExceptionRepo = {
-      findOne: jest.fn(),
-    };
-
     const mockActivityRepo = {
       create: jest.fn(),
       save: jest.fn(),
@@ -93,14 +98,23 @@ describe('ActivitiesService - Exception Handling', () => {
     const mockReportingPeriodRepo = {
       findOne: jest.fn(),
       createQueryBuilder: jest.fn(),
-      manager: {
-        getRepository: jest.fn().mockReturnValue(mockExceptionRepo),
-      },
     };
 
     const mockUserRoleAssignmentRepo = {
       findOne: jest.fn(),
       find: jest.fn(),
+    };
+
+    const mockExceptionRepo = {
+      findOne: jest.fn(),
+    };
+
+    const mockUserRepo = {
+      findOne: jest.fn(),
+    };
+
+    const mockReportingPeriodsService = {
+      ensureCurrentPeriodForEntity: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -122,6 +136,18 @@ describe('ActivitiesService - Exception Handling', () => {
           provide: getRepositoryToken(UserRoleAssignment),
           useValue: mockUserRoleAssignmentRepo,
         },
+        {
+          provide: getRepositoryToken(ReportingPeriodException),
+          useValue: mockExceptionRepo,
+        },
+        {
+          provide: getRepositoryToken(User),
+          useValue: mockUserRepo,
+        },
+        {
+          provide: ReportingPeriodsService,
+          useValue: mockReportingPeriodsService,
+        },
       ],
     }).compile();
 
@@ -130,6 +156,24 @@ describe('ActivitiesService - Exception Handling', () => {
     activityTypeRepo = module.get(getRepositoryToken(ActivityType));
     reportingPeriodRepo = module.get(getRepositoryToken(ReportingPeriod));
     userRoleAssignmentRepo = module.get(getRepositoryToken(UserRoleAssignment));
+    exceptionRepo = module.get(getRepositoryToken(ReportingPeriodException));
+    userRepo = module.get(getRepositoryToken(User));
+    reportingPeriodsService = module.get(ReportingPeriodsService);
+
+    userRepo.findOne.mockResolvedValue({ id: 'user-id', entity_id: 'entity-id' } as User);
+    activePeriod = {
+      ...mockLockedPeriod,
+      id: 'active-period-id',
+      status: ReportingPeriodStatus.ACTIVE,
+      startDate: '2024-02-01',
+      endDate: '2024-02-14',
+      isLocked: false,
+      containsDate: jest.fn().mockReturnValue(false),
+    } as ReportingPeriod;
+    reportingPeriodRepo.findOne.mockResolvedValue(activePeriod);
+    reportingPeriodsService.ensureCurrentPeriodForEntity = jest
+      .fn()
+      .mockResolvedValue(activePeriod);
   });
 
   describe('create with exception', () => {
@@ -146,10 +190,11 @@ describe('ActivitiesService - Exception Handling', () => {
       userRoleAssignmentRepo.findOne.mockResolvedValue({ id: 'assignment-id' } as any);
       reportingPeriodRepo.createQueryBuilder.mockReturnValue({
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(mockLockedPeriod),
       } as any);
 
-      mockExceptionRepo.findOne.mockResolvedValue(mockException);
+      exceptionRepo.findOne.mockResolvedValue(mockException);
 
       activityRepo.create.mockReturnValue(mockActivity);
       activityRepo.save.mockResolvedValue(mockActivity);
@@ -158,7 +203,7 @@ describe('ActivitiesService - Exception Handling', () => {
 
       expect(result).toEqual(mockActivity);
       expect(activityRepo.save).toHaveBeenCalled();
-      expect(mockExceptionRepo.findOne).toHaveBeenCalledWith({
+      expect(exceptionRepo.findOne).toHaveBeenCalledWith({
         where: {
           userId: 'user-id',
           reportingPeriodId: 'locked-period-id',
@@ -179,10 +224,11 @@ describe('ActivitiesService - Exception Handling', () => {
       userRoleAssignmentRepo.findOne.mockResolvedValue({ id: 'assignment-id' } as any);
       reportingPeriodRepo.createQueryBuilder.mockReturnValue({
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(mockLockedPeriod),
       } as any);
 
-      mockExceptionRepo.findOne.mockResolvedValue(mockException);
+      exceptionRepo.findOne.mockResolvedValue(mockException);
 
       await expect(service.create(createDto, 'user-id')).rejects.toThrow(
         new ForbiddenException('Cannot create activity in a locked reporting period'),
@@ -204,10 +250,11 @@ describe('ActivitiesService - Exception Handling', () => {
       userRoleAssignmentRepo.findOne.mockResolvedValue({ id: 'assignment-id' } as any);
       reportingPeriodRepo.createQueryBuilder.mockReturnValue({
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(mockLockedPeriod),
       } as any);
 
-      mockExceptionRepo.findOne.mockResolvedValue(mockException);
+      exceptionRepo.findOne.mockResolvedValue(mockException);
       activityRepo.create.mockReturnValue(mockActivity);
       activityRepo.save.mockResolvedValue(mockActivity);
 
@@ -227,10 +274,11 @@ describe('ActivitiesService - Exception Handling', () => {
       userRoleAssignmentRepo.findOne.mockResolvedValue({ id: 'assignment-id' } as any);
       reportingPeriodRepo.createQueryBuilder.mockReturnValue({
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(mockLockedPeriod),
       } as any);
 
-      mockExceptionRepo.findOne.mockResolvedValue(mockException);
+      exceptionRepo.findOne.mockResolvedValue(mockException);
       activityRepo.create.mockReturnValue(mockActivity);
       activityRepo.save.mockResolvedValue(mockActivity);
 
@@ -246,8 +294,13 @@ describe('ActivitiesService - Exception Handling', () => {
 
       const activityInRange = { ...mockActivity, activityDate: '2024-01-03' };
       activityRepo.findOne.mockResolvedValue(activityInRange);
-      reportingPeriodRepo.findOne.mockResolvedValue(mockLockedPeriod);
-      mockExceptionRepo.findOne.mockResolvedValue(mockException);
+      reportingPeriodRepo.findOne.mockImplementation(async (args: any) => {
+        if (args?.where?.id === 'locked-period-id') {
+          return mockLockedPeriod;
+        }
+        return activePeriod;
+      });
+      exceptionRepo.findOne.mockResolvedValue(mockException);
       activityRepo.save.mockResolvedValue({ ...activityInRange, description: 'Updated' });
 
       const result = await service.updateMine('activity-id', updateDto, 'user-id');
@@ -263,8 +316,13 @@ describe('ActivitiesService - Exception Handling', () => {
 
       const activityOutsideRange = { ...mockActivity, activityDate: '2024-01-10' };
       activityRepo.findOne.mockResolvedValue(activityOutsideRange);
-      reportingPeriodRepo.findOne.mockResolvedValue(mockLockedPeriod);
-      mockExceptionRepo.findOne.mockResolvedValue(mockException);
+      reportingPeriodRepo.findOne.mockImplementation(async (args: any) => {
+        if (args?.where?.id === 'locked-period-id') {
+          return mockLockedPeriod;
+        }
+        return activePeriod;
+      });
+      exceptionRepo.findOne.mockResolvedValue(mockException);
 
       await expect(service.updateMine('activity-id', updateDto, 'user-id')).rejects.toThrow(
         new ForbiddenException('This activity is locked because its reporting period has ended'),
@@ -277,13 +335,19 @@ describe('ActivitiesService - Exception Handling', () => {
       };
 
       activityRepo.findOne.mockResolvedValue(mockActivity);
-      reportingPeriodRepo.findOne.mockResolvedValue(mockLockedPeriod);
+      reportingPeriodRepo.findOne.mockImplementation(async (args: any) => {
+        if (args?.where?.id === 'locked-period-id') {
+          return mockLockedPeriod;
+        }
+        return activePeriod;
+      });
       reportingPeriodRepo.createQueryBuilder.mockReturnValue({
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(mockLockedPeriod),
       } as any);
 
-      mockExceptionRepo.findOne.mockResolvedValue(mockException);
+      exceptionRepo.findOne.mockResolvedValue(mockException);
       activityRepo.save.mockResolvedValue({ ...mockActivity, activityDate: '2024-01-04' });
 
       const result = await service.updateMine('activity-id', updateDto, 'user-id');
@@ -298,16 +362,22 @@ describe('ActivitiesService - Exception Handling', () => {
       };
 
       activityRepo.findOne.mockResolvedValue(mockActivity);
-      reportingPeriodRepo.findOne.mockResolvedValue(mockLockedPeriod);
+      reportingPeriodRepo.findOne.mockImplementation(async (args: any) => {
+        if (args?.where?.id === 'locked-period-id') {
+          return mockLockedPeriod;
+        }
+        return activePeriod;
+      });
       reportingPeriodRepo.createQueryBuilder.mockReturnValue({
         where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
         getOne: jest.fn().mockResolvedValue(mockLockedPeriod),
       } as any);
 
-      mockExceptionRepo.findOne.mockResolvedValue(mockException);
+      exceptionRepo.findOne.mockResolvedValue(mockException);
 
       await expect(service.updateMine('activity-id', updateDto, 'user-id')).rejects.toThrow(
-        new ForbiddenException('Cannot move activity to a locked reporting period'),
+        new ForbiddenException('Cannot move activity in a locked reporting period'),
       );
     });
   });
@@ -316,8 +386,13 @@ describe('ActivitiesService - Exception Handling', () => {
     it('should allow archiving activity in locked period when user has exception for the date', async () => {
       const activityInRange = { ...mockActivity, activityDate: '2024-01-03' };
       activityRepo.findOne.mockResolvedValue(activityInRange);
-      reportingPeriodRepo.findOne.mockResolvedValue(mockLockedPeriod);
-      mockExceptionRepo.findOne.mockResolvedValue(mockException);
+      reportingPeriodRepo.findOne.mockImplementation(async (args: any) => {
+        if (args?.where?.id === 'locked-period-id') {
+          return mockLockedPeriod;
+        }
+        return activePeriod;
+      });
+      exceptionRepo.findOne.mockResolvedValue(mockException);
       activityRepo.save.mockResolvedValue({ ...activityInRange, status: ActivityStatus.ARCHIVED });
 
       await service.archiveMine('activity-id', 'user-id');
@@ -328,8 +403,13 @@ describe('ActivitiesService - Exception Handling', () => {
     it('should block archiving activity when activity date is outside exception range', async () => {
       const activityOutsideRange = { ...mockActivity, activityDate: '2024-01-10' };
       activityRepo.findOne.mockResolvedValue(activityOutsideRange);
-      reportingPeriodRepo.findOne.mockResolvedValue(mockLockedPeriod);
-      mockExceptionRepo.findOne.mockResolvedValue(mockException);
+      reportingPeriodRepo.findOne.mockImplementation(async (args: any) => {
+        if (args?.where?.id === 'locked-period-id') {
+          return mockLockedPeriod;
+        }
+        return activePeriod;
+      });
+      exceptionRepo.findOne.mockResolvedValue(mockException);
 
       await expect(service.archiveMine('activity-id', 'user-id')).rejects.toThrow(
         new ForbiddenException('This activity is locked because its reporting period has ended'),

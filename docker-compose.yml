@@ -29,8 +29,7 @@ services:
     command: >
       sh -c "
         npm install &&
-        npm run admin:bootstrap &&
-        npm run db:init
+        npm run admin:bootstrap
       "
     environment:
       DB_HOST: db
@@ -89,6 +88,16 @@ services:
         npx nest build &&
         npx nest start --watch
       "
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "node -e \"require('http').get('http://localhost:3000/health', res => { if (res.statusCode !== 200) process.exit(1); res.resume(); }).on('error', () => process.exit(1));\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     develop:
       watch:
         - action: sync

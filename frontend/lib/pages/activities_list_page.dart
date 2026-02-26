@@ -37,7 +37,6 @@ class _ActivitiesListContentState extends ConsumerState<ActivitiesListContent> {
 
     final result = await showDialog<Map<String, dynamic>?>(
       context: context,
-      barrierDismissible: false,
       builder: (_) => ActivityFormDialog(
         baseUrl: ApiConfig.baseUrl,
         existingActivity: activityData,

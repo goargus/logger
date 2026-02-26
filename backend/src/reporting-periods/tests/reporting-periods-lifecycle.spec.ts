@@ -6,6 +6,7 @@ import { ReportingPeriod } from '../reporting-period.entity';
 import { ReportingPeriodException } from '../reporting-period-exception.entity';
 import { ReportingPeriodStatus } from '../reporting-period-status.enum';
 import { ConflictException } from '@nestjs/common';
+import { Entity } from '../../entities/entity.entity';
 
 describe('ReportingPeriodsService - Lifecycle Management', () => {
   let service: ReportingPeriodsService;
@@ -27,14 +28,21 @@ describe('ReportingPeriodsService - Lifecycle Management', () => {
     remove: jest.fn(),
   };
 
+  const mockEntityRepository = {
+    findOne: jest.fn(),
+  };
+
   const mockQueryBuilder = {
     where: jest.fn().mockReturnThis(),
     andWhere: jest.fn().mockReturnThis(),
     orderBy: jest.fn().mockReturnThis(),
     leftJoinAndSelect: jest.fn().mockReturnThis(),
     leftJoin: jest.fn().mockReturnThis(),
+    skip: jest.fn().mockReturnThis(),
+    take: jest.fn().mockReturnThis(),
     getOne: jest.fn(),
     getMany: jest.fn(),
+    getManyAndCount: jest.fn(),
     getCount: jest.fn(),
     update: jest.fn().mockReturnThis(),
     set: jest.fn().mockReturnThis(),
@@ -52,6 +60,10 @@ describe('ReportingPeriodsService - Lifecycle Management', () => {
         {
           provide: getRepositoryToken(ReportingPeriodException),
           useValue: mockExceptionsRepository,
+        },
+        {
+          provide: getRepositoryToken(Entity),
+          useValue: mockEntityRepository,
         },
       ],
     }).compile();
@@ -198,12 +210,14 @@ describe('ReportingPeriodsService - Lifecycle Management', () => {
         endDate: '2025-01-14',
       };
 
-      mockRepository.find.mockResolvedValue([expiredPeriod]);
+      mockRepository.find
+        .mockResolvedValueOnce([expiredPeriod])
+        .mockResolvedValueOnce([]);
       mockRepository.save.mockResolvedValue({
         ...expiredPeriod,
         status: ReportingPeriodStatus.LOCKED,
       });
-      mockRepository.findOne.mockResolvedValue(expiredPeriod);
+      mockRepository.findOne.mockResolvedValue(null);
       mockRepository.create.mockReturnValue({});
 
       await service.transitionExpiredPeriods('system');
@@ -249,13 +263,17 @@ describe('ReportingPeriodsService - Lifecycle Management', () => {
 
     it('should find all periods with entity filter', async () => {
       mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder);
-      mockQueryBuilder.getMany.mockResolvedValue([{ id: '1' }]);
+      mockQueryBuilder.getManyAndCount.mockResolvedValue([[{ id: '1' }], 1]);
+      mockQueryBuilder.skip.mockReturnThis();
+      mockQueryBuilder.take.mockReturnThis();
 
-      await service.findAll('entity-1');
+      await service.findAll({ entityId: 'entity-1' } as any);
 
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('period.entity_id = :entityId', {
         entityId: 'entity-1',
       });
+      expect(mockQueryBuilder.skip).toHaveBeenCalledWith(0);
+      expect(mockQueryBuilder.take).toHaveBeenCalledWith(20);
     });
   });
 
@@ -314,8 +332,10 @@ describe('ReportingPeriodsService - Lifecycle Management', () => {
     });
   });
 
-  describe('14-Day Period Duration', () => {
-    it('should create periods with exactly 14-day duration', async () => {
+  describe('Half-Month Period Duration', () => {
+    it('should create periods for the first half of the month', async () => {
+      jest.useFakeTimers().setSystemTime(new Date('2024-02-03T00:00:00Z'));
+
       mockRepository.findOne.mockResolvedValue(null);
       mockRepository.create.mockImplementation((data) => data);
       mockRepository.save.mockImplementation((data) => Promise.resolve(data));
@@ -327,7 +347,11 @@ describe('ReportingPeriodsService - Lifecycle Management', () => {
       const end = new Date(createCall.endDate);
       const diffDays = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
-      expect(diffDays).toBe(14);
+      expect(diffDays).toBe(13);
+      expect(createCall.startDate).toBe('2024-02-01');
+      expect(createCall.endDate).toBe('2024-02-14');
+
+      jest.useRealTimers();
     });
   });
 });

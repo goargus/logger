@@ -12,6 +12,7 @@ const createMockRepo = (): MockRepo<Role> => ({
   create: jest.fn(),
   save: jest.fn(),
   find: jest.fn(),
+  findAndCount: jest.fn(),
   findOne: jest.fn(),
   delete: jest.fn(),
 });
@@ -79,10 +80,13 @@ describe('RolesService', () => {
 
   describe('findAll', () => {
     it('returns roles list', async () => {
-      repo.find?.mockResolvedValue([role]);
+      repo.findAndCount?.mockResolvedValue([[role], 1]);
       const result = await service.findAll();
-      expect(repo.find).toHaveBeenCalledWith({ order: { name: 'ASC' } });
-      expect(result).toEqual([role]);
+      expect(repo.findAndCount).toHaveBeenCalledWith({ order: { name: 'ASC' }, skip: 0, take: 20 });
+      expect(result).toEqual({
+        data: [role],
+        pagination: { page: 1, limit: 20, total: 1, totalPages: 1 },
+      });
     });
   });
 

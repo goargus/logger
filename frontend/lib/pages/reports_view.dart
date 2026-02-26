@@ -5,6 +5,7 @@ import '../widgets/reports/period_type_selector.dart';
 import '../widgets/reports/enhanced_time_selector.dart';
 import '../widgets/reports/comparison_breakdown_table.dart';
 import '../services/reports_service.dart';
+import '../providers/auth.dart';
 import '../auth/auth_utils.dart';
 import '../models/report_summary.dart';
 import '../models/report_breakdown.dart';
@@ -225,7 +226,7 @@ class _ReportsViewContentState extends ConsumerState<ReportsViewContent> {
                   Row(
                     children: [
                       Text(
-                        'Estado: ${_summary?.status ?? "Activo"}',
+                        'Estado: ${_summary?.statusLabel ?? "Activo"}',
                         style: const TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
@@ -283,12 +284,14 @@ class _ReportsViewContentState extends ConsumerState<ReportsViewContent> {
               activitiesCount: _summary!.totalActivities,
               expenses: _summary!.totalExpenses,
               isReported: _summary!.isReported,
+              currencySymbol: ref.watch(currencySymbolProvider),
             ),
             const SizedBox(height: 32),
             if (_comparisonBreakdown != null)
               ComparisonBreakdownTable(
                 breakdown: _comparisonBreakdown!.byType,
                 showComparison: true,
+                currencySymbol: ref.watch(currencySymbolProvider),
               ),
             if (_comparisonBreakdown == null)
               const Padding(

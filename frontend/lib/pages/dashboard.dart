@@ -52,7 +52,6 @@ class _DashboardContentState extends ConsumerState<DashboardContent> {
     try {
       final created = await showDialog<Map<String, dynamic>?>(
         context: context,
-        barrierDismissible: false,
         builder: (_) => ActivityFormDialog(
           baseUrl: ApiConfig.baseUrl,
           getAccessToken: () async {
@@ -110,7 +109,6 @@ class _DashboardContentState extends ConsumerState<DashboardContent> {
     try {
       final result = await showDialog<Map<String, dynamic>?>(
         context: context,
-        barrierDismissible: false,
         builder: (_) => ActivityFormDialog(
           baseUrl: ApiConfig.baseUrl,
           existingActivity: activityData,

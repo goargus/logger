@@ -13,6 +13,9 @@ import { CreateReportingPeriodDto } from './dto/create-reporting-period.dto';
 import { UpdateReportingPeriodDto } from './dto/update-reporting-period.dto';
 import { CreateExceptionDto } from './dto/create-exception.dto';
 import { ReportingPeriodStatus } from './reporting-period-status.enum';
+import { ListReportingPeriodsQueryDto } from './dto/list-reporting-periods.dto';
+import { PaginatedResult, buildPagination, normalizePagination } from '../common/pagination';
+import { Entity } from '../entities/entity.entity';
 
 @Injectable()
 export class ReportingPeriodsService {
@@ -23,7 +26,90 @@ export class ReportingPeriodsService {
     private readonly repo: Repository<ReportingPeriod>,
     @InjectRepository(ReportingPeriodException)
     private readonly exceptionsRepo: Repository<ReportingPeriodException>,
+    @InjectRepository(Entity)
+    private readonly entityRepo: Repository<Entity>,
   ) {}
+
+  private async getReportingPeriodDays(entityId: string): Promise<number> {
+    const entity = await this.entityRepo.findOne({
+      where: { id: entityId },
+      select: ['reporting_period_days'],
+    });
+    if (entity?.reporting_period_days != null) {
+      return entity.reporting_period_days;
+    }
+    const envDays = process.env.REPORTING_PERIOD_DAYS;
+    if (envDays) {
+      const parsed = parseInt(envDays, 10);
+      if (!isNaN(parsed) && parsed > 0) {
+        return parsed;
+      }
+    }
+
+    return 14;
+  }
+
+  private getHalfMonthRange(date: Date): { startDate: string; endDate: string } {
+    const year = date.getFullYear();
+    const month = date.getMonth();
+    const day = date.getDate();
+
+    if (day <= 14) {
+      const start = new Date(year, month, 1);
+      const end = new Date(year, month, 14);
+      return { startDate: this.formatDate(start), endDate: this.formatDate(end) };
+    }
+
+    const start = new Date(year, month, 15);
+    const end = new Date(year, month + 1, 0);
+    return { startDate: this.formatDate(start), endDate: this.formatDate(end) };
+  }
+
+  async ensureCurrentPeriodForEntity(
+    entityId: string,
+    actorUserId: string,
+  ): Promise<ReportingPeriod> {
+    const today = new Date();
+    const { startDate, endDate } = this.getHalfMonthRange(today);
+
+    const existingForRange = await this.repo.findOne({
+      where: { entityId, startDate, endDate },
+    });
+
+    const active = await this.repo.findOne({
+      where: { entityId, status: ReportingPeriodStatus.ACTIVE },
+    });
+
+    if (active && (active.startDate !== startDate || active.endDate !== endDate)) {
+      active.status = ReportingPeriodStatus.LOCKED;
+      active.updatedBy = actorUserId;
+      await this.repo.save(active);
+    }
+
+    if (existingForRange) {
+      if (existingForRange.status !== ReportingPeriodStatus.ACTIVE) {
+        existingForRange.status = ReportingPeriodStatus.ACTIVE;
+        existingForRange.updatedBy = actorUserId;
+        await this.repo.save(existingForRange);
+      }
+      return existingForRange;
+    }
+
+    const period = this.repo.create({
+      entityId,
+      name: `Periodo ${startDate} - ${endDate}`,
+      description: 'Periodo quincenal generado automáticamente',
+      startDate,
+      endDate,
+      status: ReportingPeriodStatus.ACTIVE,
+      createdBy: actorUserId,
+      updatedBy: actorUserId,
+    });
+
+    const saved = await this.repo.save(period);
+    this.logger.log(`Created current reporting period for entity ${entityId}: ${saved.id}`);
+    return saved;
+  }
 
   async create(dto: CreateReportingPeriodDto, actorUserId: string): Promise<ReportingPeriod> {
     if (dto.startDate >= dto.endDate) {
@@ -90,12 +176,11 @@ export class ReportingPeriodsService {
       }
 
       const today = new Date();
-      const startDate = this.formatDate(today);
-      const endDate = this.formatDate(this.addDays(today, 14));
+      const { startDate, endDate } = this.getHalfMonthRange(today);
 
       const period = this.repo.create({
         entityId,
-        name: `Reporting Period ${startDate}`,
+        name: `Periodo ${startDate} - ${endDate}`,
         startDate,
         endDate,
         status: ReportingPeriodStatus.ACTIVE,
@@ -125,12 +210,26 @@ export class ReportingPeriodsService {
       throw new NotFoundException('No previous period found to create next period');
     }
 
-    const startDate = this.formatDate(this.addDays(new Date(previousPeriod.endDate), 1));
-    const endDate = this.formatDate(this.addDays(new Date(startDate), 14));
+    const nextDate = this.addDays(new Date(previousPeriod.endDate), 1);
+    const days = await this.getReportingPeriodDays(entityId);
+    const startDate = this.formatDate(nextDate);
+    const endDate = this.formatDate(this.addDays(nextDate, days - 1));
+
+    const existing = await this.repo.findOne({
+      where: { entityId, startDate, endDate },
+    });
+    if (existing) {
+      if (existing.status !== ReportingPeriodStatus.ACTIVE) {
+        existing.status = ReportingPeriodStatus.ACTIVE;
+        existing.updatedBy = actorUserId;
+        await this.repo.save(existing);
+      }
+      return existing;
+    }
 
     const period = this.repo.create({
       entityId,
-      name: `Reporting Period ${startDate}`,
+      name: `Periodo ${startDate} - ${endDate}`,
       startDate,
       endDate,
       status: ReportingPeriodStatus.ACTIVE,
@@ -149,7 +248,7 @@ export class ReportingPeriodsService {
     const expiredPeriods = await this.repo.find({
       where: {
         status: ReportingPeriodStatus.ACTIVE,
-        endDate: LessThanOrEqual(today),
+        endDate: LessThanOrEqual(this.formatDate(this.addDays(new Date(today), -1))),
       },
     });
 
@@ -161,10 +260,27 @@ export class ReportingPeriodsService {
         period.updatedBy = actorUserId;
         await this.repo.save(period);
 
-        await this.createNextPeriod(period.entityId, actorUserId);
+        await this.ensureCurrentPeriodForEntity(period.entityId, actorUserId);
         transitioned++;
       } catch (error) {
         this.logger.error(`Failed to transition period ${period.id}:`, error);
+      }
+    }
+
+    const activePeriods = await this.repo.find({
+      where: { status: ReportingPeriodStatus.ACTIVE },
+    });
+
+    for (const period of activePeriods) {
+      if (today < period.startDate || today > period.endDate) {
+        try {
+          period.status = ReportingPeriodStatus.LOCKED;
+          period.updatedBy = actorUserId;
+          await this.repo.save(period);
+          await this.ensureCurrentPeriodForEntity(period.entityId, actorUserId);
+        } catch (error) {
+          this.logger.error(`Failed to align period ${period.id}:`, error);
+        }
       }
     }
 
@@ -190,17 +306,19 @@ export class ReportingPeriodsService {
       .getMany();
   }
 
-  async findAll(entityId?: string): Promise<ReportingPeriod[]> {
-    const query = this.repo
+  async findAll(query?: ListReportingPeriodsQueryDto): Promise<PaginatedResult<ReportingPeriod>> {
+    const queryBuilder = this.repo
       .createQueryBuilder('period')
       .leftJoinAndSelect('period.entity', 'entity')
       .orderBy('period.start_date', 'DESC');
 
-    if (entityId) {
-      query.andWhere('period.entity_id = :entityId', { entityId });
+    if (query?.entityId) {
+      queryBuilder.andWhere('period.entity_id = :entityId', { entityId: query.entityId });
     }
 
-    return query.getMany();
+    const { page, limit, skip } = normalizePagination(query);
+    const [data, total] = await queryBuilder.skip(skip).take(limit).getManyAndCount();
+    return { data, pagination: buildPagination(page, limit, total) };
   }
 
   async findOne(id: string): Promise<ReportingPeriod> {

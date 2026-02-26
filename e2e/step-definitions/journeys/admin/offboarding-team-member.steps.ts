@@ -12,10 +12,11 @@ async function ensureUserWithStatus(
 ): Promise<string> {
   // Get a role for the user
   const rolesResponse = await world.apiClient.get(ENDPOINTS.ROLES);
-  if (rolesResponse.status !== 200 || !Array.isArray(rolesResponse.data) || rolesResponse.data.length === 0) {
+  const rolesList = rolesResponse.data?.data || rolesResponse.data;
+  if (rolesResponse.status !== 200 || !Array.isArray(rolesList) || rolesList.length === 0) {
     throw new Error('No roles available');
   }
-  const roleId = rolesResponse.data[0].id;
+  const roleId = rolesList[0].id;
 
   const timestamp = Date.now();
   const payload = {
@@ -158,7 +159,12 @@ When("I archive Pedro's account", async function (this: CustomWorld) {
 
 When('I review the list of inactive users', async function (this: CustomWorld) {
   // Get all users and filter by those with no recent activity
-  this.context.lastResponse = await this.apiClient.get(ENDPOINTS.ADMIN_USERS);
+  const rawResponse = await this.apiClient.get(ENDPOINTS.ADMIN_USERS);
+  // Normalize to always expose a flat array in lastResponse.data for assertion steps
+  this.context.lastResponse = {
+    ...rawResponse,
+    data: rawResponse.data?.data || rawResponse.data,
+  };
 });
 
 // --- Assertion Steps ---
@@ -181,7 +187,8 @@ Then('Maria should appear in the suspended users list', async function (this: Cu
   expect(response.status).toBe(200);
 
   const userId = this.context.currentTestUserId;
-  const user = response.data.find((u: any) => u.id === userId);
+  const usersList = response.data?.data || response.data;
+  const user = usersList.find((u: any) => u.id === userId);
   expect(user).toBeTruthy();
   expect(user.status).toBe('suspended');
 });
