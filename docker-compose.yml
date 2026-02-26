@@ -63,6 +63,7 @@ services:
       - ./backend/test:/app/test
       - ./backend/config:/app/config
       - ./backend/scripts:/app/scripts
+      - ./backend/migrations:/app/migrations
       - ./backend/package.json:/app/package.json
       - ./backend/tsconfig.json:/app/tsconfig.json
       - ./backend/package-lock.json:/app/package-lock.json
