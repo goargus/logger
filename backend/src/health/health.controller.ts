@@ -1,10 +1,5 @@
 import { Controller, Get, HttpException, HttpStatus, UseGuards } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiResponse,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { HttpHealthIndicator, TypeOrmHealthIndicator } from '@nestjs/terminus';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';

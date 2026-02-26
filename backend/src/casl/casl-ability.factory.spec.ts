@@ -14,7 +14,7 @@ import { Permission } from '../auth/permissions/permission.enum';
 
 // Helper function to create a role with permissions
 function createRoleWithPermissions(id: string, name: string, permissions: Permission[]): Role {
-  const rolePermissions = permissions.map(p => ({ permission: p } as RolePermission));
+  const rolePermissions = permissions.map((p) => ({ permission: p }) as RolePermission);
   return {
     id,
     name,
@@ -359,7 +359,16 @@ describe('CaslAbilityFactory', () => {
                 id: 'role-1',
                 name: 'Missionary',
                 rolePermissions: [],
-                get permissions() { return [Permission.ACTIVITY_CREATE_OWN, Permission.ACTIVITY_READ_OWN, Permission.ACTIVITY_UPDATE_OWN, Permission.ACTIVITY_DELETE_OWN, Permission.USER_READ_OWN, Permission.ACTIVITY_TYPE_READ]; },
+                get permissions() {
+                  return [
+                    Permission.ACTIVITY_CREATE_OWN,
+                    Permission.ACTIVITY_READ_OWN,
+                    Permission.ACTIVITY_UPDATE_OWN,
+                    Permission.ACTIVITY_DELETE_OWN,
+                    Permission.USER_READ_OWN,
+                    Permission.ACTIVITY_TYPE_READ,
+                  ];
+                },
               } as unknown as Role,
               entity: { id: 'field-1' } as Entity,
               user: { id: 'user-1' } as User,
@@ -390,7 +399,16 @@ describe('CaslAbilityFactory', () => {
                 id: 'role-1',
                 name: 'Missionary',
                 rolePermissions: [],
-                get permissions() { return [Permission.ACTIVITY_CREATE_OWN, Permission.ACTIVITY_READ_OWN, Permission.ACTIVITY_UPDATE_OWN, Permission.ACTIVITY_DELETE_OWN, Permission.USER_READ_OWN, Permission.ACTIVITY_TYPE_READ]; },
+                get permissions() {
+                  return [
+                    Permission.ACTIVITY_CREATE_OWN,
+                    Permission.ACTIVITY_READ_OWN,
+                    Permission.ACTIVITY_UPDATE_OWN,
+                    Permission.ACTIVITY_DELETE_OWN,
+                    Permission.USER_READ_OWN,
+                    Permission.ACTIVITY_TYPE_READ,
+                  ];
+                },
               } as unknown as Role,
               entity: { id: 'field-1' } as Entity,
               user: { id: 'user-1' } as User,
@@ -421,7 +439,16 @@ describe('CaslAbilityFactory', () => {
                 id: 'role-1',
                 name: 'Missionary',
                 rolePermissions: [],
-                get permissions() { return [Permission.ACTIVITY_CREATE_OWN, Permission.ACTIVITY_READ_OWN, Permission.ACTIVITY_UPDATE_OWN, Permission.ACTIVITY_DELETE_OWN, Permission.USER_READ_OWN, Permission.ACTIVITY_TYPE_READ]; },
+                get permissions() {
+                  return [
+                    Permission.ACTIVITY_CREATE_OWN,
+                    Permission.ACTIVITY_READ_OWN,
+                    Permission.ACTIVITY_UPDATE_OWN,
+                    Permission.ACTIVITY_DELETE_OWN,
+                    Permission.USER_READ_OWN,
+                    Permission.ACTIVITY_TYPE_READ,
+                  ];
+                },
               } as unknown as Role,
               entity: { id: 'field-1' } as Entity,
               user: { id: 'user-1' } as User,
@@ -454,7 +481,16 @@ describe('CaslAbilityFactory', () => {
                 id: 'role-1',
                 name: 'Missionary',
                 rolePermissions: [],
-                get permissions() { return [Permission.ACTIVITY_CREATE_OWN, Permission.ACTIVITY_READ_OWN, Permission.ACTIVITY_UPDATE_OWN, Permission.ACTIVITY_DELETE_OWN, Permission.USER_READ_OWN, Permission.ACTIVITY_TYPE_READ]; },
+                get permissions() {
+                  return [
+                    Permission.ACTIVITY_CREATE_OWN,
+                    Permission.ACTIVITY_READ_OWN,
+                    Permission.ACTIVITY_UPDATE_OWN,
+                    Permission.ACTIVITY_DELETE_OWN,
+                    Permission.USER_READ_OWN,
+                    Permission.ACTIVITY_TYPE_READ,
+                  ];
+                },
               } as unknown as Role,
               entity: { id: 'field-1' } as Entity,
               user: { id: 'user-1' } as User,
@@ -485,7 +521,16 @@ describe('CaslAbilityFactory', () => {
                 id: 'role-1',
                 name: 'Missionary',
                 rolePermissions: [],
-                get permissions() { return [Permission.ACTIVITY_CREATE_OWN, Permission.ACTIVITY_READ_OWN, Permission.ACTIVITY_UPDATE_OWN, Permission.ACTIVITY_DELETE_OWN, Permission.USER_READ_OWN, Permission.ACTIVITY_TYPE_READ]; },
+                get permissions() {
+                  return [
+                    Permission.ACTIVITY_CREATE_OWN,
+                    Permission.ACTIVITY_READ_OWN,
+                    Permission.ACTIVITY_UPDATE_OWN,
+                    Permission.ACTIVITY_DELETE_OWN,
+                    Permission.USER_READ_OWN,
+                    Permission.ACTIVITY_TYPE_READ,
+                  ];
+                },
               } as unknown as Role,
               entity: { id: 'field-1' } as Entity,
               user: { id: 'user-1' } as User,
@@ -518,7 +563,16 @@ describe('CaslAbilityFactory', () => {
                 id: 'role-1',
                 name: 'Association Secretary',
                 rolePermissions: [],
-                get permissions() { return [Permission.ACTIVITY_CREATE_OWN, Permission.ACTIVITY_READ_OWN, Permission.ACTIVITY_UPDATE_OWN, Permission.ACTIVITY_DELETE_OWN, Permission.ACTIVITY_READ_HIERARCHY, Permission.ACTIVITY_MANAGE_HIERARCHY]; },
+                get permissions() {
+                  return [
+                    Permission.ACTIVITY_CREATE_OWN,
+                    Permission.ACTIVITY_READ_OWN,
+                    Permission.ACTIVITY_UPDATE_OWN,
+                    Permission.ACTIVITY_DELETE_OWN,
+                    Permission.ACTIVITY_READ_HIERARCHY,
+                    Permission.ACTIVITY_MANAGE_HIERARCHY,
+                  ];
+                },
               } as unknown as Role,
               entity: { id: 'assoc-1' } as Entity,
               user: { id: 'user-1' } as User,
@@ -555,7 +609,9 @@ describe('CaslAbilityFactory', () => {
                 id: 'role-1',
                 name: 'Field Secretary',
                 rolePermissions: [],
-                get permissions() { return [Permission.ACTIVITY_CREATE_OWN, Permission.ACTIVITY_READ_OWN]; },
+                get permissions() {
+                  return [Permission.ACTIVITY_CREATE_OWN, Permission.ACTIVITY_READ_OWN];
+                },
               } as unknown as Role,
               entity: { id: 'field-1' } as Entity,
               user: { id: 'user-1' } as User,
@@ -593,7 +649,14 @@ describe('CaslAbilityFactory', () => {
                 id: 'role-1',
                 name: 'Union President',
                 rolePermissions: [],
-                get permissions() { return [Permission.REPORT_VIEW_HIERARCHY, Permission.ACTIVITY_READ_HIERARCHY, Permission.ENTITY_READ_HIERARCHY, Permission.ENTITY_UPDATE_OWN]; },
+                get permissions() {
+                  return [
+                    Permission.REPORT_VIEW_HIERARCHY,
+                    Permission.ACTIVITY_READ_HIERARCHY,
+                    Permission.ENTITY_READ_HIERARCHY,
+                    Permission.ENTITY_UPDATE_OWN,
+                  ];
+                },
               } as unknown as Role,
               entity: { id: 'union-1' } as Entity,
               user: { id: 'user-1' } as User,
@@ -632,7 +695,14 @@ describe('CaslAbilityFactory', () => {
                 id: 'role-1',
                 name: 'Association President',
                 rolePermissions: [],
-                get permissions() { return [Permission.REPORT_VIEW_HIERARCHY, Permission.ACTIVITY_READ_HIERARCHY, Permission.ENTITY_READ_HIERARCHY, Permission.ENTITY_UPDATE_OWN]; },
+                get permissions() {
+                  return [
+                    Permission.REPORT_VIEW_HIERARCHY,
+                    Permission.ACTIVITY_READ_HIERARCHY,
+                    Permission.ENTITY_READ_HIERARCHY,
+                    Permission.ENTITY_UPDATE_OWN,
+                  ];
+                },
               } as unknown as Role,
               entity: { id: 'assoc-1' } as Entity,
               user: { id: 'user-1' } as User,
@@ -672,7 +742,14 @@ describe('CaslAbilityFactory', () => {
                 id: 'role-1',
                 name: 'Union Secretary',
                 rolePermissions: [],
-                get permissions() { return [Permission.REPORT_VIEW_HIERARCHY, Permission.ACTIVITY_READ_HIERARCHY, Permission.ENTITY_READ_HIERARCHY, Permission.ENTITY_UPDATE_OWN]; },
+                get permissions() {
+                  return [
+                    Permission.REPORT_VIEW_HIERARCHY,
+                    Permission.ACTIVITY_READ_HIERARCHY,
+                    Permission.ENTITY_READ_HIERARCHY,
+                    Permission.ENTITY_UPDATE_OWN,
+                  ];
+                },
               } as unknown as Role,
               entity: { id: 'union-1' } as Entity,
               user: { id: 'user-1' } as User,
@@ -695,7 +772,6 @@ describe('CaslAbilityFactory', () => {
         expect(ability.can(Action.Read, activityInHierarchy)).toBe(true);
         expect(ability.cannot(Action.Read, activityOutOfHierarchy)).toBe(true);
       });
-
     });
 
     describe('Combined Permissions from Multiple Roles', () => {
@@ -709,7 +785,16 @@ describe('CaslAbilityFactory', () => {
                 id: 'role-1',
                 name: 'Missionary',
                 rolePermissions: [],
-                get permissions() { return [Permission.ACTIVITY_CREATE_OWN, Permission.ACTIVITY_READ_OWN, Permission.ACTIVITY_UPDATE_OWN, Permission.ACTIVITY_DELETE_OWN, Permission.USER_READ_OWN, Permission.ACTIVITY_TYPE_READ]; },
+                get permissions() {
+                  return [
+                    Permission.ACTIVITY_CREATE_OWN,
+                    Permission.ACTIVITY_READ_OWN,
+                    Permission.ACTIVITY_UPDATE_OWN,
+                    Permission.ACTIVITY_DELETE_OWN,
+                    Permission.USER_READ_OWN,
+                    Permission.ACTIVITY_TYPE_READ,
+                  ];
+                },
               } as unknown as Role,
               entity: { id: 'field-1' } as Entity,
               user: { id: 'user-1' } as User,
@@ -722,7 +807,9 @@ describe('CaslAbilityFactory', () => {
                 id: 'role-2',
                 name: 'Field Secretary',
                 rolePermissions: [],
-                get permissions() { return [Permission.ACTIVITY_CREATE_OWN, Permission.ACTIVITY_READ_OWN]; },
+                get permissions() {
+                  return [Permission.ACTIVITY_CREATE_OWN, Permission.ACTIVITY_READ_OWN];
+                },
               } as unknown as Role,
               entity: { id: 'field-2' } as Entity,
               user: { id: 'user-1' } as User,

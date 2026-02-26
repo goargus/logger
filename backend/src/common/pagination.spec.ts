@@ -1,4 +1,10 @@
-import { normalizePagination, buildPagination, DEFAULT_PAGE, DEFAULT_LIMIT, MAX_LIMIT } from './pagination';
+import {
+  normalizePagination,
+  buildPagination,
+  DEFAULT_PAGE,
+  DEFAULT_LIMIT,
+  MAX_LIMIT,
+} from './pagination';
 
 describe('normalizePagination', () => {
   it('returns defaults when called with no arguments', () => {

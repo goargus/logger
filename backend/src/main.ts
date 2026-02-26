@@ -36,9 +36,7 @@ async function bootstrap() {
   // Swagger configuration
   const config = new DocumentBuilder()
     .setTitle('Secretary API')
-    .setDescription(
-      'Activity Management System API for tracking organizational activities',
-    )
+    .setDescription('Activity Management System API for tracking organizational activities')
     .setVersion('1.0')
     .addBearerAuth(
       {

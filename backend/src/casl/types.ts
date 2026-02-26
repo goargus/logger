@@ -14,13 +14,7 @@ export enum Action {
 }
 
 export type Subjects =
-  | InferSubjects<
-      | typeof Activity
-      | typeof Entity
-      | typeof User
-      | typeof Role
-      | typeof ActivityType
-    >
+  | InferSubjects<typeof Activity | typeof Entity | typeof User | typeof Role | typeof ActivityType>
   | 'all';
 
 export type AppAbility = MongoAbility<[Action, Subjects]>;

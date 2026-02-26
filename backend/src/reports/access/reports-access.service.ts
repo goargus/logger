@@ -122,9 +122,7 @@ export class ReportsAccessService {
    * Get role assignments for multiple users
    * Returns a map of userId -> role assignments
    */
-  async getRoleAssignmentsForUsers(
-    userIds: string[],
-  ): Promise<Map<string, UserRoleAssignment[]>> {
+  async getRoleAssignmentsForUsers(userIds: string[]): Promise<Map<string, UserRoleAssignment[]>> {
     if (!userIds || userIds.length === 0) {
       return new Map();
     }

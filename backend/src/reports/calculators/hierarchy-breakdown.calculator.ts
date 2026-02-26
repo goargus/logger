@@ -89,9 +89,7 @@ export class HierarchyBreakdownCalculator {
         usersExpected,
         usersSubmitted,
         complianceRate:
-          usersExpected > 0
-            ? Math.round((usersSubmitted / usersExpected) * 100) / 100
-            : 0,
+          usersExpected > 0 ? Math.round((usersSubmitted / usersExpected) * 100) / 100 : 0,
       };
     });
   }

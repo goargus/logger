@@ -35,6 +35,8 @@ describe('ReportsAccessService - getEntityHierarchy', () => {
   it('should throw NotFoundException when the root entity does not exist', async () => {
     entityRepo.query.mockResolvedValue([]);
 
-    await expect(service.getEntityHierarchy('missing-id')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.getEntityHierarchy('missing-id')).rejects.toBeInstanceOf(
+      NotFoundException,
+    );
   });
 });

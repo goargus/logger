@@ -136,10 +136,7 @@ export class ActivitiesController {
 
     const itemsWithLocked = await Promise.all(
       items.map(async (a) => {
-        const isLocked = await this.lockService.isDateLocked(
-          owner.entity_id,
-          a.activityDate,
-        );
+        const isLocked = await this.lockService.isDateLocked(owner.entity_id, a.activityDate);
         return ActivityResponseDto.fromEntity(
           a,
           owner.username,
@@ -199,12 +196,7 @@ export class ActivitiesController {
 
     const isLocked = await this.lockService.isDateLocked(owner.entity_id, updated.activityDate);
 
-    return ActivityResponseDto.fromEntity(
-      updated,
-      owner.username,
-      (type as any).name,
-      isLocked,
-    );
+    return ActivityResponseDto.fromEntity(updated, owner.username, (type as any).name, isLocked);
   }
 
   @Delete(':id')

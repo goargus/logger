@@ -109,7 +109,6 @@ export class CaslAbilityFactory {
       if (permissions.has(Permission.ACTIVITY_TYPE_READ)) {
         can(Action.Read, ActivityType);
       }
-
     }
 
     return build();
