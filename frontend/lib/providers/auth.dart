@@ -65,13 +65,23 @@ class AuthNotifier extends Notifier<AuthState> {
     }
 
     try {
-      final currentUrl = web.window.location.href;
-      if (currentUrl.contains('code=') && currentUrl.contains('state=')) {
+      final existingToken = web.window.localStorage.getItem('auth_token');
+      final uri = Uri.parse(web.window.location.href);
+      final hasAuthCode =
+          uri.queryParameters.containsKey('code') &&
+              uri.queryParameters.containsKey('state');
+
+      if (hasAuthCode) {
+        if (existingToken != null && existingToken.isNotEmpty) {
+          _clearAuthCallbackParams(uri);
+          await _refreshSession();
+          return;
+        }
+
         await _handleAuthCallback();
         return;
       }
 
-      final existingToken = web.window.localStorage.getItem('auth_token');
       if (existingToken != null && existingToken.isNotEmpty) {
         await _refreshSession();
         return;
@@ -184,7 +194,7 @@ class AuthNotifier extends Notifier<AuthState> {
           web.window.localStorage.removeItem('pkce_code_verifier');
           await _session.saveToken(accessToken);
 
-          web.window.history.replaceState(null, '', AuthConfig.redirectUri);
+          _clearAuthCallbackParams(uri);
 
           state = state.copyWith(
             isLoading: false,
@@ -204,6 +214,20 @@ class AuthNotifier extends Notifier<AuthState> {
         lastError: e.toString(),
       );
     }
+  }
+
+  void _clearAuthCallbackParams(Uri uri) {
+    final cleanedParams = Map<String, String>.from(uri.queryParameters)
+      ..remove('code')
+      ..remove('state');
+
+    final cleanedUri = Uri(
+      path: uri.path,
+      queryParameters: cleanedParams.isEmpty ? null : cleanedParams,
+      fragment: uri.fragment,
+    );
+
+    web.window.history.replaceState(null, '', cleanedUri.toString());
   }
 
   Future<void> _refreshSession() async {
