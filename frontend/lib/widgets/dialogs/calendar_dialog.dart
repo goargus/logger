@@ -390,21 +390,41 @@ class _CalendarDialogState extends State<CalendarDialog> {
                 ),
               ),
             const SizedBox(height: 12),
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
+            Material(
+              color: Theme.of(context).colorScheme.primary,
+              borderRadius: BorderRadius.circular(8),
+              child: InkWell(
                 borderRadius: BorderRadius.circular(8),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.today, size: 16, color: Colors.white),
-                  const SizedBox(width: 8),
-                  Text('Hoy: $today',
-                      style: const TextStyle(color: Colors.white)),
-                ],
+                mouseCursor: SystemMouseCursors.click,
+                onTap: () {
+                  final now = DateTime.now();
+                  final todayDate = DateTime(now.year, now.month, now.day);
+                  final isWithinRange = _isWithinSelectableRange(todayDate);
+
+                  setState(() {
+                    _focusedMonth =
+                        DateTime(todayDate.year, todayDate.month);
+                    if (isWithinRange) {
+                      _selected = todayDate;
+                    }
+                  });
+
+                  _loadAvailability();
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.today, size: 16, color: Colors.white),
+                      const SizedBox(width: 8),
+                      Text('Hoy: $today',
+                          style: const TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 12),
