@@ -27,15 +27,16 @@ class ActivitiesListNotifier extends AsyncNotifier<ActivitiesListState> {
       search: filterParams.search,
     );
 
-    final items = (data['items'] as List)
+    final items = (data['data'] as List)
         .map((e) => Activity.fromApi(e as Map<String, dynamic>))
         .toList();
+    final pagination = data['pagination'] as Map<String, dynamic>;
 
     return currentState.copyWith(
       items: items,
-      total: data['total'] as int,
-      page: data['page'] as int,
-      limit: data['limit'] as int,
+      total: pagination['total'] as int,
+      page: pagination['page'] as int,
+      limit: pagination['limit'] as int,
     );
   }
 
