@@ -5,35 +5,28 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository, FindOptionsWhere } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Activity } from './activity.entity';
 import { CreateActivityDto } from './dto/create-activity.dto';
 import { UpdateActivityDto } from './dto/update-activity.dto';
 import { ActivityStatus } from './activity-status.enum';
 import { ActivityType } from '../activities-type/activity-type.entity';
-import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
-import { ReportingPeriodStatus } from '../reporting-periods/reporting-period-status.enum';
 import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
-import { formatDateToString, isDateInRange } from '../common/date.utils';
+import { formatDateToString } from '../common/date.utils';
 import { normalizePagination } from '../common/pagination';
-import { ReportingPeriodException } from '../reporting-periods/reporting-period-exception.entity';
 import { User } from '../users/user.entity';
-import { ReportingPeriodsService } from '../reporting-periods/reporting-periods.service';
+import { LockService } from '../periods/lock.service';
 
 @Injectable()
 export class ActivitiesService {
   constructor(
     @InjectRepository(Activity) private readonly repo: Repository<Activity>,
     @InjectRepository(ActivityType) private readonly typesRepo: Repository<ActivityType>,
-    @InjectRepository(ReportingPeriod)
-    private readonly reportingPeriodsRepo: Repository<ReportingPeriod>,
-    @InjectRepository(ReportingPeriodException)
-    private readonly exceptionsRepo: Repository<ReportingPeriodException>,
     @InjectRepository(UserRoleAssignment)
     private readonly uraRepo: Repository<UserRoleAssignment>,
     @InjectRepository(User)
     private readonly usersRepo: Repository<User>,
-    private readonly reportingPeriodsService: ReportingPeriodsService,
+    private readonly lockService: LockService,
   ) {}
 
   private ensureOwnershipOrThrow(activity: Activity, userId: string) {
@@ -64,92 +57,6 @@ export class ActivitiesService {
       return date;
     }
     return formatDateToString(new Date(date));
-  }
-
-  private async findLockedPeriodForDate(
-    entityId: string,
-    date: string,
-  ): Promise<ReportingPeriod | null> {
-    return this.reportingPeriodsRepo
-      .createQueryBuilder('period')
-      .where('period.entity_id = :entityId', { entityId })
-      .andWhere('period.status = :status', { status: ReportingPeriodStatus.LOCKED })
-      .andWhere('period.startDate <= :date AND period.endDate >= :date', { date })
-      .getOne();
-  }
-
-  private async resolveReportingPeriodForDate(
-    userId: string,
-    date: string,
-    operation: 'create' | 'move' = 'create',
-  ): Promise<ReportingPeriod> {
-    const entityId = await this.getUserEntityId(userId);
-
-    let activePeriod = await this.reportingPeriodsRepo.findOne({
-      where: { entityId, status: ReportingPeriodStatus.ACTIVE },
-    });
-
-    if (!activePeriod) {
-      activePeriod = await this.reportingPeriodsService.ensureCurrentPeriodForEntity(
-        entityId,
-        userId,
-      );
-    }
-
-    if (isDateInRange(date, activePeriod.startDate, activePeriod.endDate)) {
-      return activePeriod;
-    }
-
-    const lockedPeriod = await this.findLockedPeriodForDate(entityId, date);
-    if (!lockedPeriod) {
-      throw new ForbiddenException(`Cannot ${operation} activity outside active reporting period`);
-    }
-
-    const hasException = await this.exceptionsRepo.findOne({
-      where: {
-        userId,
-        reportingPeriodId: lockedPeriod.id,
-      },
-    });
-
-    if (!hasException) {
-      throw new ForbiddenException(`Cannot ${operation} activity in a locked reporting period`);
-    }
-
-    const { startDate, endDate } = hasException;
-    if (!isDateInRange(date, startDate, endDate)) {
-      throw new ForbiddenException(`Cannot ${operation} activity in a locked reporting period`);
-    }
-
-    return lockedPeriod;
-  }
-
-  private async ensureActivityNotLocked(activity: Activity, userId: string): Promise<void> {
-    if (activity.reportingPeriodId) {
-      const reportingPeriod = await this.reportingPeriodsRepo.findOne({
-        where: { id: activity.reportingPeriodId },
-      });
-      if (reportingPeriod && reportingPeriod.status === ReportingPeriodStatus.LOCKED) {
-        const hasException = await this.exceptionsRepo.findOne({
-          where: {
-            userId,
-            reportingPeriodId: activity.reportingPeriodId,
-          },
-        });
-
-        if (hasException) {
-          const activityDate = activity.activityDate;
-          const { startDate, endDate } = hasException;
-          if (activityDate >= startDate && activityDate <= endDate) {
-            return;
-          }
-        }
-
-        throw new ForbiddenException(
-          'This activity is locked because its reporting period has ended',
-        );
-      }
-    }
   }
 
   async canUserSubmitActivityType(userId: string, activityTypeId: string): Promise<boolean> {
@@ -191,7 +98,16 @@ export class ActivitiesService {
     }
 
     const activityDate = this.normalizeDateString(dto.activityDate);
-    const reportingPeriod = await this.resolveReportingPeriodForDate(actorUserId, activityDate);
+
+    const entityId = await this.getUserEntityId(actorUserId);
+    const available = await this.lockService.isDateAvailableForUser(
+      entityId,
+      actorUserId,
+      activityDate,
+    );
+    if (!available) {
+      throw new ForbiddenException('Activity date is locked');
+    }
 
     const entity = this.repo.create({
       activityTypeId: dto.activityTypeId,
@@ -199,7 +115,6 @@ export class ActivitiesService {
       description: dto.description ?? null,
       hasExpense: dto.hasExpense,
       expenseAmount: dto.hasExpense ? dto.expenseAmount : null,
-      reportingPeriodId: reportingPeriod?.id ?? null,
       userId: actorUserId,
       createdBy: actorUserId,
       updatedBy: actorUserId,
@@ -287,7 +202,15 @@ export class ActivitiesService {
     if (!a) throw new NotFoundException('Activity not found.');
     this.ensureOwnershipOrThrow(a, userId);
 
-    await this.ensureActivityNotLocked(a, userId);
+    const entityId = await this.getUserEntityId(userId);
+    const available = await this.lockService.isDateAvailableForUser(
+      entityId,
+      userId,
+      a.activityDate,
+    );
+    if (!available) {
+      throw new ForbiddenException('Activity date is locked');
+    }
 
     if (dto.activityTypeId) {
       await this.ensureTypeOrThrow(dto.activityTypeId);
@@ -300,8 +223,14 @@ export class ActivitiesService {
 
     if (dto.activityDate && dto.activityDate !== a.activityDate) {
       const activityDate = this.normalizeDateString(dto.activityDate);
-      const newReportingPeriod = await this.resolveReportingPeriodForDate(userId, activityDate, 'move');
-      a.reportingPeriodId = newReportingPeriod.id;
+      const newDateAvailable = await this.lockService.isDateAvailableForUser(
+        entityId,
+        userId,
+        activityDate,
+      );
+      if (!newDateAvailable) {
+        throw new ForbiddenException('Activity date is locked');
+      }
       a.activityDate = activityDate;
     }
 
@@ -330,7 +259,15 @@ export class ActivitiesService {
     if (!a) throw new NotFoundException('Activity not found.');
     this.ensureOwnershipOrThrow(a, userId);
 
-    await this.ensureActivityNotLocked(a, userId);
+    const entityId = await this.getUserEntityId(userId);
+    const available = await this.lockService.isDateAvailableForUser(
+      entityId,
+      userId,
+      a.activityDate,
+    );
+    if (!available) {
+      throw new ForbiddenException('Activity date is locked');
+    }
 
     a.status = ActivityStatus.ARCHIVED;
     a.archivedAt = new Date();

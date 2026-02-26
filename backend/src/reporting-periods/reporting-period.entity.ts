@@ -5,13 +5,11 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
-  OneToMany,
   ManyToOne,
   JoinColumn,
   Check,
 } from 'typeorm';
 import { ReportingPeriodStatus } from './reporting-period-status.enum';
-import { Activity } from '../activity/activity.entity';
 import { Entity as OrganizationalEntity } from '../entities/entity.entity';
 
 @Entity({ name: 'reporting_period' })
@@ -47,9 +45,6 @@ export class ReportingPeriod {
 
   @Column({ type: 'enum', enum: ReportingPeriodStatus, default: ReportingPeriodStatus.ACTIVE })
   status!: ReportingPeriodStatus;
-
-  @OneToMany(() => Activity, (activity) => activity.reportingPeriod)
-  activities!: Activity[];
 
   @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
   createdAt!: Date;
