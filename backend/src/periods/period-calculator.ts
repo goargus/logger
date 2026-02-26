@@ -22,6 +22,7 @@ const SPANISH_MONTHS = [
   'Diciembre',
 ];
 
+// month is 1-based; Date(year, month, 0) gives last day of that month
 function daysInMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate();
 }
@@ -44,7 +45,11 @@ function parseDate(dateStr: string): { year: number; month: number; day: number 
 }
 
 export class PeriodCalculator {
-  constructor(private readonly periodFrequency: number) {}
+  constructor(private readonly periodFrequency: number) {
+    if (!Number.isInteger(periodFrequency) || periodFrequency < 1) {
+      throw new Error('periodFrequency must be a positive integer');
+    }
+  }
 
   computePeriod(dateStr: string): PeriodInfo {
     const { year, month, day } = parseDate(dateStr);
