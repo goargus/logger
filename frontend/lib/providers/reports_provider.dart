@@ -53,6 +53,10 @@ class ReportsState {
   }
 }
 
-final reportsProvider = StateProvider<ReportsState>((ref) {
-  return ReportsState.initial();
-});
+class ReportsNotifier extends Notifier<ReportsState> {
+  @override
+  ReportsState build() => ReportsState.initial();
+}
+
+final reportsProvider =
+    NotifierProvider<ReportsNotifier, ReportsState>(ReportsNotifier.new);

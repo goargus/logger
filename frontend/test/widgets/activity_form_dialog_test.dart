@@ -29,7 +29,7 @@ Widget _buildFormDialogTest({
 }) {
   return ProviderScope(
     overrides: [
-      authNotifierProvider.overrideWith((_) => FakeAuthNotifier(authState)),
+      authNotifierProvider.overrideWith(() => FakeAuthNotifier(authState)),
     ],
     child: MaterialApp(
       home: Scaffold(

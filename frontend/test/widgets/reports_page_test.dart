@@ -30,7 +30,7 @@ class FakeAuthNotifier extends AuthNotifier {
 Widget _buildReportsTest({required AuthState authState}) {
   return ProviderScope(
     overrides: [
-      authNotifierProvider.overrideWith((_) => FakeAuthNotifier(authState)),
+      authNotifierProvider.overrideWith(() => FakeAuthNotifier(authState)),
     ],
     child: const MaterialApp(
       home: Scaffold(body: ReportsPage()),
