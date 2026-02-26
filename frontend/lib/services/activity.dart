@@ -63,7 +63,7 @@ class ActivityService {
       },
     );
 
-    final items = data['items'] as List<dynamic>;
+    final items = data['data'] as List<dynamic>;
     return items.cast<Map<String, dynamic>>();
   }
 
