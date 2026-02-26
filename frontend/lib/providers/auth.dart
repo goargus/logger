@@ -14,6 +14,7 @@ import '../services/user.dart';
 import '../auth/session.dart';
 import '../auth/session_interface.dart';
 
+import '../utils/url_utils.dart';
 import 'auth_state.dart';
 export 'auth_state.dart';
 
@@ -216,17 +217,7 @@ class AuthNotifier extends Notifier<AuthState> {
   }
 
   void _clearAuthCallbackParams(Uri uri) {
-    final cleanedParams = Map<String, String>.from(uri.queryParameters)
-      ..remove('code')
-      ..remove('state');
-
-    final cleanedUri = Uri(
-      path: uri.path,
-      queryParameters: cleanedParams.isEmpty ? null : cleanedParams,
-      fragment: uri.fragment,
-    );
-
-    web.window.history.replaceState(null, '', cleanedUri.toString());
+    web.window.history.replaceState(null, '', stripAuthCallbackParams(uri));
   }
 
   Future<void> _refreshSession() async {

@@ -26,8 +26,7 @@ class AvailabilityResponse {
   final DateRange? currentPeriod;
   final List<DateRange> availableDates;
 
-  AvailabilityResponse(
-      {required this.currentPeriod, required this.availableDates});
+  AvailabilityResponse({required this.currentPeriod, required this.availableDates});
 
   factory AvailabilityResponse.fromJson(Map<String, dynamic> json) {
     return AvailabilityResponse(

@@ -1,4 +1,4 @@
-import 'package:flutter_riverpod/legacy.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/report_summary.dart';
 import '../models/report_breakdown.dart';
 
@@ -53,6 +53,10 @@ class ReportsState {
   }
 }
 
-final reportsProvider = StateProvider<ReportsState>((ref) {
-  return ReportsState.initial();
-});
+class ReportsNotifier extends Notifier<ReportsState> {
+  @override
+  ReportsState build() => ReportsState.initial();
+}
+
+final reportsProvider =
+    NotifierProvider<ReportsNotifier, ReportsState>(ReportsNotifier.new);
