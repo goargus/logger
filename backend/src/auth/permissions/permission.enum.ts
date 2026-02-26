@@ -2,7 +2,7 @@
  * Permission enum - defines all granular permissions in the system.
  * Follows the pattern: {resource}:{action}:{scope}
  *
- * Resources: activity, report, entity, user, role, activity-type, reporting-period, system
+ * Resources: activity, report, entity, user, role, activity-type, system
  * Actions: create, read, update, delete, view, manage
  * Scope: own (self only), hierarchy (entity and children), all (global)
  */
@@ -33,10 +33,6 @@ export enum Permission {
 
   // Activity Type permissions
   ACTIVITY_TYPE_READ = 'activity-type:read',
-
-  // Reporting Period permissions
-  REPORTING_PERIOD_READ = 'reporting-period:read',
-  REPORTING_PERIOD_READ_HIERARCHY = 'reporting-period:read:hierarchy',
 
   // System permissions
   SYSTEM_ADMIN = 'system:admin',

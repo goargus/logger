@@ -9,7 +9,6 @@ import { Role } from '../roles/role.entity';
 import { RolePermission } from '../roles/role-permission.entity';
 import { Action } from './types';
 import { Activity } from '../activity/activity.entity';
-import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
 import { ActivityType } from '../activities-type/activity-type.entity';
 import { Permission } from '../auth/permissions/permission.enum';
 
@@ -101,7 +100,6 @@ describe('CaslAbilityFactory', () => {
               Permission.ACTIVITY_READ_HIERARCHY,
               Permission.ENTITY_READ_HIERARCHY,
               Permission.USER_READ_HIERARCHY,
-              Permission.REPORTING_PERIOD_READ_HIERARCHY,
               Permission.ROLE_READ,
               Permission.ACTIVITY_TYPE_READ,
               Permission.ENTITY_UPDATE_OWN,
@@ -123,7 +121,6 @@ describe('CaslAbilityFactory', () => {
       const ability = await factory.createForUser(user);
 
       expect(ability.can(Action.Read, Activity)).toBe(true);
-      expect(ability.can(Action.Read, ReportingPeriod)).toBe(true);
       expect(ability.can(Action.Read, Entity)).toBe(true);
       expect(ability.can(Action.Update, Entity)).toBe(true);
       expect(ability.cannot(Action.Delete, Entity)).toBe(true);
@@ -140,7 +137,6 @@ describe('CaslAbilityFactory', () => {
               Permission.ACTIVITY_READ_HIERARCHY,
               Permission.ENTITY_READ_HIERARCHY,
               Permission.USER_READ_HIERARCHY,
-              Permission.REPORTING_PERIOD_READ_HIERARCHY,
               Permission.ROLE_READ,
               Permission.ACTIVITY_TYPE_READ,
               Permission.ACTIVITY_MANAGE_HIERARCHY,
@@ -183,7 +179,6 @@ describe('CaslAbilityFactory', () => {
               Permission.USER_READ_OWN,
               Permission.ACTIVITY_TYPE_READ,
               Permission.ENTITY_READ,
-              Permission.REPORTING_PERIOD_READ,
             ]),
             entity: { id: 'field-1' } as Entity,
             user: { id: 'user-1' } as User,
@@ -220,7 +215,6 @@ describe('CaslAbilityFactory', () => {
               Permission.ACTIVITY_READ_HIERARCHY,
               Permission.ENTITY_READ_HIERARCHY,
               Permission.USER_READ_HIERARCHY,
-              Permission.REPORTING_PERIOD_READ_HIERARCHY,
               Permission.ROLE_READ,
               Permission.ACTIVITY_TYPE_READ,
             ]),
@@ -279,7 +273,6 @@ describe('CaslAbilityFactory', () => {
               Permission.ACTIVITY_READ_HIERARCHY,
               Permission.ENTITY_READ_HIERARCHY,
               Permission.USER_READ_HIERARCHY,
-              Permission.REPORTING_PERIOD_READ_HIERARCHY,
               Permission.ROLE_READ,
               Permission.ACTIVITY_TYPE_READ,
               Permission.ACTIVITY_MANAGE_HIERARCHY,
@@ -301,7 +294,6 @@ describe('CaslAbilityFactory', () => {
               Permission.USER_READ_OWN,
               Permission.ACTIVITY_TYPE_READ,
               Permission.ENTITY_READ,
-              Permission.REPORTING_PERIOD_READ,
             ]),
             entity: { id: 'field-2' } as Entity,
             user: { id: 'user-1' } as User,
@@ -483,7 +475,7 @@ describe('CaslAbilityFactory', () => {
         expect(ability.cannot(Action.Read, otherUser)).toBe(true);
       });
 
-      it.skip('should allow Missionary to read entity and reporting period of their field', async () => {
+      it.skip('should allow Missionary to read entity of their field', async () => {
         const user: UserWithRoles = {
           id: 'user-1',
           roleAssignments: [
@@ -510,13 +502,8 @@ describe('CaslAbilityFactory', () => {
         const ownEntity = { id: 'field-1' } as Entity;
         const otherEntity = { id: 'field-2' } as Entity;
 
-        const ownPeriod = { entityId: 'field-1' } as ReportingPeriod;
-        const otherPeriod = { entityId: 'field-2' } as ReportingPeriod;
-
         expect(ability.can(Action.Read, ownEntity)).toBe(true);
         expect(ability.cannot(Action.Read, otherEntity)).toBe(true);
-        expect(ability.can(Action.Read, ownPeriod)).toBe(true);
-        expect(ability.cannot(Action.Read, otherPeriod)).toBe(true);
       });
     });
 
@@ -709,40 +696,6 @@ describe('CaslAbilityFactory', () => {
         expect(ability.cannot(Action.Read, activityOutOfHierarchy)).toBe(true);
       });
 
-      it.skip('should allow Field Director to read reporting periods in their hierarchy', async () => {
-        const user: UserWithRoles = {
-          id: 'user-1',
-          roleAssignments: [
-            {
-              id: 'ra-1',
-              role: {
-                id: 'role-1',
-                name: 'Field Director',
-                rolePermissions: [],
-                get permissions() { return [Permission.REPORT_VIEW_HIERARCHY, Permission.ACTIVITY_READ_HIERARCHY, Permission.ENTITY_READ_HIERARCHY, Permission.ENTITY_UPDATE_OWN]; },
-              } as unknown as Role,
-              entity: { id: 'field-1' } as Entity,
-              user: { id: 'user-1' } as User,
-              start_date: '2024-01-01',
-              end_date: '2025-12-31',
-            } as UserRoleAssignment,
-          ],
-        } as UserWithRoles;
-
-        mockEntityRepo.find.mockResolvedValue([]);
-
-        const ability = await factory.createForUser(user);
-
-        const periodInScope = {
-          entityId: 'field-1',
-        } as Partial<ReportingPeriod> as ReportingPeriod;
-        const periodOutOfScope = {
-          entityId: 'field-2',
-        } as Partial<ReportingPeriod> as ReportingPeriod;
-
-        expect(ability.can(Action.Read, periodInScope)).toBe(true);
-        expect(ability.cannot(Action.Read, periodOutOfScope)).toBe(true);
-      });
     });
 
     describe('Combined Permissions from Multiple Roles', () => {

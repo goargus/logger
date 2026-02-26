@@ -7,7 +7,6 @@ import { User } from '../users/user.entity';
 import { UserRoleAssignment } from '../roles/user-role-assignment.entity';
 import { Entity } from '../entities/entity.entity';
 import { Activity } from '../activity/activity.entity';
-import { ReportingPeriod } from '../reporting-periods/reporting-period.entity';
 import { Role } from '../roles/role.entity';
 import { ActivityType } from '../activities-type/activity-type.entity';
 import { getCurrentDateString, isDateInRange } from '../common/date.utils';
@@ -79,11 +78,6 @@ export class CaslAbilityFactory {
         can(Action.Delete, Activity, { entityId: { $in: accessibleEntityIds } } as never);
       }
 
-      // Report permissions (maps to reading activities/periods in hierarchy)
-      if (permissions.has(Permission.REPORT_VIEW_HIERARCHY)) {
-        can(Action.Read, ReportingPeriod, { entityId: { $in: accessibleEntityIds } } as never);
-      }
-
       // Entity permissions
       if (permissions.has(Permission.ENTITY_READ)) {
         can(Action.Read, Entity, { id: entityId } as never);
@@ -116,13 +110,6 @@ export class CaslAbilityFactory {
         can(Action.Read, ActivityType);
       }
 
-      // Reporting Period permissions
-      if (permissions.has(Permission.REPORTING_PERIOD_READ)) {
-        can(Action.Read, ReportingPeriod, { entityId: entityId } as never);
-      }
-      if (permissions.has(Permission.REPORTING_PERIOD_READ_HIERARCHY)) {
-        can(Action.Read, ReportingPeriod, { entityId: { $in: accessibleEntityIds } } as never);
-      }
     }
 
     return build();
