@@ -128,7 +128,7 @@ class _ActivityFiltersState extends ConsumerState<ActivityFilters> {
               child: ConstrainedBox(
                 constraints: const BoxConstraints(
                   maxWidth: 400,
-                  maxHeight: 500,
+                  maxHeight: 700,
                 ),
                 child: child,
               ),

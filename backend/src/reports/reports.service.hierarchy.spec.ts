@@ -63,7 +63,7 @@ describe('ReportsService - Hierarchy Features', () => {
   ] as unknown as Activity[];
 
   const mockSummaryResponse = {
-    period: { id: '', startDate: '2024-01-01', endDate: '2024-01-14', status: 'custom' },
+    period: { id: '', startDate: '2024-01-01', endDate: '2024-01-14', status: 'locked' },
     scope: 'entity' as const,
     entity: { id: 'entity-1', name: 'Test Union', type: 'UNION' },
     totals: {

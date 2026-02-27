@@ -37,7 +37,7 @@ class ReportSummary {
       isReported: isReported,
       periodStart: period['startDate'] as String? ?? '',
       periodEnd: period['endDate'] as String? ?? '',
-      status: period['status'] as String? ?? 'Activo',
+      status: period['status'] as String? ?? 'active',
     );
   }
 
@@ -48,7 +48,7 @@ class ReportSummary {
       isReported: false,
       periodStart: '',
       periodEnd: '',
-      status: 'Activo',
+      status: 'active',
     );
   }
 }

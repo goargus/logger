@@ -152,6 +152,33 @@ export class ActivitiesController {
     };
   }
 
+  @Get('stats/monthly-expenses')
+  @ApiOperation({ summary: 'Get monthly expense total for the current user' })
+  @ApiResponse({ status: 200, description: 'Monthly expense total' })
+  @ApiQuery({
+    name: 'year',
+    required: false,
+    type: Number,
+    description: 'Year (default: current year)',
+  })
+  @ApiQuery({
+    name: 'month',
+    required: false,
+    type: Number,
+    description: 'Month 1-12 (default: current month)',
+  })
+  async getMonthlyExpenses(
+    @Req() req: Request,
+    @Query('year', new DefaultValuePipe(new Date().getFullYear()), ParseIntPipe) year: number,
+    @Query('month', new DefaultValuePipe(new Date().getMonth() + 1), ParseIntPipe) month: number,
+  ) {
+    const { sub, iss } = (req.user as any) ?? {};
+    const user = await this.identity.resolveUserBySubAndIssuer(sub, iss);
+
+    const total = await this.activities.getMonthlyExpenseTotal(user.id, year, month);
+    return { total, year, month };
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a single activity by ID' })
   @ApiResponse({ status: 200, description: 'Activity details', type: ActivityResponseDto })
@@ -218,32 +245,5 @@ export class ActivitiesController {
 
     await this.activities.archiveMine(id, user.id);
     return { ok: true };
-  }
-
-  @Get('stats/monthly-expenses')
-  @ApiOperation({ summary: 'Get monthly expense total for the current user' })
-  @ApiResponse({ status: 200, description: 'Monthly expense total' })
-  @ApiQuery({
-    name: 'year',
-    required: false,
-    type: Number,
-    description: 'Year (default: current year)',
-  })
-  @ApiQuery({
-    name: 'month',
-    required: false,
-    type: Number,
-    description: 'Month 1-12 (default: current month)',
-  })
-  async getMonthlyExpenses(
-    @Req() req: Request,
-    @Query('year', new DefaultValuePipe(new Date().getFullYear()), ParseIntPipe) year: number,
-    @Query('month', new DefaultValuePipe(new Date().getMonth() + 1), ParseIntPipe) month: number,
-  ) {
-    const { sub, iss } = (req.user as any) ?? {};
-    const user = await this.identity.resolveUserBySubAndIssuer(sub, iss);
-
-    const total = await this.activities.getMonthlyExpenseTotal(user.id, year, month);
-    return { total, year, month };
   }
 }
