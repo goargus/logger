@@ -29,6 +29,36 @@ class AuthNotifier extends Notifier<AuthState> {
   bool _bootstrapped = false;
   bool _isRedirecting = false;
 
+  String _friendlyAuthError(Object error) {
+    final message = error.toString().toLowerCase();
+
+    if (message.contains('pkce') ||
+        message.contains('authorization code') ||
+        message.contains('authentication flow') ||
+        message.contains('no token found')) {
+      return 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.';
+    }
+
+    if (message.contains('exchange code') ||
+        message.contains('failed to exchange') ||
+        message.contains('oauth/token')) {
+      return 'No pudimos iniciar sesión. Por favor, inténtalo de nuevo.';
+    }
+
+    if (message.contains('auth0') ||
+        message.contains('not configured') ||
+        message.contains('dart-define')) {
+      return 'La autenticación no está disponible en este momento.';
+    }
+
+    return 'Ocurrió un problema al iniciar sesión. Por favor, inténtalo de nuevo.';
+  }
+
+  String _authError(Object error) {
+    debugPrint('[AuthNotifier] Auth error: $error');
+    return _friendlyAuthError(error);
+  }
+
   @override
   AuthState build() {
     _bootstrapped = false;
@@ -59,8 +89,8 @@ class AuthNotifier extends Notifier<AuthState> {
     if (!AuthConfig.isConfigured) {
       state = state.copyWith(
         isLoading: false,
-        lastError:
-            'Auth0 no está configurado. Revisa tus --dart-define en auth_config.dart',
+        lastError: _friendlyAuthError(
+            'Auth0 no está configurado. Revisa tus --dart-define en auth_config.dart'),
       );
       return;
     }
@@ -96,7 +126,7 @@ class AuthNotifier extends Notifier<AuthState> {
       state = state.copyWith(
         isLoading: false,
         isAuthenticated: false,
-        lastError: e.toString(),
+        lastError: _authError(e),
       );
     }
   }
@@ -211,7 +241,7 @@ class AuthNotifier extends Notifier<AuthState> {
       state = state.copyWith(
         isLoading: false,
         isAuthenticated: false,
-        lastError: e.toString(),
+        lastError: _authError(e),
       );
     }
   }
@@ -266,7 +296,7 @@ class AuthNotifier extends Notifier<AuthState> {
       state = state.copyWith(
         isLoading: false,
         isAuthenticated: false,
-        lastError: e.toString(),
+        lastError: _authError(e),
       );
     }
   }
@@ -298,7 +328,7 @@ class AuthNotifier extends Notifier<AuthState> {
       web.window.location.assign(authUrl.toString());
     } catch (e) {
       _isRedirecting = false;
-      state = state.copyWith(lastError: e.toString());
+      state = state.copyWith(lastError: _authError(e));
     }
   }
 
@@ -316,7 +346,7 @@ class AuthNotifier extends Notifier<AuthState> {
       state = state.copyWith(accessToken: accessToken);
       return accessToken;
     } catch (e) {
-      state = state.copyWith(lastError: e.toString());
+      state = state.copyWith(lastError: _authError(e));
       return null;
     }
   }
