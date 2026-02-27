@@ -11,8 +11,10 @@ import '../widgets/reports/enhanced_time_selector.dart';
 import '../widgets/reports/users_report_table.dart';
 import '../widgets/reports/activity_distribution_chart.dart';
 import '../models/users_report.dart';
+import '../models/compliance_report.dart';
 import '../providers/hierarchy_reports_provider.dart';
 import '../providers/auth.dart';
+import '../services/pdf_service.dart';
 import '../utils/currency_formatter.dart';
 
 /// Content-only widget for hierarchy reports - shell is handled by AppShell via router
@@ -352,6 +354,69 @@ class _HierarchyReportsContentState
     String reportType,
     HierarchyReportsState state,
   ) async {
+    if (format == 'pdf') {
+      if (state.summary == null) {
+        throw Exception('No hay datos para exportar');
+      }
+
+      final pdfService = PdfService();
+      final authState = ref.read(authNotifierProvider);
+      final requestorName = _resolveRequestorName(authState.user);
+      final currencySymbol = ref.read(currencySymbolProvider);
+      final now = DateTime.now();
+      final dateStamp =
+          '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
+
+      switch (reportType) {
+        case 'activities':
+          if (state.activityBreakdown.isEmpty) {
+            throw Exception('No hay actividades para exportar');
+          }
+          final bytes = await pdfService.generateActivitiesBreakdownReport(
+            breakdowns: state.activityBreakdown,
+            summary: state.summary!,
+            periodStart: state.periodStart,
+            periodEnd: state.periodEnd,
+            currencySymbol: currencySymbol,
+            requestorName: requestorName,
+          );
+          return ExportData.fromBytes(
+            bytes,
+            'reporte_actividades_$dateStamp.pdf',
+            'application/pdf',
+          );
+        case 'summary':
+          final bytes = await pdfService.generateSummaryReport(
+            summary: state.summary!,
+            periodStart: state.periodStart,
+            periodEnd: state.periodEnd,
+            currencySymbol: currencySymbol,
+            requestorName: requestorName,
+          );
+          return ExportData.fromBytes(
+            bytes,
+            'reporte_resumen_$dateStamp.pdf',
+            'application/pdf',
+          );
+        case 'compliance':
+          final compliance = state.compliance ?? ComplianceResponse.empty();
+          final bytes = await pdfService.generateComplianceReport(
+            compliance: compliance,
+            entityName: state.summary!.entityName,
+            periodStart: state.periodStart,
+            periodEnd: state.periodEnd,
+            requestorName: requestorName,
+          );
+          return ExportData.fromBytes(
+            bytes,
+            'reporte_cumplimiento_$dateStamp.pdf',
+            'application/pdf',
+          );
+        default:
+          throw Exception('Tipo de reporte no soportado');
+      }
+    }
+
     final reportsService = ref.read(reportsServiceProvider);
 
     final response = await reportsService.exportReport(
@@ -367,6 +432,16 @@ class _HierarchyReportsContentState
       response.filename,
       response.contentType,
     );
+  }
+
+  String? _resolveRequestorName(Map<String, dynamic>? user) {
+    if (user == null) return null;
+    return user['full_name'] as String? ??
+        user['first_name'] as String? ??
+        user['name'] as String? ??
+        user['nickname'] as String? ??
+        user['username'] as String? ??
+        user['email'] as String?;
   }
 
   String _formatDateForApi(DateTime date) {
