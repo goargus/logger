@@ -25,6 +25,10 @@ class ActivitiesListNotifier extends AsyncNotifier<ActivitiesListState> {
       activityTypeId: filterParams.activityTypeId,
       hasExpense: filterParams.hasExpense,
       search: filterParams.search,
+      sortBy: currentState.sortBy,
+      sortOrder: currentState.sortBy != null
+          ? (currentState.sortAscending ? 'ASC' : 'DESC')
+          : null,
     );
 
     final items = (data['data'] as List)
@@ -70,6 +74,17 @@ class ActivitiesListNotifier extends AsyncNotifier<ActivitiesListState> {
     if (state.value?.hasPreviousPage ?? false) {
       await setPage(state.value!.page - 1);
     }
+  }
+
+  Future<void> setSort(String sortBy, bool ascending) async {
+    if (state.value == null) return;
+    state = const AsyncLoading();
+    final newState = state.value!.copyWith(
+      sortBy: sortBy,
+      sortAscending: ascending,
+      page: 1,
+    );
+    state = await AsyncValue.guard(() => _fetchActivities(newState));
   }
 
   Future<void> refresh() async {

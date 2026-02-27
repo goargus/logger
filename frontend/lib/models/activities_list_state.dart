@@ -8,6 +8,8 @@ class ActivitiesListState {
   final int total;
   final ActivitiesFilter filter;
   final TimePreset? selectedPreset;
+  final String? sortBy;
+  final bool sortAscending;
 
   const ActivitiesListState({
     required this.items,
@@ -16,6 +18,8 @@ class ActivitiesListState {
     required this.total,
     required this.filter,
     this.selectedPreset,
+    this.sortBy,
+    this.sortAscending = false,
   });
 
   factory ActivitiesListState.initial() {
@@ -45,6 +49,9 @@ class ActivitiesListState {
     ActivitiesFilter? filter,
     TimePreset? selectedPreset,
     bool clearPreset = false,
+    String? sortBy,
+    bool? sortAscending,
+    bool clearSort = false,
   }) {
     return ActivitiesListState(
       items: items ?? this.items,
@@ -54,6 +61,8 @@ class ActivitiesListState {
       filter: filter ?? this.filter,
       selectedPreset:
           clearPreset ? null : (selectedPreset ?? this.selectedPreset),
+      sortBy: clearSort ? null : (sortBy ?? this.sortBy),
+      sortAscending: sortAscending ?? this.sortAscending,
     );
   }
 }

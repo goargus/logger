@@ -101,6 +101,18 @@ export class ActivitiesController {
     required: false,
     description: 'Search by description or activity type name',
   })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    enum: ['activityDate', 'activityType', 'description', 'expenseAmount'],
+    description: 'Column to sort by (default: activityDate)',
+  })
+  @ApiQuery({
+    name: 'sortOrder',
+    required: false,
+    enum: ['ASC', 'DESC'],
+    description: 'Sort direction (default: DESC)',
+  })
   async findMine(
     @Req() req: Request,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page = 1,
@@ -110,6 +122,8 @@ export class ActivitiesController {
     @Query('activityTypeId') activityTypeId?: string,
     @Query('hasExpense') hasExpense?: string,
     @Query('search') search?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: string,
   ) {
     const { sub, iss } = (req.user as any) ?? {};
     const user = await this.identity.resolveUserBySubAndIssuer(sub, iss);
@@ -120,6 +134,11 @@ export class ActivitiesController {
       activityTypeId: activityTypeId || undefined,
       hasExpense: hasExpense === 'true' ? true : hasExpense === 'false' ? false : undefined,
       search: search?.trim() || undefined,
+      sortBy: sortBy || undefined,
+      sortOrder: (sortOrder === 'ASC' ? 'ASC' : sortOrder === 'DESC' ? 'DESC' : undefined) as
+        | 'ASC'
+        | 'DESC'
+        | undefined,
     };
 
     const [items, total] = await this.activities.findMine(user.id, page, limit, filters);
