@@ -3,6 +3,10 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import '../models/activity.dart';
 import '../models/activities_filter.dart';
+import '../models/compliance_report.dart';
+import '../models/hierarchy_breakdown.dart';
+import '../models/report_breakdown.dart';
+import '../utils/currency_formatter.dart';
 
 class PdfService {
   Future<Uint8List> generateActivitiesReport({
@@ -50,6 +54,144 @@ class PdfService {
             )
           else
             _buildActivitiesTable(activities),
+        ],
+      ),
+    );
+
+    return pdf.save();
+  }
+
+  Future<Uint8List> generateSummaryReport({
+    required HierarchySummaryResponse summary,
+    required DateTime periodStart,
+    required DateTime periodEnd,
+    required String currencySymbol,
+    String? requestorName,
+  }) async {
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.letter,
+        margin: const pw.EdgeInsets.all(40),
+        header: (context) => _buildReportHeader(
+          title: 'Reporte de Resumen',
+          entityName: summary.entityName,
+          periodStart: periodStart,
+          periodEnd: periodEnd,
+          requestorName: requestorName,
+        ),
+        footer: (context) => _buildFooter(context),
+        build: (context) => [
+          pw.SizedBox(height: 20),
+          _buildSummarySection(
+            summary.totalActivities,
+            summary.usersSubmitted,
+            summary.totalExpenses,
+            currencySymbol: currencySymbol,
+            compliancePercent: summary.compliancePercent,
+            usersExpected: summary.usersExpected,
+          ),
+          pw.SizedBox(height: 24),
+          if (summary.hasHierarchyBreakdown)
+            _buildHierarchyBreakdownTable(
+              summary.hierarchyBreakdown,
+              currencySymbol: currencySymbol,
+            )
+          else
+            _buildEmptyState('No hay desglose de jerarquia disponible'),
+        ],
+      ),
+    );
+
+    return pdf.save();
+  }
+
+  Future<Uint8List> generateActivitiesBreakdownReport({
+    required List<ReportBreakdown> breakdowns,
+    required HierarchySummaryResponse summary,
+    required DateTime periodStart,
+    required DateTime periodEnd,
+    required String currencySymbol,
+    String? requestorName,
+  }) async {
+    final pdf = pw.Document();
+    final totalActivities =
+        breakdowns.fold<int>(0, (sum, item) => sum + item.count);
+    final totalExpenses = breakdowns.fold<double>(
+      0,
+      (sum, item) => sum + item.totalExpenses,
+    );
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.letter,
+        margin: const pw.EdgeInsets.all(40),
+        header: (context) => _buildReportHeader(
+          title: 'Reporte de Actividades',
+          entityName: summary.entityName,
+          periodStart: periodStart,
+          periodEnd: periodEnd,
+          requestorName: requestorName,
+        ),
+        footer: (context) => _buildFooter(context),
+        build: (context) => [
+          pw.SizedBox(height: 20),
+          _buildActivitiesBreakdownSummary(
+            totalActivities,
+            totalExpenses,
+            currencySymbol,
+          ),
+          pw.SizedBox(height: 24),
+          if (breakdowns.isEmpty)
+            _buildEmptyState('No hay actividades para mostrar')
+          else
+            _buildActivitiesBreakdownTable(breakdowns, currencySymbol),
+        ],
+      ),
+    );
+
+    return pdf.save();
+  }
+
+  Future<Uint8List> generateComplianceReport({
+    required ComplianceResponse compliance,
+    required String entityName,
+    required DateTime periodStart,
+    required DateTime periodEnd,
+    String? requestorName,
+  }) async {
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.letter,
+        margin: const pw.EdgeInsets.all(40),
+        header: (context) => _buildReportHeader(
+          title: 'Reporte de Cumplimiento',
+          entityName: entityName,
+          periodStart: periodStart,
+          periodEnd: periodEnd,
+          requestorName: requestorName,
+        ),
+        footer: (context) => _buildFooter(context),
+        build: (context) => [
+          pw.SizedBox(height: 20),
+          _buildComplianceSummary(compliance),
+          pw.SizedBox(height: 24),
+          if (compliance.submitted.isNotEmpty) ...[
+            _buildSectionTitle('Usuarios que reportaron'),
+            pw.SizedBox(height: 8),
+            _buildSubmittedUsersTable(compliance.submitted),
+            pw.SizedBox(height: 24),
+          ] else
+            _buildEmptyState('No hay usuarios con reportes'),
+          if (compliance.notSubmitted.isNotEmpty) ...[
+            _buildSectionTitle('Usuarios sin reportar'),
+            pw.SizedBox(height: 8),
+            _buildNotSubmittedUsersTable(compliance.notSubmitted),
+          ] else
+            _buildEmptyState('No hay usuarios pendientes'),
         ],
       ),
     );
@@ -107,6 +249,65 @@ class PdfService {
     );
   }
 
+  pw.Widget _buildReportHeader({
+    required String title,
+    required DateTime periodStart,
+    required DateTime periodEnd,
+    String? entityName,
+    String? requestorName,
+  }) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text(
+              title,
+              style: pw.TextStyle(
+                fontSize: 22,
+                fontWeight: pw.FontWeight.bold,
+              ),
+            ),
+            pw.Text(
+              _formatDate(DateTime.now()),
+              style: const pw.TextStyle(
+                fontSize: 10,
+                color: PdfColors.grey600,
+              ),
+            ),
+          ],
+        ),
+        pw.SizedBox(height: 6),
+        pw.Text(
+          'Periodo: ${_formatDate(periodStart)} - ${_formatDate(periodEnd)}',
+          style: const pw.TextStyle(
+            fontSize: 11,
+            color: PdfColors.grey700,
+          ),
+        ),
+        if (entityName != null && entityName.isNotEmpty)
+          pw.Text(
+            'Entidad: $entityName',
+            style: const pw.TextStyle(
+              fontSize: 11,
+              color: PdfColors.grey700,
+            ),
+          ),
+        if (requestorName != null && requestorName.isNotEmpty)
+          pw.Text(
+            'Solicitado por: $requestorName',
+            style: const pw.TextStyle(
+              fontSize: 10,
+              color: PdfColors.grey700,
+            ),
+          ),
+        pw.SizedBox(height: 4),
+        pw.Divider(color: PdfColors.grey400),
+      ],
+    );
+  }
+
   pw.Widget _buildFooter(pw.Context context) {
     return pw.Column(
       children: [
@@ -136,9 +337,41 @@ class PdfService {
   }
 
   pw.Widget _buildSummarySection(
+      int totalActivities, int activitiesWithExpense, double totalExpenses,
+      {String currencySymbol = 'L',
+      double? compliancePercent,
+      int? usersExpected}) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(16),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey400),
+        borderRadius: pw.BorderRadius.circular(8),
+        color: PdfColors.grey100,
+      ),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
+        children: [
+          _buildStatColumn('Total Actividades', totalActivities.toString()),
+          if (usersExpected != null && compliancePercent != null)
+            _buildStatColumn(
+              'Cumplimiento',
+              '${compliancePercent.toStringAsFixed(0)}%',
+            )
+          else
+            _buildStatColumn('Con Gastos', activitiesWithExpense.toString()),
+          _buildStatColumn(
+            'Total Gastos',
+            _formatCurrency(totalExpenses, currencySymbol),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildActivitiesBreakdownSummary(
     int totalActivities,
-    int activitiesWithExpense,
     double totalExpenses,
+    String currencySymbol,
   ) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(16),
@@ -151,10 +384,38 @@ class PdfService {
         mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
         children: [
           _buildStatColumn('Total Actividades', totalActivities.toString()),
-          _buildStatColumn('Con Gastos', activitiesWithExpense.toString()),
           _buildStatColumn(
             'Total Gastos',
-            'L.${totalExpenses.toStringAsFixed(2)}',
+            _formatCurrency(totalExpenses, currencySymbol),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildComplianceSummary(ComplianceResponse compliance) {
+    final totalUsers = compliance.totalUsers;
+    final submitted = compliance.submitted.length;
+    final notSubmitted = compliance.notSubmitted.length;
+    final compliancePercent =
+        totalUsers == 0 ? 0 : (submitted / totalUsers) * 100;
+
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(16),
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: PdfColors.grey400),
+        borderRadius: pw.BorderRadius.circular(8),
+        color: PdfColors.grey100,
+      ),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
+        children: [
+          _buildStatColumn('Total Usuarios', totalUsers.toString()),
+          _buildStatColumn('Han Reportado', submitted.toString()),
+          _buildStatColumn('Pendientes', notSubmitted.toString()),
+          _buildStatColumn(
+            'Cumplimiento',
+            '${compliancePercent.toStringAsFixed(0)}%',
           ),
         ],
       ),
@@ -177,6 +438,166 @@ class PdfService {
           style: const pw.TextStyle(
             fontSize: 10,
             color: PdfColors.grey700,
+          ),
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _buildSectionTitle(String title) {
+    return pw.Text(
+      title,
+      style: pw.TextStyle(
+        fontSize: 13,
+        fontWeight: pw.FontWeight.bold,
+      ),
+    );
+  }
+
+  pw.Widget _buildEmptyState(String message) {
+    return pw.Center(
+      child: pw.Padding(
+        padding: const pw.EdgeInsets.all(30),
+        child: pw.Text(
+          message,
+          style: pw.TextStyle(
+            fontSize: 12,
+            color: PdfColors.grey700,
+          ),
+        ),
+      ),
+    );
+  }
+
+  pw.Widget _buildHierarchyBreakdownTable(
+      List<HierarchyEntityBreakdown> breakdown,
+      {required String currencySymbol}) {
+    return pw.Table(
+      border: pw.TableBorder.all(color: PdfColors.grey400),
+      columnWidths: {
+        0: const pw.FlexColumnWidth(2.5),
+        1: const pw.FlexColumnWidth(1.4),
+        2: const pw.FlexColumnWidth(1.2),
+        3: const pw.FlexColumnWidth(1.4),
+        4: const pw.FlexColumnWidth(1.4),
+      },
+      children: [
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+          children: [
+            _buildTableCell('Entidad', isHeader: true),
+            _buildTableCell('Tipo', isHeader: true),
+            _buildTableCell('Actividades', isHeader: true),
+            _buildTableCell('Gastos', isHeader: true),
+            _buildTableCell('Cumplimiento', isHeader: true),
+          ],
+        ),
+        ...breakdown.map(
+          (item) => pw.TableRow(
+            children: [
+              _buildTableCell(item.entityName),
+              _buildTableCell(item.entityType.displayName),
+              _buildTableCell(item.activities.toString()),
+              _buildTableCell(
+                _formatCurrency(item.expenses, currencySymbol),
+              ),
+              _buildTableCell(item.complianceDisplay),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _buildActivitiesBreakdownTable(
+    List<ReportBreakdown> breakdowns,
+    String currencySymbol,
+  ) {
+    return pw.Table(
+      border: pw.TableBorder.all(color: PdfColors.grey400),
+      columnWidths: {
+        0: const pw.FlexColumnWidth(3),
+        1: const pw.FlexColumnWidth(1.3),
+        2: const pw.FlexColumnWidth(1.5),
+      },
+      children: [
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+          children: [
+            _buildTableCell('Tipo de Actividad', isHeader: true),
+            _buildTableCell('Cantidad', isHeader: true),
+            _buildTableCell('Gastos', isHeader: true),
+          ],
+        ),
+        ...breakdowns.map(
+          (item) => pw.TableRow(
+            children: [
+              _buildTableCell(item.activityTypeName),
+              _buildTableCell(item.count.toString()),
+              _buildTableCell(
+                _formatCurrency(item.totalExpenses, currencySymbol),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _buildSubmittedUsersTable(List<SubmittedUser> users) {
+    return pw.Table(
+      border: pw.TableBorder.all(color: PdfColors.grey400),
+      columnWidths: {
+        0: const pw.FlexColumnWidth(2.2),
+        1: const pw.FlexColumnWidth(1),
+        2: const pw.FlexColumnWidth(1.8),
+      },
+      children: [
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+          children: [
+            _buildTableCell('Usuario', isHeader: true),
+            _buildTableCell('Actividades', isHeader: true),
+            _buildTableCell('Ultima Actividad', isHeader: true),
+          ],
+        ),
+        ...users.map(
+          (user) => pw.TableRow(
+            children: [
+              _buildTableCell(user.name),
+              _buildTableCell(user.count.toString()),
+              _buildTableCell(_formatDateString(user.lastActivity)),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _buildNotSubmittedUsersTable(List<NotSubmittedUser> users) {
+    return pw.Table(
+      border: pw.TableBorder.all(color: PdfColors.grey400),
+      columnWidths: {
+        0: const pw.FlexColumnWidth(2),
+        1: const pw.FlexColumnWidth(2.2),
+        2: const pw.FlexColumnWidth(2.2),
+      },
+      children: [
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: PdfColors.grey200),
+          children: [
+            _buildTableCell('Usuario', isHeader: true),
+            _buildTableCell('Roles', isHeader: true),
+            _buildTableCell('Entidad', isHeader: true),
+          ],
+        ),
+        ...users.map(
+          (user) => pw.TableRow(
+            children: [
+              _buildTableCell(user.name),
+              _buildTableCell(user.roles.join(', ')),
+              _buildTableCell(user.entity),
+            ],
           ),
         ),
       ],
@@ -223,7 +644,7 @@ class PdfService {
                           : '-',
                 ),
                 _buildTableCell(
-                  a.hasExpense ? 'L.${a.expense.toStringAsFixed(2)}' : '-',
+                  a.hasExpense ? _formatCurrency(a.expense, 'L') : '-',
                 ),
               ],
             )),
@@ -247,5 +668,16 @@ class PdfService {
   String _formatDate(DateTime? date) {
     if (date == null) return '-';
     return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
+
+  String _formatDateString(String? raw) {
+    if (raw == null || raw.isEmpty) return '-';
+    final parsed = DateTime.tryParse(raw);
+    if (parsed == null) return raw;
+    return _formatDate(parsed);
+  }
+
+  String _formatCurrency(double value, String currencySymbol) {
+    return CurrencyFormatter.format(value, currencySymbol);
   }
 }
