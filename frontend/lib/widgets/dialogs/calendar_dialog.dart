@@ -27,6 +27,7 @@ class _CalendarDialogState extends State<CalendarDialog> {
   AvailabilityResponse? _availability;
   bool _isLoading = true;
   String? _errorMessage;
+  bool _showMonthPicker = false;
 
   @override
   void initState() {
@@ -176,19 +177,37 @@ class _CalendarDialogState extends State<CalendarDialog> {
                   onPressed: _prevMonth,
                   icon: const Icon(Icons.chevron_left),
                 ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.surface,
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Theme.of(context).dividerColor),
-                  ),
-                  child: Text(
-                    _capitalize(monthLabel),
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.w600,
+                    onTap: () => setState(() => _showMonthPicker = !_showMonthPicker),
+                    child: Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).colorScheme.surface,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Theme.of(context).dividerColor),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _capitalize(monthLabel),
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Icon(
+                            _showMonthPicker ? Icons.expand_less : Icons.expand_more,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -197,9 +216,21 @@ class _CalendarDialogState extends State<CalendarDialog> {
                   onPressed: _nextMonth,
                   icon: const Icon(Icons.chevron_right),
                 ),
+                const SizedBox(width: 4),
+                IconButton(
+                  tooltip: 'Cerrar',
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close),
+                  style: IconButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),
+            if (_showMonthPicker)
+              _buildMonthPickerGrid(context),
+            if (_showMonthPicker) const SizedBox(height: 12),
             Row(
               children: [
                 Expanded(
@@ -449,6 +480,65 @@ class _CalendarDialogState extends State<CalendarDialog> {
             )
           ]),
         ),
+      ),
+    );
+  }
+
+  static const _monthNames = [
+    'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
+    'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
+  ];
+
+  Widget _buildMonthPickerGrid(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final currentMonth = _focusedMonth.month;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: scheme.surface,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Theme.of(context).dividerColor),
+      ),
+      padding: const EdgeInsets.all(8),
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 4,
+          mainAxisSpacing: 4,
+          crossAxisSpacing: 4,
+          childAspectRatio: 2.0,
+        ),
+        itemCount: 12,
+        itemBuilder: (context, index) {
+          final month = index + 1;
+          final isSelected = month == currentMonth;
+
+          return Material(
+            color: isSelected ? scheme.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(6),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(6),
+              onTap: () {
+                setState(() {
+                  _focusedMonth = DateTime(_focusedMonth.year, month);
+                  _showMonthPicker = false;
+                });
+                _loadAvailability();
+              },
+              child: Center(
+                child: Text(
+                  _monthNames[index],
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    color: isSelected ? scheme.onPrimary : scheme.onSurface,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
