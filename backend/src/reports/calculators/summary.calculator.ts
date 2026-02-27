@@ -6,6 +6,7 @@ import { User } from '../../users/user.entity';
 import { Entity } from '../../entities/entity.entity';
 import { UserStatus } from '../../users/user-status.enum';
 import { SummaryResponse } from '../dto/report-responses.dto';
+import { getCurrentDateString } from '../../common/date.utils';
 
 @Injectable()
 export class SummaryCalculator {
@@ -63,7 +64,7 @@ export class SummaryCalculator {
         id: '',
         startDate: timeScope.dateFrom || '',
         endDate: timeScope.dateTo || '',
-        status: 'custom',
+        status: timeScope.dateTo && timeScope.dateTo < getCurrentDateString() ? 'locked' : 'active',
       },
       scope,
       entity: {

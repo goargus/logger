@@ -41,7 +41,7 @@ void main() {
         expect(summary.statusLabel, equals('custom'));
       });
 
-      test('status defaults to "Activo" when missing from API', () {
+      test('status defaults to "active" when missing from API', () {
         final summary = ReportSummary.fromApi({
           'totals': {'activities': 0, 'expenses': 0},
           'period': {
@@ -49,12 +49,14 @@ void main() {
             'endDate': '2026-02-28',
           },
         });
-        expect(summary.status, equals('Activo'));
+        expect(summary.status, equals('active'));
+        expect(summary.statusLabel, equals('Activo'));
       });
 
-      test('status defaults to "Activo" when period is null', () {
+      test('status defaults to "active" when period is null', () {
         final summary = ReportSummary.fromApi({});
-        expect(summary.status, equals('Activo'));
+        expect(summary.status, equals('active'));
+        expect(summary.statusLabel, equals('Activo'));
       });
     });
 
@@ -140,7 +142,8 @@ void main() {
         expect(empty.totalActivities, equals(0));
         expect(empty.totalExpenses, equals(0.0));
         expect(empty.isReported, isFalse);
-        expect(empty.status, equals('Activo'));
+        expect(empty.status, equals('active'));
+        expect(empty.statusLabel, equals('Activo'));
       });
     });
   });
