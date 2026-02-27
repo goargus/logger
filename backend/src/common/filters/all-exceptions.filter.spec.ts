@@ -4,7 +4,7 @@ import { AllExceptionsFilter } from './all-exceptions.filter';
 describe('AllExceptionsFilter', () => {
   let filter: AllExceptionsFilter;
   let response: { status: jest.Mock; json: jest.Mock };
-  let request: { method: string; originalUrl?: string; url?: string; user?: any };
+  let request: { method: string; originalUrl?: string; url?: string; user?: any; correlationId?: string };
   let host: ArgumentsHost;
   const originalNodeEnv = process.env.NODE_ENV;
 
@@ -86,5 +86,29 @@ describe('AllExceptionsFilter', () => {
     expect(message).toContain('POST /activities');
     expect(message).toContain('userId=user-1');
     expect(trace).toBe(exception.stack);
+  });
+
+  it('includes correlationId in response body and log when present', () => {
+    process.env.NODE_ENV = 'production';
+    (request as any).correlationId = 'req-abc-123';
+    const exception = new Error('fail');
+    const logSpy = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+
+    filter.catch(exception, host);
+
+    const body = response.json.mock.calls[0][0];
+    expect(body.correlationId).toBe('req-abc-123');
+    expect(logSpy.mock.calls[0][0]).toContain('correlationId=req-abc-123');
+  });
+
+  it('omits correlationId from body when not present on request', () => {
+    process.env.NODE_ENV = 'production';
+    const exception = new Error('fail');
+    jest.spyOn(Logger.prototype, 'error').mockImplementation();
+
+    filter.catch(exception, host);
+
+    const body = response.json.mock.calls[0][0];
+    expect(body.correlationId).toBeUndefined();
   });
 });
