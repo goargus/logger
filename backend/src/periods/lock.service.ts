@@ -24,6 +24,20 @@ export class LockService {
     private readonly calculator: PeriodCalculator,
   ) {}
 
+  async getAdminLock(entityId: string): Promise<AdminLock | null> {
+    return this.adminLockRepo.findOne({ where: { entityId } });
+  }
+
+  isDateLockedSync(dateStr: string, adminLock: AdminLock | null): boolean {
+    if (this.calculator.isDateInPastPeriod(dateStr)) {
+      return true;
+    }
+    if (adminLock && dateStr <= adminLock.lockDate) {
+      return true;
+    }
+    return false;
+  }
+
   async isDateLocked(entityId: string, dateStr: string): Promise<boolean> {
     if (this.calculator.isDateInPastPeriod(dateStr)) {
       return true;
