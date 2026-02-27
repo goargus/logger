@@ -4,7 +4,13 @@ import { AllExceptionsFilter } from './all-exceptions.filter';
 describe('AllExceptionsFilter', () => {
   let filter: AllExceptionsFilter;
   let response: { status: jest.Mock; json: jest.Mock };
-  let request: { method: string; originalUrl?: string; url?: string; user?: any; correlationId?: string };
+  let request: {
+    method: string;
+    originalUrl?: string;
+    url?: string;
+    user?: any;
+    correlationId?: string;
+  };
   let host: ArgumentsHost;
   const originalNodeEnv = process.env.NODE_ENV;
 
