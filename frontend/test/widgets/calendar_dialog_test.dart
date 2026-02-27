@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -7,6 +9,14 @@ import 'package:logger/core/api_client.dart';
 import 'package:logger/models/availability.dart';
 import 'package:logger/services/periods_service.dart';
 import 'package:logger/widgets/dialogs/calendar_dialog.dart';
+
+// CI (GitHub Actions) uses the official Flutter SDK where framework and engine
+// versions match. Local Arch Linux AUR packages have a version mismatch
+// (framework 3.38.x vs engine 3.32.x) causing a Dart VM SIGABRT during
+// semantics processing of the CalendarDialog widget tree.
+// These tests run in CI; skip locally to avoid the crash.
+// To force-run locally: CI=true flutter test test/widgets/calendar_dialog_test.dart
+final _skipLocally = !Platform.environment.containsKey('CI');
 
 class FakePeriodsService extends PeriodsService {
   FakePeriodsService({
@@ -37,7 +47,8 @@ void main() {
     await initializeDateFormatting('es_ES');
   });
 
-  testWidgets('unavailable date shows styling and feedback', (tester) async {
+  testWidgets('unavailable date shows styling and feedback',
+      skip: _skipLocally, (tester) async {
     // Jan 5 is NOT in available dates, so it should be unavailable
     final service = FakePeriodsService(
       availability: AvailabilityResponse(
@@ -78,7 +89,7 @@ void main() {
   });
 
   testWidgets('unavailable date in month with no available dates',
-      (tester) async {
+      skip: _skipLocally, (tester) async {
     // December 2025 has no available dates
     final service = FakePeriodsService(
       availability: AvailabilityResponse(
@@ -109,7 +120,8 @@ void main() {
     );
   });
 
-  testWidgets('API failure shows warning banner', (tester) async {
+  testWidgets('API failure shows warning banner', skip: _skipLocally,
+      (tester) async {
     final service = FakePeriodsService(
       availability: AvailabilityResponse(
         currentPeriod: null,
@@ -127,7 +139,8 @@ void main() {
     );
   });
 
-  testWidgets('no available dates blocks all dates', (tester) async {
+  testWidgets('no available dates blocks all dates', skip: _skipLocally,
+      (tester) async {
     final service = FakePeriodsService(
       availability: AvailabilityResponse(
         currentPeriod: null,
@@ -147,7 +160,8 @@ void main() {
     );
   });
 
-  testWidgets('available dates are selectable', (tester) async {
+  testWidgets('available dates are selectable', skip: _skipLocally,
+      (tester) async {
     final service = FakePeriodsService(
       availability: AvailabilityResponse(
         currentPeriod: DateRange(
