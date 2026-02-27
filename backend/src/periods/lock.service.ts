@@ -115,14 +115,8 @@ export class LockService {
   }
 
   async setAdminLock(entityId: string, lockDate: string, lockedBy: string): Promise<AdminLock> {
-    let lock = await this.adminLockRepo.findOne({ where: { entityId } });
-    if (lock) {
-      lock.lockDate = lockDate;
-      lock.lockedBy = lockedBy;
-    } else {
-      lock = this.adminLockRepo.create({ entityId, lockDate, lockedBy });
-    }
-    return this.adminLockRepo.save(lock);
+    await this.adminLockRepo.upsert({ entityId, lockDate, lockedBy }, { conflictPaths: ['entityId'] });
+    return this.adminLockRepo.findOneByOrFail({ entityId });
   }
 
   async removeAdminLock(entityId: string): Promise<void> {
