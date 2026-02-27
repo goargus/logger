@@ -10,6 +10,9 @@ class PaginatedActivitiesTable extends StatelessWidget {
   final Function(Activity) onRowTap;
   final Function(Activity)? onEdit;
   final Function(Activity)? onDelete;
+  final int? sortColumnIndex;
+  final bool sortAscending;
+  final Function(int, bool)? onSort;
 
   const PaginatedActivitiesTable({
     super.key,
@@ -21,6 +24,9 @@ class PaginatedActivitiesTable extends StatelessWidget {
     required this.onRowTap,
     this.onEdit,
     this.onDelete,
+    this.sortColumnIndex,
+    this.sortAscending = false,
+    this.onSort,
   });
 
   bool get _showActions => onEdit != null || onDelete != null;
@@ -87,33 +93,40 @@ class PaginatedActivitiesTable extends StatelessWidget {
                           BoxConstraints(minWidth: constraints.maxWidth),
                       child: DataTable(
                         showCheckboxColumn: false,
+                        sortColumnIndex: sortColumnIndex,
+                        sortAscending: sortAscending,
                         headingRowColor: WidgetStateProperty.all(
                           Colors.grey.shade50,
                         ),
                         columns: [
-                          const DataColumn(
-                            label: Text(
+                          DataColumn(
+                            label: const Text(
                               'Fecha',
                               style: TextStyle(fontWeight: FontWeight.w600),
                             ),
+                            onSort: onSort,
                           ),
-                          const DataColumn(
-                            label: Text(
+                          DataColumn(
+                            label: const Text(
                               'Tipo',
                               style: TextStyle(fontWeight: FontWeight.w600),
                             ),
+                            onSort: onSort,
                           ),
-                          const DataColumn(
-                            label: Text(
+                          DataColumn(
+                            label: const Text(
                               'Descripcion',
                               style: TextStyle(fontWeight: FontWeight.w600),
                             ),
+                            onSort: onSort,
                           ),
-                          const DataColumn(
-                            label: Text(
+                          DataColumn(
+                            label: const Text(
                               'Gasto',
                               style: TextStyle(fontWeight: FontWeight.w600),
                             ),
+                            numeric: true,
+                            onSort: onSort,
                           ),
                           const DataColumn(
                             label: Text(

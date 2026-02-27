@@ -25,6 +25,22 @@ class ActivitiesListContent extends ConsumerStatefulWidget {
 }
 
 class _ActivitiesListContentState extends ConsumerState<ActivitiesListContent> {
+  static const _sortColumns = ['activityDate', 'activityType', 'description', 'expenseAmount'];
+
+  int? _sortColumnIndex(String? sortBy) {
+    if (sortBy == null) return null;
+    final idx = _sortColumns.indexOf(sortBy);
+    return idx >= 0 ? idx : null;
+  }
+
+  void _onSort(int columnIndex, bool ascending) {
+    if (columnIndex >= _sortColumns.length) return;
+    ref.read(activitiesListProvider.notifier).setSort(
+          _sortColumns[columnIndex],
+          ascending,
+        );
+  }
+
   Future<void> _showEditDialog(Activity activity) async {
     final activityData = {
       'id': activity.id,
@@ -129,6 +145,9 @@ class _ActivitiesListContentState extends ConsumerState<ActivitiesListContent> {
               page: state.page,
               totalPages: state.totalPages,
               total: state.total,
+              sortColumnIndex: _sortColumnIndex(state.sortBy),
+              sortAscending: state.sortAscending,
+              onSort: _onSort,
               onPageChange: (page) {
                 ref.read(activitiesListProvider.notifier).setPage(page);
               },

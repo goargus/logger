@@ -80,6 +80,8 @@ class ActivityService {
     String? activityTypeId,
     bool? hasExpense,
     String? search,
+    String? sortBy,
+    String? sortOrder,
   }) async {
     final params = <String, String>{
       'page': page.toString(),
@@ -93,6 +95,8 @@ class ActivityService {
     if (search != null && search.trim().isNotEmpty) {
       params['search'] = search.trim();
     }
+    if (sortBy != null) params['sortBy'] = sortBy;
+    if (sortOrder != null) params['sortOrder'] = sortOrder;
 
     final data = await apiClient.get('activities', queryParameters: params);
     return data as Map<String, dynamic>;

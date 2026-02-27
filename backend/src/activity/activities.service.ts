@@ -134,6 +134,8 @@ export class ActivitiesService {
       activityTypeId?: string;
       hasExpense?: boolean;
       search?: string;
+      sortBy?: string;
+      sortOrder?: 'ASC' | 'DESC';
     },
   ): Promise<[Activity[], number]> {
     const { skip, limit: take } = normalizePagination({ page, limit });
@@ -184,7 +186,24 @@ export class ActivitiesService {
       }
     }
 
-    qb.orderBy('activity.activityDate', 'DESC').addOrderBy('activity.createdAt', 'DESC');
+    const allowedSortColumns: Record<string, string> = {
+      activityDate: 'activity.activityDate',
+      description: 'activity.description',
+      expenseAmount: 'activity.expenseAmount',
+      activityType: 'activityType.name',
+    };
+
+    const sortColumn = allowedSortColumns[filters?.sortBy ?? ''];
+    const sortDirection = filters?.sortOrder === 'ASC' ? 'ASC' : 'DESC';
+
+    if (sortColumn) {
+      if (filters?.sortBy === 'activityType' && !filters?.search) {
+        qb.leftJoin('activity.activityType', 'activityType');
+      }
+      qb.orderBy(sortColumn, sortDirection).addOrderBy('activity.createdAt', 'DESC');
+    } else {
+      qb.orderBy('activity.activityDate', 'DESC').addOrderBy('activity.createdAt', 'DESC');
+    }
     qb.skip(skip).take(take);
 
     return qb.getManyAndCount();
