@@ -30,14 +30,14 @@ class MyApp extends ConsumerWidget {
                 if (authState.isLoading) ...[
                   const CircularProgressIndicator(),
                   const SizedBox(height: 16),
-                  const Text('Redirigiendo a Auth0...'),
+                  const Text('Redirigiendo al inicio de sesión...'),
                 ],
                 if (authState.lastError != null) ...[
                   const Icon(Icons.error, color: Colors.red, size: 48),
                   const SizedBox(height: 16),
                   ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 520),
-                    child: Text('Error: ${authState.lastError}',
+                    child: Text(authState.lastError!,
                         textAlign: TextAlign.center,
                         style: const TextStyle(color: Colors.red)),
                   ),
@@ -46,7 +46,7 @@ class MyApp extends ConsumerWidget {
                     onPressed: () {
                       authNotifier.login();
                     },
-                    child: const Text('Reintentar'),
+                    child: const Text('Iniciar sesión'),
                   ),
                 ],
               ],
