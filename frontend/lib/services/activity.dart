@@ -53,13 +53,18 @@ class ActivityService {
     return (data['total'] as num).toDouble();
   }
 
-  Future<List<Map<String, dynamic>>> getRecentActivities(
-      {int limit = 5}) async {
+  Future<List<Map<String, dynamic>>> getRecentActivities({
+    int limit = 5,
+    String? startDate,
+    String? endDate,
+  }) async {
     final data = await apiClient.get(
       'activities',
       queryParameters: {
         'page': '1',
         'limit': limit.toString(),
+        if (startDate != null) 'startDate': startDate,
+        if (endDate != null) 'endDate': endDate,
       },
     );
 
