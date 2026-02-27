@@ -10,7 +10,7 @@ class ExportButton extends StatefulWidget {
   const ExportButton({
     super.key,
     required this.onExport,
-    this.formats = const ['csv', 'json'],
+    this.formats = const ['csv', 'json', 'pdf'],
     this.reportTypes = const ['activities', 'summary', 'compliance'],
   });
 
@@ -31,6 +31,8 @@ class _ExportButtonState extends State<ExportButton> {
         return 'CSV';
       case 'json':
         return 'JSON';
+      case 'pdf':
+        return 'PDF';
       default:
         return format.toUpperCase();
     }
@@ -200,6 +202,15 @@ class ExportData {
       String content, String filename, String mimeType) {
     return ExportData(
       bytes: utf8.encode(content),
+      filename: filename,
+      mimeType: mimeType,
+    );
+  }
+
+  factory ExportData.fromBytes(
+      List<int> bytes, String filename, String mimeType) {
+    return ExportData(
+      bytes: bytes,
       filename: filename,
       mimeType: mimeType,
     );
