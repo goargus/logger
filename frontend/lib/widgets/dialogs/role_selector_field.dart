@@ -66,8 +66,21 @@ class RoleSelectorField extends StatelessWidget {
     final activeRoles = roles.where((r) => r.isActive).toList();
 
     if (activeRoles.isEmpty) {
-      return Text('No tienes roles asignados.',
-          style: theme.textTheme.bodyMedium);
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'No tienes roles asignados.',
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: submitting ? null : onRetry,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Reintentar'),
+          ),
+        ],
+      );
     }
 
     if (activeRoles.length == 1 && selectedRole == null) {
