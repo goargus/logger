@@ -28,8 +28,15 @@ class RecentActivitiesNotifier extends AsyncNotifier<List<Activity>> {
 
   Future<List<Activity>> _fetchActivities() async {
     final service = ref.read(activityServiceProvider);
+    final now = DateTime.now();
+    final firstDay = DateTime(now.year, now.month, 1);
+    final lastDay = DateTime(now.year, now.month + 1, 0);
+    final startDate = _formatDate(firstDay);
+    final endDate = _formatDate(lastDay);
     final activitiesData = await service.getRecentActivities(
       limit: _dashboardActivityLimit,
+      startDate: startDate,
+      endDate: endDate,
     );
     return activitiesData.map((data) => Activity.fromApi(data)).toList();
   }
@@ -43,3 +50,7 @@ class RecentActivitiesNotifier extends AsyncNotifier<List<Activity>> {
 final recentActivitiesProvider =
     AsyncNotifierProvider<RecentActivitiesNotifier, List<Activity>>(
         RecentActivitiesNotifier.new);
+
+String _formatDate(DateTime date) {
+  return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+}
