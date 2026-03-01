@@ -38,4 +38,42 @@ describe('CorrelationIdMiddleware', () => {
 
     expect(res.setHeader).toHaveBeenCalledWith(CORRELATION_ID_HEADER, expect.any(String));
   });
+
+  it('rejects X-Request-ID with newlines and generates a UUID instead', () => {
+    req.headers['x-request-id'] = 'abc\nerror=INJECTED';
+
+    middleware.use(req as any, res as any, next);
+
+    expect(req.correlationId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
+  });
+
+  it('rejects X-Request-ID exceeding 128 characters', () => {
+    req.headers['x-request-id'] = 'a'.repeat(129);
+
+    middleware.use(req as any, res as any, next);
+
+    expect(req.correlationId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/,
+    );
+  });
+
+  it('accepts valid alphanumeric X-Request-ID with hyphens and dots', () => {
+    req.headers['x-request-id'] = 'req-abc.123:456';
+
+    middleware.use(req as any, res as any, next);
+
+    expect(req.correlationId).toBe('req-abc.123:456');
+  });
+
+  it('reuses req.correlationId when already set by pino genReqId', () => {
+    req.correlationId = 'pre-set-by-pino';
+    req.headers['x-request-id'] = 'header-value';
+
+    middleware.use(req as any, res as any, next);
+
+    expect(req.correlationId).toBe('pre-set-by-pino');
+    expect(res.setHeader).toHaveBeenCalledWith(CORRELATION_ID_HEADER, 'pre-set-by-pino');
+  });
 });

@@ -14,9 +14,11 @@ describe('LockService', () => {
   beforeEach(async () => {
     adminLockRepo = {
       findOne: jest.fn(),
+      findOneByOrFail: jest.fn(),
       save: jest.fn(),
       create: jest.fn((data) => data),
       delete: jest.fn(),
+      upsert: jest.fn(),
     };
     exceptionRepo = {
       findOne: jest.fn(),
@@ -43,6 +45,39 @@ describe('LockService', () => {
   afterEach(() => {
     jest.useRealTimers();
     jest.clearAllMocks();
+  });
+
+  describe('getAdminLock', () => {
+    it('returns the admin lock for an entity', async () => {
+      const lock = { id: 'lock-1', entityId: 'entity-1', lockDate: '2026-03-15' };
+      adminLockRepo.findOne.mockResolvedValue(lock);
+      expect(await service.getAdminLock('entity-1')).toEqual(lock);
+    });
+
+    it('returns null when no admin lock exists', async () => {
+      adminLockRepo.findOne.mockResolvedValue(null);
+      expect(await service.getAdminLock('entity-1')).toBeNull();
+    });
+  });
+
+  describe('isDateLockedSync', () => {
+    it('returns true when date is in a past period', () => {
+      expect(service.isDateLockedSync('2026-03-10', null)).toBe(true);
+    });
+
+    it('returns true when date <= admin lock date', () => {
+      const lock = { lockDate: '2026-03-25' } as any;
+      expect(service.isDateLockedSync('2026-03-20', lock)).toBe(true);
+    });
+
+    it('returns false when date is current and no admin lock', () => {
+      expect(service.isDateLockedSync('2026-03-20', null)).toBe(false);
+    });
+
+    it('returns false when date is after admin lock date', () => {
+      const lock = { lockDate: '2026-03-18' } as any;
+      expect(service.isDateLockedSync('2026-03-20', lock)).toBe(false);
+    });
   });
 
   describe('isDateLocked', () => {
@@ -142,27 +177,27 @@ describe('LockService', () => {
   });
 
   describe('setAdminLock', () => {
-    it('creates lock entry for entity', async () => {
-      adminLockRepo.findOne.mockResolvedValue(null);
-      adminLockRepo.save.mockResolvedValue({
-        id: 'lock-1',
-        entityId: 'entity-1',
-        lockDate: '2026-03-15',
-      });
+    it('upserts lock entry for entity', async () => {
+      const expected = { id: 'lock-1', entityId: 'entity-1', lockDate: '2026-03-15', lockedBy: 'admin-1' };
+      adminLockRepo.upsert.mockResolvedValue(undefined);
+      adminLockRepo.findOneByOrFail.mockResolvedValue(expected);
 
-      await service.setAdminLock('entity-1', '2026-03-15', 'admin-1');
-      expect(adminLockRepo.save).toHaveBeenCalled();
+      const result = await service.setAdminLock('entity-1', '2026-03-15', 'admin-1');
+
+      expect(adminLockRepo.upsert).toHaveBeenCalledWith(
+        { entityId: 'entity-1', lockDate: '2026-03-15', lockedBy: 'admin-1' },
+        { conflictPaths: ['entityId'] },
+      );
+      expect(result).toEqual(expected);
     });
 
-    it('updates existing lock entry', async () => {
-      const existing = { id: 'lock-1', entityId: 'entity-1', lockDate: '2026-03-10' };
-      adminLockRepo.findOne.mockResolvedValue(existing);
-      adminLockRepo.save.mockResolvedValue({ ...existing, lockDate: '2026-03-20' });
+    it('returns the persisted lock after upsert', async () => {
+      const persisted = { id: 'lock-1', entityId: 'entity-1', lockDate: '2026-03-20', lockedBy: 'admin-1' };
+      adminLockRepo.upsert.mockResolvedValue(undefined);
+      adminLockRepo.findOneByOrFail.mockResolvedValue(persisted);
 
-      await service.setAdminLock('entity-1', '2026-03-20', 'admin-1');
-      expect(adminLockRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ lockDate: '2026-03-20' }),
-      );
+      const result = await service.setAdminLock('entity-1', '2026-03-20', 'admin-1');
+      expect(result.lockDate).toBe('2026-03-20');
     });
   });
 

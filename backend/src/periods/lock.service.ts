@@ -24,6 +24,20 @@ export class LockService {
     private readonly calculator: PeriodCalculator,
   ) {}
 
+  async getAdminLock(entityId: string): Promise<AdminLock | null> {
+    return this.adminLockRepo.findOne({ where: { entityId } });
+  }
+
+  isDateLockedSync(dateStr: string, adminLock: AdminLock | null): boolean {
+    if (this.calculator.isDateInPastPeriod(dateStr)) {
+      return true;
+    }
+    if (adminLock && dateStr <= adminLock.lockDate) {
+      return true;
+    }
+    return false;
+  }
+
   async isDateLocked(entityId: string, dateStr: string): Promise<boolean> {
     if (this.calculator.isDateInPastPeriod(dateStr)) {
       return true;
@@ -115,14 +129,8 @@ export class LockService {
   }
 
   async setAdminLock(entityId: string, lockDate: string, lockedBy: string): Promise<AdminLock> {
-    let lock = await this.adminLockRepo.findOne({ where: { entityId } });
-    if (lock) {
-      lock.lockDate = lockDate;
-      lock.lockedBy = lockedBy;
-    } else {
-      lock = this.adminLockRepo.create({ entityId, lockDate, lockedBy });
-    }
-    return this.adminLockRepo.save(lock);
+    await this.adminLockRepo.upsert({ entityId, lockDate, lockedBy }, { conflictPaths: ['entityId'] });
+    return this.adminLockRepo.findOneByOrFail({ entityId });
   }
 
   async removeAdminLock(entityId: string): Promise<void> {

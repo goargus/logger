@@ -58,12 +58,13 @@ export class ActivitiesController {
 
     const created = await this.activities.create(dto, user.id);
 
-    const [owner, type] = await Promise.all([
+    const [owner, type, adminLock] = await Promise.all([
       this.usersRepo.findOneByOrFail({ id: created.userId }),
       this.typesRepo.findOneByOrFail({ id: created.activityTypeId }),
+      this.lockService.getAdminLock(user.entity_id),
     ]);
 
-    const isLocked = await this.lockService.isDateLocked(owner.entity_id, created.activityDate);
+    const isLocked = this.lockService.isDateLockedSync(created.activityDate, adminLock);
 
     return ActivityResponseDto.fromEntity(created, owner.username, (type as any).name, isLocked);
   }
@@ -143,7 +144,7 @@ export class ActivitiesController {
 
     const [items, total] = await this.activities.findMine(user.id, page, limit, filters);
 
-    const [owner, typesMap] = await Promise.all([
+    const [owner, typesMap, adminLock] = await Promise.all([
       this.usersRepo.findOneByOrFail({ id: user.id }),
       (async () => {
         const ids = [...new Set(items.map((i) => i.activityTypeId))];
@@ -151,22 +152,21 @@ export class ActivitiesController {
         const types = await this.typesRepo.find({ where: { id: In(ids) } });
         return new Map(types.map((t) => [t.id, (t as any).name]));
       })(),
+      this.lockService.getAdminLock(user.entity_id),
     ]);
 
-    const itemsWithLocked = await Promise.all(
-      items.map(async (a) => {
-        const isLocked = await this.lockService.isDateLocked(owner.entity_id, a.activityDate);
-        return ActivityResponseDto.fromEntity(
-          a,
-          owner.username,
-          typesMap.get(a.activityTypeId) ?? '',
-          isLocked,
-        );
-      }),
-    );
+    const data = items.map((a) => {
+      const isLocked = this.lockService.isDateLockedSync(a.activityDate, adminLock);
+      return ActivityResponseDto.fromEntity(
+        a,
+        owner.username,
+        typesMap.get(a.activityTypeId) ?? '',
+        isLocked,
+      );
+    });
 
     return {
-      data: itemsWithLocked,
+      data,
       pagination: buildPagination(page, limit, total),
     };
   }
@@ -207,12 +207,13 @@ export class ActivitiesController {
     const user = await this.identity.resolveUserBySubAndIssuer(sub, iss);
 
     const a = await this.activities.findOneMine(id, user.id);
-    const [owner, type] = await Promise.all([
+    const [owner, type, adminLock] = await Promise.all([
       this.usersRepo.findOneByOrFail({ id: a.userId }),
       this.typesRepo.findOneByOrFail({ id: a.activityTypeId }),
+      this.lockService.getAdminLock(user.entity_id),
     ]);
 
-    const isLocked = await this.lockService.isDateLocked(owner.entity_id, a.activityDate);
+    const isLocked = this.lockService.isDateLockedSync(a.activityDate, adminLock);
 
     return ActivityResponseDto.fromEntity(a, owner.username, (type as any).name, isLocked);
   }
@@ -235,12 +236,13 @@ export class ActivitiesController {
     const user = await this.identity.resolveUserBySubAndIssuer(sub, iss);
 
     const updated = await this.activities.updateMine(id, dto, user.id);
-    const [owner, type] = await Promise.all([
+    const [owner, type, adminLock] = await Promise.all([
       this.usersRepo.findOneByOrFail({ id: updated.userId }),
       this.typesRepo.findOneByOrFail({ id: updated.activityTypeId }),
+      this.lockService.getAdminLock(user.entity_id),
     ]);
 
-    const isLocked = await this.lockService.isDateLocked(owner.entity_id, updated.activityDate);
+    const isLocked = this.lockService.isDateLockedSync(updated.activityDate, adminLock);
 
     return ActivityResponseDto.fromEntity(updated, owner.username, (type as any).name, isLocked);
   }
