@@ -66,4 +66,14 @@ describe('CorrelationIdMiddleware', () => {
 
     expect(req.correlationId).toBe('req-abc.123:456');
   });
+
+  it('reuses req.correlationId when already set by pino genReqId', () => {
+    req.correlationId = 'pre-set-by-pino';
+    req.headers['x-request-id'] = 'header-value';
+
+    middleware.use(req as any, res as any, next);
+
+    expect(req.correlationId).toBe('pre-set-by-pino');
+    expect(res.setHeader).toHaveBeenCalledWith(CORRELATION_ID_HEADER, 'pre-set-by-pino');
+  });
 });

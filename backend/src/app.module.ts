@@ -1,5 +1,7 @@
 import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { LoggerModule } from 'nestjs-pino';
+import { randomUUID } from 'crypto';
 import { CorrelationIdMiddleware } from './common/middleware/correlation-id.middleware';
 import { AuthModule } from './auth/auth.modules';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -54,6 +56,23 @@ import { configValidationSchema } from './config/config.validation';
     PeriodsModule,
     ReportsModule,
     HealthModule,
+    LoggerModule.forRoot({
+      pinoHttp: {
+        genReqId: (req: any) => {
+          if (req.correlationId) return req.correlationId;
+          const header = req.headers['x-request-id'] as string | undefined;
+          const id = header && /^[\w.:\-]{1,128}$/.test(header) ? header : randomUUID();
+          req.correlationId = id;
+          return id;
+        },
+        customProps: (req: any) => ({ correlationId: req.correlationId }),
+        transport:
+          process.env.NODE_ENV !== 'production'
+            ? { target: 'pino-pretty', options: { colorize: true, singleLine: true } }
+            : undefined,
+        autoLogging: { ignore: (req: any) => req.originalUrl === '/health' },
+      },
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],
