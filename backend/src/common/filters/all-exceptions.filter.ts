@@ -28,11 +28,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const path = request?.originalUrl ?? request?.url ?? 'unknown';
     const method = request?.method ?? 'UNKNOWN';
     const userId = request?.user?.id ?? request?.user?.sub ?? 'anonymous';
+    const correlationId = request?.correlationId ?? null;
     const errorMessage = exception instanceof Error ? exception.message : String(exception);
     const errorStack = exception instanceof Error ? exception.stack : undefined;
 
     this.logger.error(
-      `Unhandled exception ${method} ${path} userId=${userId} error=${errorMessage}`,
+      `Unhandled exception ${method} ${path} userId=${userId} correlationId=${correlationId} error=${errorMessage}`,
       errorStack,
     );
 
@@ -43,6 +44,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
       timestamp,
       path,
     };
+
+    if (correlationId) {
+      body.correlationId = correlationId;
+    }
 
     if (!isProduction) {
       body.error = errorMessage;
