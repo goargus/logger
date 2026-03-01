@@ -167,6 +167,12 @@ class ApiClient {
         headers['Authorization'] = 'Bearer $token';
       }
     } catch (e) {
+      if (e is SocketException) {
+        throw NetworkException.noConnection();
+      }
+      if (e is TimeoutException) {
+        throw NetworkException.timeout();
+      }
       throw AuthException.tokenExpired();
     }
 
