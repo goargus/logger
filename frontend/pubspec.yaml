@@ -16,7 +16,7 @@ dependencies:
   auth0_flutter: ^1.6.0
   intl: any
   file_picker: ^10.3.10
-  http: ^1.2.1
+  http: ^1.6.0
   shared_preferences: ^2.5.4
   js: ^0.6.7
   flutter_riverpod: ^3.2.1
