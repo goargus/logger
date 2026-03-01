@@ -31,12 +31,17 @@ export class CsvExporter {
   /**
    * Escape a value for CSV format
    */
-  private escapeValue(value: unknown): string {
+  escapeValue(value: unknown): string {
     if (value === null || value === undefined) {
       return '';
     }
 
-    const stringValue = String(value);
+    let stringValue = String(value);
+
+    // Neutralize formula-triggering characters to prevent CSV injection (OWASP)
+    if (/^[=+\-@\t\r]/.test(stringValue)) {
+      stringValue = "'" + stringValue;
+    }
 
     // Check if escaping is needed
     if (
