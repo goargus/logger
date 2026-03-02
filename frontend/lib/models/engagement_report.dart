@@ -70,4 +70,16 @@ class EngagementResponse {
       summary: EngagementSummary.fromApi(json['summary'] as Map<String, dynamic>),
     );
   }
+
+  factory EngagementResponse.empty() {
+    return EngagementResponse(
+      users: [],
+      summary: EngagementSummary(
+        totalUsers: 0,
+        activeUsers: 0,
+        inactiveUsers: 0,
+        avgActivitiesPerUser: 0,
+      ),
+    );
+  }
 }

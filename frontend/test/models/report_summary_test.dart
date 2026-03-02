@@ -105,7 +105,7 @@ void main() {
         });
         expect(summary.totalActivities, equals(10));
         expect(summary.totalExpenses, equals(500.75));
-        expect(summary.isReported, isTrue);
+        expect(summary.activityCount, equals(10));
         expect(summary.periodStart, equals('2026-02-01'));
         expect(summary.periodEnd, equals('2026-02-28'));
       });
@@ -120,28 +120,46 @@ void main() {
         });
         expect(summary.totalActivities, equals(0));
         expect(summary.totalExpenses, equals(0.0));
-        expect(summary.isReported, isFalse);
+        expect(summary.activityCount, equals(0));
       });
 
-      test('isReported is true only when usersSubmitted > 0', () {
-        final reported = ReportSummary.fromApi(<String, dynamic>{
-          'totals': <String, dynamic>{'usersSubmitted': 1},
+      test('activityCount reflects parsed activities', () {
+        final summary = ReportSummary.fromApi(<String, dynamic>{
+          'totals': <String, dynamic>{'activities': 5},
           'period': <String, dynamic>{},
         });
-        expect(reported.isReported, isTrue);
+        expect(summary.activityCount, equals(5));
+      });
 
-        final notReported = ReportSummary.fromApi(<String, dynamic>{
-          'totals': <String, dynamic>{'usersSubmitted': 0},
+      test('lastActivityDate and trend are parsed when present', () {
+        final summary = ReportSummary.fromApi(<String, dynamic>{
+          'totals': <String, dynamic>{
+            'activities': 3,
+            'lastActivityDate': '2026-02-15',
+            'trend': 12.5,
+          },
           'period': <String, dynamic>{},
         });
-        expect(notReported.isReported, isFalse);
+        expect(summary.lastActivityDate, equals('2026-02-15'));
+        expect(summary.trend, equals(12.5));
+      });
+
+      test('lastActivityDate and trend default to null when absent', () {
+        final summary = ReportSummary.fromApi(<String, dynamic>{
+          'totals': <String, dynamic>{'activities': 0},
+          'period': <String, dynamic>{},
+        });
+        expect(summary.lastActivityDate, isNull);
+        expect(summary.trend, isNull);
       });
 
       test('empty factory returns sensible defaults', () {
         final empty = ReportSummary.empty();
         expect(empty.totalActivities, equals(0));
         expect(empty.totalExpenses, equals(0.0));
-        expect(empty.isReported, isFalse);
+        expect(empty.activityCount, equals(0));
+        expect(empty.lastActivityDate, isNull);
+        expect(empty.trend, isNull);
         expect(empty.status, equals('active'));
         expect(empty.statusLabel, equals('Activo'));
       });

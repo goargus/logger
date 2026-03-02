@@ -85,9 +85,9 @@ void main() {
           );
         });
 
-        test('getCompliance throws $name', () async {
+        test('getEngagement throws $name', () async {
           expect(
-            () => service.getCompliance(),
+            () => service.getEngagement(),
             throwsA(isA<AppException>()),
           );
         });

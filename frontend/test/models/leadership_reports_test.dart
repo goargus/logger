@@ -12,9 +12,9 @@ void main() {
             'endDate': '2026-01-14',
             'activities': 10,
             'expenses': 500.0,
-            'complianceRate': 85.5,
-            'usersSubmitted': 8,
-            'usersExpected': 10,
+            'activeRate': 85.5,
+            'activeUsers': 8,
+            'totalUsers': 10,
           }
         ]
       };
@@ -22,7 +22,7 @@ void main() {
       expect(result.periods.length, 1);
       expect(result.periods[0].activities, 10);
       expect(result.periods[0].expenses, 500.0);
-      expect(result.periods[0].complianceRate, 85.5);
+      expect(result.periods[0].activeRate, 85.5);
     });
 
     test('fromApi handles empty periods', () {
@@ -49,7 +49,7 @@ void main() {
           'dates': '2026-01-01 - 2026-01-14',
           'activities': 10,
           'expenses': 500.0,
-          'complianceRate': 85.0,
+          'activeRate': 85.0,
           'usersActive': 8,
         },
         'previous': {
@@ -57,13 +57,13 @@ void main() {
           'dates': '2025-12-18 - 2025-12-31',
           'activities': 7,
           'expenses': 300.0,
-          'complianceRate': 70.0,
+          'activeRate': 70.0,
           'usersActive': 6,
         },
         'changes': {
           'activities': {'value': 3.0, 'percent': 42.9},
           'expenses': {'value': 200.0, 'percent': 66.7},
-          'complianceRate': {'value': 15.0, 'percent': 21.4},
+          'activeRate': {'value': 15.0, 'percent': 21.4},
           'usersActive': {'value': 2.0, 'percent': 33.3},
         },
       };
@@ -110,7 +110,7 @@ void main() {
             'expenses': 200.0,
           }
         ],
-        'lowestCompliance': [
+        'lowestEngagement': [
           {'entityId': 'e1', 'name': 'Field B', 'rate': 40.0, 'missing': 3}
         ],
         'inactiveUsers': [
@@ -125,8 +125,8 @@ void main() {
       final result = RankingsResponse.fromApi(data);
       expect(result.topPerformers.length, 1);
       expect(result.topPerformers[0].name, 'Alice');
-      expect(result.lowestCompliance.length, 1);
-      expect(result.lowestCompliance[0].rate, 40.0);
+      expect(result.lowestEngagement.length, 1);
+      expect(result.lowestEngagement[0].rate, 40.0);
       expect(result.inactiveUsers.length, 1);
       expect(result.inactiveUsers[0].periodsInactive, 2);
     });

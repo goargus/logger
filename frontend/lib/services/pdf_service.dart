@@ -433,16 +433,6 @@ class PdfService {
     );
   }
 
-  pw.Widget _buildSectionTitle(String title) {
-    return pw.Text(
-      title,
-      style: pw.TextStyle(
-        fontSize: 13,
-        fontWeight: pw.FontWeight.bold,
-      ),
-    );
-  }
-
   pw.Widget _buildEmptyState(String message) {
     return pw.Center(
       child: pw.Padding(
