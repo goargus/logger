@@ -40,6 +40,7 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
   late final PeriodsService _periodsService;
   late Future<List<UserRoleAssignment>> _rolesFuture;
   late Future<List<ActivityType>> _typesFuture;
+  late Future<List<ActivityType>> _allTypesFuture;
 
   UserRoleAssignment? _selectedRole;
   ActivityType? _selectedType;
@@ -97,17 +98,98 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
     }
 
     _dateCtrl.text = DateFormat.yMMMMd('es').format(_selectedDate);
-    _typesFuture = _typeService.fetchAll().then((types) {
+
+    _allTypesFuture = _typeService.fetchAll();
+    _typesFuture = _allTypesFuture.then((types) {
       if (isEditMode && types.isNotEmpty) {
         final typeId = widget.existingActivity?['activityTypeId'] as String?;
-        if (typeId != null) {
-          final found = types.where((t) => t.id == typeId).firstOrNull;
+        if (typeId != null && typeId.isNotEmpty) {
+          ActivityType? found;
+          for (final t in types) {
+            if (t.id == typeId) {
+              found = t;
+              break;
+            }
+          }
           if (found != null) {
             setState(() => _selectedType = found);
           }
         }
       }
       return types;
+    });
+
+    _rolesFuture = _rolesFuture.then((roles) async {
+      if (!isEditMode) return roles;
+
+      final activeRoles = roles.where((r) => r.isActive).toList();
+      if (activeRoles.isEmpty) return roles;
+
+      final typeId = widget.existingActivity?['activityTypeId'] as String?;
+      if (typeId == null || typeId.isEmpty) return roles;
+
+      final types = await _allTypesFuture;
+      ActivityType? foundType;
+      for (final t in types) {
+        if (t.id == typeId) {
+          foundType = t;
+          break;
+        }
+      }
+      if (foundType == null) return roles;
+
+      UserRoleAssignment? matchingRole;
+      for (final role in activeRoles) {
+        final allowed = foundType.allowedRoles
+            .any((allowedRole) => allowedRole.id == role.role.id);
+        if (allowed) {
+          matchingRole = role;
+          break;
+        }
+      }
+
+      if (matchingRole != null) {
+        setState(() {
+          _selectedRole = matchingRole;
+          _selectedType = foundType;
+          _typesFuture = _typeService
+              .fetchByRole(matchingRole!.role.id)
+              .then((filtered) {
+            if (_selectedType != null) {
+              ActivityType? matched;
+              for (final t in filtered) {
+                if (t.id == _selectedType!.id) {
+                  matched = t;
+                  break;
+                }
+              }
+              _selectedType = matched;
+            }
+            return filtered;
+          });
+        });
+      } else if (activeRoles.length == 1) {
+        final fallbackRole = activeRoles.first;
+        setState(() {
+          _selectedRole = fallbackRole;
+          _typesFuture =
+              _typeService.fetchByRole(fallbackRole.role.id).then((filtered) {
+            if (_selectedType != null) {
+              ActivityType? matched;
+              for (final t in filtered) {
+                if (t.id == _selectedType!.id) {
+                  matched = t;
+                  break;
+                }
+              }
+              _selectedType = matched;
+            }
+            return filtered;
+          });
+        });
+      }
+
+      return roles;
     });
   }
 
@@ -412,8 +494,18 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
                               style: theme.textTheme.bodyMedium);
                         }
 
+                        ActivityType? selectedFromList;
+                        if (_selectedType != null) {
+                          for (final t in types) {
+                            if (t.id == _selectedType!.id) {
+                              selectedFromList = t;
+                              break;
+                            }
+                          }
+                        }
+
                         return DropdownButtonFormField<ActivityType>(
-                          initialValue: _selectedType,
+                          initialValue: selectedFromList,
                           isExpanded: true,
                           items: types
                               .map((t) => DropdownMenuItem<ActivityType>(
