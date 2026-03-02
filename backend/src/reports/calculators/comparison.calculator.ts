@@ -51,14 +51,14 @@ export class ComparisonCalculator {
         usersActive = activities.length > 0 ? 1 : 0;
       }
 
-      const complianceRate = usersExpected > 0 ? usersActive / usersExpected : 0;
+      const activeRate = usersExpected > 0 ? usersActive / usersExpected : 0;
 
       return {
         periodId: period.label,
         dates: `${formatDate(period.startDate)}-${formatDate(period.endDate)}`,
         activities: activities.length,
         expenses: Math.round(totalExpenses * 100) / 100,
-        complianceRate: Math.round(complianceRate * 100) / 100,
+        activeRate: Math.round(activeRate * 100) / 100,
         usersActive,
       };
     };
@@ -81,7 +81,7 @@ export class ComparisonCalculator {
       changes: {
         activities: calculateChange(current.activities, previous.activities),
         expenses: calculateChange(current.expenses, previous.expenses),
-        complianceRate: calculateChange(current.complianceRate, previous.complianceRate),
+        activeRate: calculateChange(current.activeRate, previous.activeRate),
         usersActive: calculateChange(current.usersActive, previous.usersActive),
       },
     };

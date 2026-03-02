@@ -72,8 +72,8 @@ export class HierarchyBreakdownCalculator {
     // Build breakdown per entity
     return entities.map((entity) => {
       const entityActivities = entityActivityMap.get(entity.id) || [];
-      const usersExpected = userCountMap.get(entity.id) || 0;
-      const usersSubmitted = new Set(entityActivities.map((a) => a.userId)).size;
+      const totalUsers = userCountMap.get(entity.id) || 0;
+      const activeUsers = new Set(entityActivities.map((a) => a.userId)).size;
 
       const expenses = entityActivities.reduce((sum, a) => {
         return sum + (a.expenseAmount ? parseFloat(a.expenseAmount) : 0);
@@ -86,10 +86,14 @@ export class HierarchyBreakdownCalculator {
         parentId: entity.parent_id || null,
         activities: entityActivities.length,
         expenses: Math.round(expenses * 100) / 100,
-        usersExpected,
-        usersSubmitted,
-        complianceRate:
-          usersExpected > 0 ? Math.round((usersSubmitted / usersExpected) * 100) / 100 : 0,
+        totalUsers,
+        activeUsers,
+        activeRate:
+          totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) / 100 : 0,
+        avgActivitiesPerUser:
+          totalUsers > 0
+            ? Math.round((entityActivities.length / totalUsers) * 100) / 100
+            : 0,
       };
     });
   }
