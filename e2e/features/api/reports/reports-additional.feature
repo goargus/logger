@@ -7,10 +7,10 @@ Feature: Additional Report Endpoints
   Background:
     Given I am authenticated as "admin"
 
-  # === COMPLIANCE REPORT ===
+  # === ENGAGEMENT REPORT ===
   @smoke
-  Scenario: Get compliance report
-    When I request the compliance report
+  Scenario: Get engagement report
+    When I request the engagement report
     Then the response status should be 200
 
   # === RANKINGS REPORT ===
@@ -45,9 +45,9 @@ Feature: Additional Report Endpoints
 
   # === PERMISSION BOUNDARY ===
   @permission
-  Scenario: Missionary cannot access compliance report
+  Scenario: Missionary cannot access engagement report
     Given I am authenticated as "missionary"
-    When I request the compliance report
+    When I request the engagement report
     Then the response status should be 403
 
   @permission

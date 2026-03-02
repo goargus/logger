@@ -2,7 +2,7 @@
 Feature: Reviewing Ministry Reports
   As a pastor or administrator
   I want to view aggregated activity reports
-  So that I can track ministry effectiveness and team compliance
+  So that I can track ministry effectiveness and team engagement
 
   Background:
     Given I am logged in as an administrator
@@ -20,11 +20,10 @@ Feature: Reviewing Ministry Reports
     And I should see activities grouped by entity
     And I should see activities grouped by user
 
-  Scenario: Checking team compliance
-    When I request the compliance report
-    Then I should see which team members have submitted activities
-    And I should see which team members have not submitted
-    And I should see the overall compliance percentage
+  Scenario: Checking team engagement
+    When I request the engagement report
+    Then I should see the list of users with engagement data
+    And I should see the engagement summary
 
   Scenario: Viewing activity trends over time
     Given there are multiple completed reporting periods
@@ -41,7 +40,7 @@ Feature: Reviewing Ministry Reports
   Scenario: Identifying top performers and areas of concern
     When I request the rankings report
     Then I should see the top performing team members
-    And I should see team members with lowest compliance
+    And I should see team members with lowest engagement
     And I should see inactive users who need follow-up
 
   Scenario: Reviewing expense reports

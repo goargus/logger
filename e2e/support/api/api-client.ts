@@ -67,7 +67,7 @@ export const ENDPOINTS = {
   // Reports
   REPORTS_SUMMARY: '/reports/summary',
   REPORTS_BREAKDOWNS: '/reports/breakdowns',
-  REPORTS_COMPLIANCE: '/reports/compliance',
+  REPORTS_ENGAGEMENT: '/reports/engagement',
   REPORTS_TRENDS: '/reports/trends',
   REPORTS_COMPARISON: '/reports/comparison',
   REPORTS_RANKINGS: '/reports/rankings',

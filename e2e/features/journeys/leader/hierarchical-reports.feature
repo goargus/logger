@@ -56,9 +56,9 @@ Feature: Hierarchical Reports Navigation
       | entityType      |
       | activities      |
       | expenses        |
-      | usersExpected   |
-      | usersSubmitted  |
-      | complianceRate  |
+      | totalUsers      |
+      | activeUsers     |
+      | activeRate      |
 
   @hierarchy-reports
   Scenario: Summary without hierarchy breakdown flag
