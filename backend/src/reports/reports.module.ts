@@ -14,7 +14,7 @@ import { ReportsTimeScopeService } from './time/reports-time-scope.service';
 import { ReportsActivityQueryFactory } from './query/reports-activity-query.factory';
 import { SummaryCalculator } from './calculators/summary.calculator';
 import { BreakdownsCalculator } from './calculators/breakdowns.calculator';
-import { ComplianceCalculator } from './calculators/compliance.calculator';
+import { EngagementCalculator } from './calculators/engagement.calculator';
 import { TrendsCalculator } from './calculators/trends.calculator';
 import { ComparisonCalculator } from './calculators/comparison.calculator';
 import { RankingsCalculator } from './calculators/rankings.calculator';
@@ -38,7 +38,7 @@ import { CsvExporter } from './export/csv-exporter';
     ReportsActivityQueryFactory,
     SummaryCalculator,
     BreakdownsCalculator,
-    ComplianceCalculator,
+    EngagementCalculator,
     TrendsCalculator,
     ComparisonCalculator,
     RankingsCalculator,
