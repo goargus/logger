@@ -233,20 +233,39 @@ class _ReportsViewContentState extends ConsumerState<ReportsViewContent> {
                         ),
                       ),
                       const SizedBox(width: 16),
-                      if (_summary?.isReported ?? false)
+                      if (_summary != null && _summary!.activityCount > 0)
                         Row(
-                          children: const [
+                          children: [
                             Icon(
-                              Icons.check_circle,
-                              color: Colors.green,
+                              Icons.trending_up,
+                              color: Colors.green.shade700,
                               size: 18,
                             ),
-                            SizedBox(width: 4),
+                            const SizedBox(width: 4),
                             Text(
-                              'Has reportado',
+                              '${_summary!.activityCount} actividades',
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.green,
+                                color: Colors.green.shade700,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      if (_summary != null && _summary!.activityCount == 0)
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.info_outline,
+                              color: Colors.grey.shade600,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Sin actividad en este periodo',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.grey.shade600,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -283,7 +302,7 @@ class _ReportsViewContentState extends ConsumerState<ReportsViewContent> {
             SummaryCards(
               activitiesCount: _summary!.totalActivities,
               expenses: _summary!.totalExpenses,
-              isReported: _summary!.isReported,
+              lastActivityDate: _summary!.lastActivityDate,
               currencySymbol: ref.watch(currencySymbolProvider),
             ),
             const SizedBox(height: 32),

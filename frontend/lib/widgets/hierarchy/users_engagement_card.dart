@@ -1,24 +1,61 @@
 import 'package:flutter/material.dart';
-import '../../models/compliance_report.dart';
+import '../../models/engagement_report.dart';
+import '../../models/users_report.dart';
 
-/// Card widget showing users who submitted vs not submitted activities
-class UsersComplianceCard extends StatelessWidget {
-  const UsersComplianceCard({
+/// Card widget showing user engagement with activity metrics
+class UsersEngagementCard extends StatefulWidget {
+  const UsersEngagementCard({
     super.key,
-    required this.compliance,
+    required this.engagement,
     this.onUserTap,
     this.title = 'Usuarios',
+    this.currentFilter,
+    this.onFilterChange,
   });
 
-  final ComplianceResponse compliance;
+  final EngagementResponse engagement;
   final void Function(String userId, String userName)? onUserTap;
   final String title;
+  final EngagementFilter? currentFilter;
+  final void Function(EngagementFilter filter)? onFilterChange;
+
+  @override
+  State<UsersEngagementCard> createState() => _UsersEngagementCardState();
+}
+
+class _UsersEngagementCardState extends State<UsersEngagementCard> {
+  EngagementFilter _localFilter = EngagementFilter.all;
+
+  EngagementFilter get _activeFilter => widget.currentFilter ?? _localFilter;
+
+  List<EngagementUser> get _filteredUsers {
+    switch (_activeFilter) {
+      case EngagementFilter.all:
+        return widget.engagement.users;
+      case EngagementFilter.active:
+        return widget.engagement.users
+            .where((u) => u.activityCount > 0)
+            .toList();
+      case EngagementFilter.inactive:
+        return widget.engagement.users
+            .where((u) => u.activityCount == 0)
+            .toList();
+    }
+  }
+
+  void _onFilterChanged(EngagementFilter filter) {
+    if (widget.onFilterChange != null) {
+      widget.onFilterChange!(filter);
+    } else {
+      setState(() => _localFilter = filter);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    if (compliance.isEmpty) {
+    if (widget.engagement.users.isEmpty) {
       return Card(
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -53,7 +90,7 @@ class UsersComplianceCard extends StatelessWidget {
                 Icon(Icons.people, color: theme.colorScheme.primary),
                 const SizedBox(width: 8),
                 Text(
-                  title,
+                  widget.title,
                   style: theme.textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
@@ -62,32 +99,10 @@ class UsersComplianceCard extends StatelessWidget {
                 _buildSummaryChips(theme),
               ],
             ),
-            const SizedBox(height: 16),
-
-            // Submitted users section
-            if (compliance.submitted.isNotEmpty) ...[
-              _buildSectionHeader(
-                theme,
-                icon: Icons.check_circle,
-                label: 'Han reportado (${compliance.submitted.length})',
-                color: Colors.green,
-              ),
-              const SizedBox(height: 8),
-              _buildSubmittedUsersTable(theme),
-              const SizedBox(height: 16),
-            ],
-
-            // Not submitted users section
-            if (compliance.notSubmitted.isNotEmpty) ...[
-              _buildSectionHeader(
-                theme,
-                icon: Icons.warning,
-                label: 'Sin reportar (${compliance.notSubmitted.length})',
-                color: Colors.orange,
-              ),
-              const SizedBox(height: 8),
-              _buildNotSubmittedUsersTable(theme),
-            ],
+            const SizedBox(height: 12),
+            _buildFilterBar(theme),
+            const SizedBox(height: 12),
+            _buildUsersTable(theme),
           ],
         ),
       ),
@@ -95,20 +110,21 @@ class UsersComplianceCard extends StatelessWidget {
   }
 
   Widget _buildSummaryChips(ThemeData theme) {
+    final summary = widget.engagement.summary;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Chip(
           avatar: Icon(Icons.check, size: 16, color: Colors.green.shade700),
-          label: Text('${compliance.submitted.length}'),
+          label: Text('${summary.activeUsers} activos'),
           backgroundColor: Colors.green.shade50,
           visualDensity: VisualDensity.compact,
           padding: EdgeInsets.zero,
         ),
         const SizedBox(width: 8),
         Chip(
-          avatar: Icon(Icons.close, size: 16, color: Colors.orange.shade700),
-          label: Text('${compliance.notSubmitted.length}'),
+          avatar: Icon(Icons.remove_circle_outline, size: 16, color: Colors.orange.shade700),
+          label: Text('${summary.inactiveUsers} inactivos'),
           backgroundColor: Colors.orange.shade50,
           visualDensity: VisualDensity.compact,
           padding: EdgeInsets.zero,
@@ -117,28 +133,40 @@ class UsersComplianceCard extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(
-    ThemeData theme, {
-    required IconData icon,
-    required String label,
-    required Color color,
-  }) {
+  Widget _buildFilterBar(ThemeData theme) {
     return Row(
-      children: [
-        Icon(icon, size: 18, color: color),
-        const SizedBox(width: 8),
-        Text(
-          label,
-          style: theme.textTheme.titleSmall?.copyWith(
-            color: color,
-            fontWeight: FontWeight.w600,
+      children: EngagementFilter.values.map((filter) {
+        final isSelected = _activeFilter == filter;
+        return Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: FilterChip(
+            label: Text(filter.label),
+            selected: isSelected,
+            onSelected: (_) => _onFilterChanged(filter),
+            visualDensity: VisualDensity.compact,
           ),
-        ),
-      ],
+        );
+      }).toList(),
     );
   }
 
-  Widget _buildSubmittedUsersTable(ThemeData theme) {
+  Widget _buildUsersTable(ThemeData theme) {
+    final users = _filteredUsers;
+
+    if (users.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Center(
+          child: Text(
+            'No hay usuarios en esta categoria',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      );
+    }
+
     return Container(
       decoration: BoxDecoration(
         border: Border.all(color: theme.dividerColor),
@@ -148,60 +176,7 @@ class UsersComplianceCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         child: DataTable(
           headingRowColor: WidgetStateProperty.all(
-            Colors.green.shade50,
-          ),
-          dataRowMinHeight: 48,
-          dataRowMaxHeight: 56,
-          columnSpacing: 24,
-          horizontalMargin: 16,
-          columns: const [
-            DataColumn(label: Text('Usuario')),
-            DataColumn(label: Text('Actividades'), numeric: true),
-            DataColumn(label: Text('Ultima Actividad')),
-          ],
-          rows: compliance.submitted.map((user) {
-            return DataRow(
-              cells: [
-                DataCell(
-                  _buildUserCell(theme, user.name, user.userId),
-                  onTap: onUserTap != null
-                      ? () => onUserTap!(user.userId, user.name)
-                      : null,
-                ),
-                DataCell(
-                  Text(
-                    '${user.count}',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                      color: Colors.green.shade700,
-                    ),
-                  ),
-                ),
-                DataCell(
-                  Text(
-                    _formatDate(user.lastActivity),
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ),
-              ],
-            );
-          }).toList(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNotSubmittedUsersTable(ThemeData theme) {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: theme.dividerColor),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: DataTable(
-          headingRowColor: WidgetStateProperty.all(
-            Colors.orange.shade50,
+            theme.colorScheme.surfaceContainerHighest,
           ),
           dataRowMinHeight: 48,
           dataRowMaxHeight: 56,
@@ -210,15 +185,17 @@ class UsersComplianceCard extends StatelessWidget {
           columns: const [
             DataColumn(label: Text('Usuario')),
             DataColumn(label: Text('Entidad')),
-            DataColumn(label: Text('Roles')),
+            DataColumn(label: Text('Actividades'), numeric: true),
+            DataColumn(label: Text('Ultima Actividad')),
+            DataColumn(label: Text('Tendencia'), numeric: true),
           ],
-          rows: compliance.notSubmitted.map((user) {
+          rows: users.map((user) {
             return DataRow(
               cells: [
                 DataCell(
                   _buildUserCell(theme, user.name, user.userId),
-                  onTap: onUserTap != null
-                      ? () => onUserTap!(user.userId, user.name)
+                  onTap: widget.onUserTap != null
+                      ? () => widget.onUserTap!(user.userId, user.name)
                       : null,
                 ),
                 DataCell(
@@ -229,10 +206,22 @@ class UsersComplianceCard extends StatelessWidget {
                 ),
                 DataCell(
                   Text(
-                    user.roles.join(', '),
+                    '${user.activityCount}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: user.activityCount > 0
+                          ? Colors.green.shade700
+                          : Colors.grey,
+                    ),
+                  ),
+                ),
+                DataCell(
+                  Text(
+                    _formatDate(user.lastActivityDate),
                     style: theme.textTheme.bodySmall,
                   ),
                 ),
+                DataCell(_buildTrendCell(theme, user.trend)),
               ],
             );
           }).toList(),
@@ -242,7 +231,7 @@ class UsersComplianceCard extends StatelessWidget {
   }
 
   Widget _buildUserCell(ThemeData theme, String name, String userId) {
-    final isClickable = onUserTap != null;
+    final isClickable = widget.onUserTap != null;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -280,8 +269,43 @@ class UsersComplianceCard extends StatelessWidget {
     );
   }
 
-  String _formatDate(String dateStr) {
-    if (dateStr.isEmpty) return '-';
+  Widget _buildTrendCell(ThemeData theme, double? trend) {
+    if (trend == null) {
+      return Text('-', style: theme.textTheme.bodySmall);
+    }
+
+    final isPositive = trend > 0;
+    final isNeutral = trend == 0;
+    final color = isPositive
+        ? Colors.green.shade700
+        : isNeutral
+            ? Colors.grey.shade600
+            : Colors.red.shade700;
+    final icon = isPositive
+        ? Icons.trending_up
+        : isNeutral
+            ? Icons.trending_flat
+            : Icons.trending_down;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 4),
+        Text(
+          '${trend > 0 ? '+' : ''}${trend.toStringAsFixed(0)}%',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatDate(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) return '-';
     try {
       final date = DateTime.parse(dateStr);
       return '${date.day}/${date.month}/${date.year}';

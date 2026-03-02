@@ -80,7 +80,8 @@ class HierarchyBreakdownCard extends StatelessWidget {
                   DataColumn(label: Text('Tipo')),
                   DataColumn(label: Text('Actividades'), numeric: true),
                   DataColumn(label: Text('Gastos'), numeric: true),
-                  DataColumn(label: Text('Cumplimiento'), numeric: true),
+                  DataColumn(label: Text('Prom. Actividades'), numeric: true),
+                  DataColumn(label: Text('Participacion'), numeric: true),
                 ],
                 rows: breakdown.map((entity) {
                   return DataRow(
@@ -118,7 +119,11 @@ class HierarchyBreakdownCard extends StatelessWidget {
                       DataCell(Text('${entity.activities}')),
                       DataCell(Text(CurrencyFormatter.format(
                           entity.expenses, currencySymbol))),
-                      DataCell(_ComplianceBadge(rate: entity.complianceRate)),
+                      DataCell(Text(
+                        entity.avgActivitiesPerUser.toStringAsFixed(1),
+                        style: theme.textTheme.bodyMedium,
+                      )),
+                      DataCell(_ParticipationBadge(rate: entity.activeRate)),
                     ],
                   );
                 }).toList(),
@@ -144,8 +149,8 @@ class HierarchyBreakdownCard extends StatelessWidget {
   }
 }
 
-class _ComplianceBadge extends StatelessWidget {
-  const _ComplianceBadge({required this.rate});
+class _ParticipationBadge extends StatelessWidget {
+  const _ParticipationBadge({required this.rate});
 
   final double rate;
 
