@@ -4,7 +4,7 @@ import { randomUUID } from 'crypto';
 
 export const CORRELATION_ID_HEADER = 'X-Request-ID';
 
-const VALID_CORRELATION_ID = /^[\w.:\-]{1,128}$/;
+const VALID_CORRELATION_ID = /^[\w.:-]{1,128}$/;
 
 @Injectable()
 export class CorrelationIdMiddleware implements NestMiddleware {

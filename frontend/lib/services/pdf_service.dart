@@ -329,9 +329,7 @@ class PdfService {
 
   pw.Widget _buildSummarySection(
       int totalActivities, int activitiesWithExpense, double totalExpenses,
-      {String currencySymbol = 'L',
-      double? activePercent,
-      int? totalUsers}) {
+      {String currencySymbol = 'L', double? activePercent, int? totalUsers}) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(16),
       decoration: pw.BoxDecoration(

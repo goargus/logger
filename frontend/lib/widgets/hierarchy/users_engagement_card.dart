@@ -123,7 +123,8 @@ class _UsersEngagementCardState extends State<UsersEngagementCard> {
         ),
         const SizedBox(width: 8),
         Chip(
-          avatar: Icon(Icons.remove_circle_outline, size: 16, color: Colors.orange.shade700),
+          avatar: Icon(Icons.remove_circle_outline,
+              size: 16, color: Colors.orange.shade700),
           label: Text('${summary.inactiveUsers} inactivos'),
           backgroundColor: Colors.orange.shade50,
           visualDensity: VisualDensity.compact,

@@ -150,7 +150,8 @@ class UsersReportSummary {
       inactiveUsers: json['inactiveUsers'] as int,
       totalActivities: json['totalActivities'] as int,
       totalExpenses: (json['totalExpenses'] as num).toDouble(),
-      avgActivitiesPerUser: (json['avgActivitiesPerUser'] as num?)?.toDouble() ?? 0.0,
+      avgActivitiesPerUser:
+          (json['avgActivitiesPerUser'] as num?)?.toDouble() ?? 0.0,
     );
   }
 

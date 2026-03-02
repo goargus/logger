@@ -67,7 +67,8 @@ class EngagementResponse {
       users: (json['users'] as List<dynamic>)
           .map((u) => EngagementUser.fromApi(u as Map<String, dynamic>))
           .toList(),
-      summary: EngagementSummary.fromApi(json['summary'] as Map<String, dynamic>),
+      summary:
+          EngagementSummary.fromApi(json['summary'] as Map<String, dynamic>),
     );
   }
 

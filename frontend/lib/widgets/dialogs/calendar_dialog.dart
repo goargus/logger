@@ -181,14 +181,16 @@ class _CalendarDialogState extends State<CalendarDialog> {
                   color: Colors.transparent,
                   child: InkWell(
                     borderRadius: BorderRadius.circular(8),
-                    onTap: () => setState(() => _showMonthPicker = !_showMonthPicker),
+                    onTap: () =>
+                        setState(() => _showMonthPicker = !_showMonthPicker),
                     child: Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
                         color: Theme.of(context).colorScheme.surface,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Theme.of(context).dividerColor),
+                        border:
+                            Border.all(color: Theme.of(context).dividerColor),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -202,7 +204,9 @@ class _CalendarDialogState extends State<CalendarDialog> {
                           ),
                           const SizedBox(width: 4),
                           Icon(
-                            _showMonthPicker ? Icons.expand_less : Icons.expand_more,
+                            _showMonthPicker
+                                ? Icons.expand_less
+                                : Icons.expand_more,
                             size: 16,
                             color: Theme.of(context).colorScheme.primary,
                           ),
@@ -222,14 +226,14 @@ class _CalendarDialogState extends State<CalendarDialog> {
                   onPressed: () => Navigator.of(context).pop(),
                   icon: const Icon(Icons.close),
                   style: IconButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
+                    foregroundColor:
+                        Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
-            if (_showMonthPicker)
-              _buildMonthPickerGrid(context),
+            if (_showMonthPicker) _buildMonthPickerGrid(context),
             if (_showMonthPicker) const SizedBox(height: 12),
             Row(
               children: [
@@ -433,8 +437,7 @@ class _CalendarDialogState extends State<CalendarDialog> {
                   final isWithinRange = _isWithinSelectableRange(todayDate);
 
                   setState(() {
-                    _focusedMonth =
-                        DateTime(todayDate.year, todayDate.month);
+                    _focusedMonth = DateTime(todayDate.year, todayDate.month);
                     if (isWithinRange) {
                       _selected = todayDate;
                     }
@@ -485,8 +488,18 @@ class _CalendarDialogState extends State<CalendarDialog> {
   }
 
   static const _monthNames = [
-    'Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun',
-    'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic',
+    'Ene',
+    'Feb',
+    'Mar',
+    'Abr',
+    'May',
+    'Jun',
+    'Jul',
+    'Ago',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dic',
   ];
 
   Widget _buildMonthPickerGrid(BuildContext context) {
@@ -531,7 +544,8 @@ class _CalendarDialogState extends State<CalendarDialog> {
                   _monthNames[index],
                   style: TextStyle(
                     fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                    fontWeight:
+                        isSelected ? FontWeight.w600 : FontWeight.normal,
                     color: isSelected ? scheme.onPrimary : scheme.onSurface,
                   ),
                 ),

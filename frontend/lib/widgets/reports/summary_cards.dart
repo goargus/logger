@@ -29,7 +29,8 @@ class SummaryCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasActivity = lastActivityDate != null && lastActivityDate!.isNotEmpty;
+    final hasActivity =
+        lastActivityDate != null && lastActivityDate!.isNotEmpty;
 
     return Row(
       children: [

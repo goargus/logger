@@ -38,7 +38,8 @@ class HierarchyEntityBreakdown {
       totalUsers: (data['totalUsers'] as num?)?.toInt() ?? 0,
       activeUsers: (data['activeUsers'] as num?)?.toInt() ?? 0,
       activeRate: (data['activeRate'] as num?)?.toDouble() ?? 0.0,
-      avgActivitiesPerUser: (data['avgActivitiesPerUser'] as num?)?.toDouble() ?? 0.0,
+      avgActivitiesPerUser:
+          (data['avgActivitiesPerUser'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
@@ -105,7 +106,8 @@ class HierarchySummaryResponse {
       totalUsers: (totals['totalUsers'] as num?)?.toInt() ?? 0,
       activeUsers: (totals['activeUsers'] as num?)?.toInt() ?? 0,
       activeRate: (totals['activeRate'] as num?)?.toDouble() ?? 0.0,
-      avgActivitiesPerUser: (totals['avgActivitiesPerUser'] as num?)?.toDouble() ?? 0.0,
+      avgActivitiesPerUser:
+          (totals['avgActivitiesPerUser'] as num?)?.toDouble() ?? 0.0,
       hierarchyBreakdown: breakdownData
           .map((item) =>
               HierarchyEntityBreakdown.fromApi(item as Map<String, dynamic>))

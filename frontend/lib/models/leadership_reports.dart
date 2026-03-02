@@ -127,8 +127,7 @@ class ComparisonChanges {
     return ComparisonChanges(
       activities: Change.fromApi(data['activities'] as Map<String, dynamic>),
       expenses: Change.fromApi(data['expenses'] as Map<String, dynamic>),
-      activeRate:
-          Change.fromApi(data['activeRate'] as Map<String, dynamic>),
+      activeRate: Change.fromApi(data['activeRate'] as Map<String, dynamic>),
       usersActive: Change.fromApi(data['usersActive'] as Map<String, dynamic>),
     );
   }

@@ -39,7 +39,10 @@ describe('IdentityResolutionService', () => {
     it('returns user when found with sub and issuer', async () => {
       idpRepo.findOne.mockResolvedValue({ user: activeUser });
 
-      const result = await service.resolveUserBySubAndIssuer('auth0|abc', 'https://auth0.example.com/');
+      const result = await service.resolveUserBySubAndIssuer(
+        'auth0|abc',
+        'https://auth0.example.com/',
+      );
 
       expect(result).toEqual(activeUser);
       expect(idpRepo.findOne).toHaveBeenCalledWith({
@@ -61,9 +64,9 @@ describe('IdentityResolutionService', () => {
     });
 
     it('throws UnauthorizedException when sub is missing', async () => {
-      await expect(
-        service.resolveUserBySubAndIssuer(undefined),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.resolveUserBySubAndIssuer(undefined)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('throws UnauthorizedException when no identity found', async () => {
@@ -85,7 +88,10 @@ describe('IdentityResolutionService', () => {
     it('loads user with role and entity relations', async () => {
       idpRepo.findOne.mockResolvedValue({ user: activeUser });
 
-      const result = await service.resolveUserBySubAndIssuer('auth0|abc', 'https://auth0.example.com/');
+      const result = await service.resolveUserBySubAndIssuer(
+        'auth0|abc',
+        'https://auth0.example.com/',
+      );
 
       expect(result.role).toBeDefined();
       expect(result.entity).toBeDefined();

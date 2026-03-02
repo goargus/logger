@@ -543,10 +543,9 @@ class _LeadershipDashboardContentState
                     DataCell(Text(
                       CurrencyFormatter.format(period.expenses, 'L'),
                     )),
+                    DataCell(Text('${period.activeRate.toStringAsFixed(1)}%')),
                     DataCell(
-                        Text('${period.activeRate.toStringAsFixed(1)}%')),
-                    DataCell(Text(
-                        '${period.activeUsers}/${period.totalUsers}')),
+                        Text('${period.activeUsers}/${period.totalUsers}')),
                   ]);
                 }).toList(),
               ),

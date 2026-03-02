@@ -25,7 +25,12 @@ class ActivitiesListContent extends ConsumerStatefulWidget {
 }
 
 class _ActivitiesListContentState extends ConsumerState<ActivitiesListContent> {
-  static const _sortColumns = ['activityDate', 'activityType', 'description', 'expenseAmount'];
+  static const _sortColumns = [
+    'activityDate',
+    'activityType',
+    'description',
+    'expenseAmount'
+  ];
 
   int? _sortColumnIndex(String? sortBy) {
     if (sortBy == null) return null;
