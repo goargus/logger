@@ -166,7 +166,7 @@ void main() {
                 'dates': '',
                 'activities': 0,
                 'expenses': 0.0,
-                'complianceRate': 0.0,
+                'activeRate': 0.0,
                 'usersActive': 0,
               },
               'previous': {
@@ -174,13 +174,13 @@ void main() {
                 'dates': '',
                 'activities': 0,
                 'expenses': 0.0,
-                'complianceRate': 0.0,
+                'activeRate': 0.0,
                 'usersActive': 0,
               },
               'changes': {
                 'activities': {'value': 0.0, 'percent': 0.0},
                 'expenses': {'value': 0.0, 'percent': 0.0},
-                'complianceRate': {'value': 0.0, 'percent': 0.0},
+                'activeRate': {'value': 0.0, 'percent': 0.0},
                 'usersActive': {'value': 0.0, 'percent': 0.0},
               },
             },
@@ -209,7 +209,7 @@ void main() {
           final mockClient = _CapturingApiClient(
             response: {
               'topPerformers': [],
-              'lowestCompliance': [],
+              'lowestEngagement': [],
               'inactiveUsers': [],
             },
             onGet: (path, params) => capturedPath = path,
