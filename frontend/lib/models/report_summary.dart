@@ -1,7 +1,9 @@
 class ReportSummary {
   final int totalActivities;
   final double totalExpenses;
-  final bool isReported;
+  final int activityCount;
+  final String? lastActivityDate;
+  final double? trend;
   final String periodStart;
   final String periodEnd;
   final String status;
@@ -16,7 +18,9 @@ class ReportSummary {
   const ReportSummary({
     required this.totalActivities,
     required this.totalExpenses,
-    required this.isReported,
+    required this.activityCount,
+    this.lastActivityDate,
+    this.trend,
     required this.periodStart,
     required this.periodEnd,
     required this.status,
@@ -28,13 +32,13 @@ class ReportSummary {
 
     final activities = (totals['activities'] as num?)?.toInt() ?? 0;
     final expenses = (totals['expenses'] as num?)?.toDouble() ?? 0.0;
-    final usersSubmitted = (totals['usersSubmitted'] as num?)?.toInt() ?? 0;
-    final isReported = usersSubmitted > 0;
 
     return ReportSummary(
       totalActivities: activities,
       totalExpenses: expenses,
-      isReported: isReported,
+      activityCount: activities,
+      lastActivityDate: totals['lastActivityDate'] as String?,
+      trend: (totals['trend'] as num?)?.toDouble(),
       periodStart: period['startDate'] as String? ?? '',
       periodEnd: period['endDate'] as String? ?? '',
       status: period['status'] as String? ?? 'active',
@@ -45,7 +49,9 @@ class ReportSummary {
     return const ReportSummary(
       totalActivities: 0,
       totalExpenses: 0.0,
-      isReported: false,
+      activityCount: 0,
+      lastActivityDate: null,
+      trend: null,
       periodStart: '',
       periodEnd: '',
       status: 'active',

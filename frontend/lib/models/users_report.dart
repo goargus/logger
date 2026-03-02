@@ -45,7 +45,7 @@ class UserReportItem {
   final int activitiesCount;
   final double totalExpenses;
   final String? lastActivityDate;
-  final bool hasSubmitted;
+  final double? trend;
 
   const UserReportItem({
     required this.userId,
@@ -60,7 +60,7 @@ class UserReportItem {
     required this.activitiesCount,
     required this.totalExpenses,
     this.lastActivityDate,
-    required this.hasSubmitted,
+    this.trend,
   });
 
   factory UserReportItem.fromApi(Map<String, dynamic> json) {
@@ -82,7 +82,7 @@ class UserReportItem {
       activitiesCount: json['activitiesCount'] as int,
       totalExpenses: (json['totalExpenses'] as num).toDouble(),
       lastActivityDate: json['lastActivityDate'] as String?,
-      hasSubmitted: json['hasSubmitted'] as bool,
+      trend: (json['trend'] as num?)?.toDouble(),
     );
   }
 
@@ -128,30 +128,33 @@ class UsersReportPagination {
 /// Summary totals
 class UsersReportSummary {
   final int totalUsers;
-  final int usersSubmitted;
-  final int usersNotSubmitted;
+  final int activeUsers;
+  final int inactiveUsers;
   final int totalActivities;
   final double totalExpenses;
+  final double avgActivitiesPerUser;
 
   const UsersReportSummary({
     required this.totalUsers,
-    required this.usersSubmitted,
-    required this.usersNotSubmitted,
+    required this.activeUsers,
+    required this.inactiveUsers,
     required this.totalActivities,
     required this.totalExpenses,
+    required this.avgActivitiesPerUser,
   });
 
   factory UsersReportSummary.fromApi(Map<String, dynamic> json) {
     return UsersReportSummary(
       totalUsers: json['totalUsers'] as int,
-      usersSubmitted: json['usersSubmitted'] as int,
-      usersNotSubmitted: json['usersNotSubmitted'] as int,
+      activeUsers: json['activeUsers'] as int,
+      inactiveUsers: json['inactiveUsers'] as int,
       totalActivities: json['totalActivities'] as int,
       totalExpenses: (json['totalExpenses'] as num).toDouble(),
+      avgActivitiesPerUser: (json['avgActivitiesPerUser'] as num?)?.toDouble() ?? 0.0,
     );
   }
 
-  double get complianceRate => totalUsers > 0 ? usersSubmitted / totalUsers : 0;
+  double get activeRate => totalUsers > 0 ? activeUsers / totalUsers : 0;
 }
 
 /// Full users report response
@@ -191,10 +194,11 @@ class UsersReportResponse {
       ),
       summary: UsersReportSummary(
         totalUsers: 0,
-        usersSubmitted: 0,
-        usersNotSubmitted: 0,
+        activeUsers: 0,
+        inactiveUsers: 0,
         totalActivities: 0,
         totalExpenses: 0,
+        avgActivitiesPerUser: 0.0,
       ),
     );
   }
@@ -202,31 +206,31 @@ class UsersReportResponse {
   bool get isEmpty => users.isEmpty;
 }
 
-/// Compliance filter options
-enum ComplianceFilter {
+/// Engagement filter options
+enum EngagementFilter {
   all,
-  submitted,
-  notSubmitted;
+  active,
+  inactive;
 
   String get apiValue {
     switch (this) {
-      case ComplianceFilter.all:
+      case EngagementFilter.all:
         return 'all';
-      case ComplianceFilter.submitted:
-        return 'submitted';
-      case ComplianceFilter.notSubmitted:
-        return 'notSubmitted';
+      case EngagementFilter.active:
+        return 'active';
+      case EngagementFilter.inactive:
+        return 'inactive';
     }
   }
 
   String get label {
     switch (this) {
-      case ComplianceFilter.all:
+      case EngagementFilter.all:
         return 'Todos';
-      case ComplianceFilter.submitted:
-        return 'Han reportado';
-      case ComplianceFilter.notSubmitted:
-        return 'Sin reportar';
+      case EngagementFilter.active:
+        return 'Activos';
+      case EngagementFilter.inactive:
+        return 'Inactivos';
     }
   }
 }

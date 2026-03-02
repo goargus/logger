@@ -11,9 +11,9 @@ class TrendPeriod {
   final String endDate;
   final int activities;
   final double expenses;
-  final double complianceRate;
-  final int usersSubmitted;
-  final int usersExpected;
+  final double activeRate;
+  final int activeUsers;
+  final int totalUsers;
 
   const TrendPeriod({
     required this.periodId,
@@ -21,9 +21,9 @@ class TrendPeriod {
     required this.endDate,
     required this.activities,
     required this.expenses,
-    required this.complianceRate,
-    required this.usersSubmitted,
-    required this.usersExpected,
+    required this.activeRate,
+    required this.activeUsers,
+    required this.totalUsers,
   });
 
   factory TrendPeriod.fromApi(Map<String, dynamic> data) {
@@ -33,9 +33,9 @@ class TrendPeriod {
       endDate: data['endDate'] as String? ?? '',
       activities: (data['activities'] as num?)?.toInt() ?? 0,
       expenses: (data['expenses'] as num?)?.toDouble() ?? 0.0,
-      complianceRate: (data['complianceRate'] as num?)?.toDouble() ?? 0.0,
-      usersSubmitted: (data['usersSubmitted'] as num?)?.toInt() ?? 0,
-      usersExpected: (data['usersExpected'] as num?)?.toInt() ?? 0,
+      activeRate: (data['activeRate'] as num?)?.toDouble() ?? 0.0,
+      activeUsers: (data['activeUsers'] as num?)?.toInt() ?? 0,
+      totalUsers: (data['totalUsers'] as num?)?.toInt() ?? 0,
     );
   }
 }
@@ -65,7 +65,7 @@ class PeriodSummary {
   final String dates;
   final int activities;
   final double expenses;
-  final double complianceRate;
+  final double activeRate;
   final int usersActive;
 
   const PeriodSummary({
@@ -73,7 +73,7 @@ class PeriodSummary {
     required this.dates,
     required this.activities,
     required this.expenses,
-    required this.complianceRate,
+    required this.activeRate,
     required this.usersActive,
   });
 
@@ -83,7 +83,7 @@ class PeriodSummary {
       dates: data['dates'] as String? ?? '',
       activities: (data['activities'] as num?)?.toInt() ?? 0,
       expenses: (data['expenses'] as num?)?.toDouble() ?? 0.0,
-      complianceRate: (data['complianceRate'] as num?)?.toDouble() ?? 0.0,
+      activeRate: (data['activeRate'] as num?)?.toDouble() ?? 0.0,
       usersActive: (data['usersActive'] as num?)?.toInt() ?? 0,
     );
   }
@@ -113,13 +113,13 @@ class Change {
 class ComparisonChanges {
   final Change activities;
   final Change expenses;
-  final Change complianceRate;
+  final Change activeRate;
   final Change usersActive;
 
   const ComparisonChanges({
     required this.activities,
     required this.expenses,
-    required this.complianceRate,
+    required this.activeRate,
     required this.usersActive,
   });
 
@@ -127,8 +127,8 @@ class ComparisonChanges {
     return ComparisonChanges(
       activities: Change.fromApi(data['activities'] as Map<String, dynamic>),
       expenses: Change.fromApi(data['expenses'] as Map<String, dynamic>),
-      complianceRate:
-          Change.fromApi(data['complianceRate'] as Map<String, dynamic>),
+      activeRate:
+          Change.fromApi(data['activeRate'] as Map<String, dynamic>),
       usersActive: Change.fromApi(data['usersActive'] as Map<String, dynamic>),
     );
   }
@@ -161,7 +161,7 @@ class ComparisonResponse {
       changes: ComparisonChanges.fromApi(const {
         'activities': {'value': 0.0, 'percent': 0.0},
         'expenses': {'value': 0.0, 'percent': 0.0},
-        'complianceRate': {'value': 0.0, 'percent': 0.0},
+        'activeRate': {'value': 0.0, 'percent': 0.0},
         'usersActive': {'value': 0.0, 'percent': 0.0},
       }),
     );
@@ -195,21 +195,21 @@ class TopPerformer {
   }
 }
 
-class LowCompliance {
+class LowEngagement {
   final String entityId;
   final String name;
   final double rate;
   final int missing;
 
-  const LowCompliance({
+  const LowEngagement({
     required this.entityId,
     required this.name,
     required this.rate,
     required this.missing,
   });
 
-  factory LowCompliance.fromApi(Map<String, dynamic> data) {
-    return LowCompliance(
+  factory LowEngagement.fromApi(Map<String, dynamic> data) {
+    return LowEngagement(
       entityId: data['entityId'] as String? ?? '',
       name: data['name'] as String? ?? '',
       rate: (data['rate'] as num?)?.toDouble() ?? 0.0,
@@ -243,12 +243,12 @@ class InactiveUser {
 
 class RankingsResponse {
   final List<TopPerformer> topPerformers;
-  final List<LowCompliance> lowestCompliance;
+  final List<LowEngagement> lowestEngagement;
   final List<InactiveUser> inactiveUsers;
 
   const RankingsResponse({
     required this.topPerformers,
-    required this.lowestCompliance,
+    required this.lowestEngagement,
     required this.inactiveUsers,
   });
 
@@ -258,10 +258,10 @@ class RankingsResponse {
         .map((item) => TopPerformer.fromApi(item as Map<String, dynamic>))
         .toList();
 
-    final lowestComplianceData =
-        data['lowestCompliance'] as List<dynamic>? ?? [];
-    final lowestCompliance = lowestComplianceData
-        .map((item) => LowCompliance.fromApi(item as Map<String, dynamic>))
+    final lowestEngagementData =
+        data['lowestEngagement'] as List<dynamic>? ?? [];
+    final lowestEngagement = lowestEngagementData
+        .map((item) => LowEngagement.fromApi(item as Map<String, dynamic>))
         .toList();
 
     final inactiveUsersData = data['inactiveUsers'] as List<dynamic>? ?? [];
@@ -271,7 +271,7 @@ class RankingsResponse {
 
     return RankingsResponse(
       topPerformers: topPerformers,
-      lowestCompliance: lowestCompliance,
+      lowestEngagement: lowestEngagement,
       inactiveUsers: inactiveUsers,
     );
   }
@@ -279,7 +279,7 @@ class RankingsResponse {
   factory RankingsResponse.empty() {
     return const RankingsResponse(
       topPerformers: [],
-      lowestCompliance: [],
+      lowestEngagement: [],
       inactiveUsers: [],
     );
   }
