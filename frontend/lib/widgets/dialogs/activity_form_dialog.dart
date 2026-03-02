@@ -152,9 +152,8 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
         setState(() {
           _selectedRole = matchingRole;
           _selectedType = foundType;
-          _typesFuture = _typeService
-              .fetchByRole(matchingRole!.role.id)
-              .then((filtered) {
+          _typesFuture =
+              _typeService.fetchByRole(matchingRole!.role.id).then((filtered) {
             if (_selectedType != null) {
               ActivityType? matched;
               for (final t in filtered) {
