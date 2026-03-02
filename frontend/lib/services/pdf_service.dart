@@ -89,8 +89,8 @@ class PdfService {
             summary.activeUsers,
             summary.totalExpenses,
             currencySymbol: currencySymbol,
-            compliancePercent: summary.activePercent,
-            usersExpected: summary.totalUsers,
+            activePercent: summary.activePercent,
+            totalUsers: summary.totalUsers,
           ),
           pw.SizedBox(height: 24),
           if (summary.hasHierarchyBreakdown)
@@ -330,8 +330,8 @@ class PdfService {
   pw.Widget _buildSummarySection(
       int totalActivities, int activitiesWithExpense, double totalExpenses,
       {String currencySymbol = 'L',
-      double? compliancePercent,
-      int? usersExpected}) {
+      double? activePercent,
+      int? totalUsers}) {
     return pw.Container(
       padding: const pw.EdgeInsets.all(16),
       decoration: pw.BoxDecoration(
@@ -343,10 +343,10 @@ class PdfService {
         mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
         children: [
           _buildStatColumn('Total Actividades', totalActivities.toString()),
-          if (usersExpected != null && compliancePercent != null)
+          if (totalUsers != null && activePercent != null)
             _buildStatColumn(
               'Participacion',
-              '${compliancePercent.toStringAsFixed(0)}%',
+              '${activePercent.toStringAsFixed(0)}%',
             )
           else
             _buildStatColumn('Con Gastos', activitiesWithExpense.toString()),

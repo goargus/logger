@@ -11,7 +11,7 @@ class ExportButton extends StatefulWidget {
     super.key,
     required this.onExport,
     this.formats = const ['csv', 'json', 'pdf'],
-    this.reportTypes = const ['activities', 'summary', 'compliance'],
+    this.reportTypes = const ['activities', 'summary', 'engagement'],
   });
 
   final Future<ExportData> Function(String format, String reportType) onExport;
@@ -44,8 +44,8 @@ class _ExportButtonState extends State<ExportButton> {
         return 'Actividades';
       case 'summary':
         return 'Resumen';
-      case 'compliance':
-        return 'Cumplimiento';
+      case 'engagement':
+        return 'Participacion';
       default:
         return type;
     }
@@ -57,7 +57,7 @@ class _ExportButtonState extends State<ExportButton> {
         return Icons.list_alt;
       case 'summary':
         return Icons.analytics;
-      case 'compliance':
+      case 'engagement':
         return Icons.people;
       default:
         return Icons.description;
