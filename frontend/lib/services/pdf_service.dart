@@ -3,7 +3,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import '../models/activity.dart';
 import '../models/activities_filter.dart';
-import '../models/compliance_report.dart';
+import '../models/engagement_report.dart';
 import '../models/hierarchy_breakdown.dart';
 import '../models/report_breakdown.dart';
 import '../utils/currency_formatter.dart';
@@ -86,11 +86,11 @@ class PdfService {
           pw.SizedBox(height: 20),
           _buildSummarySection(
             summary.totalActivities,
-            summary.usersSubmitted,
+            summary.activeUsers,
             summary.totalExpenses,
             currencySymbol: currencySymbol,
-            compliancePercent: summary.compliancePercent,
-            usersExpected: summary.usersExpected,
+            compliancePercent: summary.activePercent,
+            usersExpected: summary.totalUsers,
           ),
           pw.SizedBox(height: 24),
           if (summary.hasHierarchyBreakdown)
@@ -154,8 +154,8 @@ class PdfService {
     return pdf.save();
   }
 
-  Future<Uint8List> generateComplianceReport({
-    required ComplianceResponse compliance,
+  Future<Uint8List> generateEngagementReport({
+    required EngagementResponse engagement,
     required String entityName,
     required DateTime periodStart,
     required DateTime periodEnd,
@@ -168,7 +168,7 @@ class PdfService {
         pageFormat: PdfPageFormat.letter,
         margin: const pw.EdgeInsets.all(40),
         header: (context) => _buildReportHeader(
-          title: 'Reporte de Cumplimiento',
+          title: 'Reporte de Participacion',
           entityName: entityName,
           periodStart: periodStart,
           periodEnd: periodEnd,
@@ -177,21 +177,12 @@ class PdfService {
         footer: (context) => _buildFooter(context),
         build: (context) => [
           pw.SizedBox(height: 20),
-          _buildComplianceSummary(compliance),
+          _buildEngagementSummary(engagement.summary),
           pw.SizedBox(height: 24),
-          if (compliance.submitted.isNotEmpty) ...[
-            _buildSectionTitle('Usuarios que reportaron'),
-            pw.SizedBox(height: 8),
-            _buildSubmittedUsersTable(compliance.submitted),
-            pw.SizedBox(height: 24),
-          ] else
-            _buildEmptyState('No hay usuarios con reportes'),
-          if (compliance.notSubmitted.isNotEmpty) ...[
-            _buildSectionTitle('Usuarios sin reportar'),
-            pw.SizedBox(height: 8),
-            _buildNotSubmittedUsersTable(compliance.notSubmitted),
-          ] else
-            _buildEmptyState('No hay usuarios pendientes'),
+          if (engagement.users.isNotEmpty)
+            _buildEngagementUsersTable(engagement.users)
+          else
+            _buildEmptyState('No hay usuarios para mostrar'),
         ],
       ),
     );
@@ -354,7 +345,7 @@ class PdfService {
           _buildStatColumn('Total Actividades', totalActivities.toString()),
           if (usersExpected != null && compliancePercent != null)
             _buildStatColumn(
-              'Cumplimiento',
+              'Participacion',
               '${compliancePercent.toStringAsFixed(0)}%',
             )
           else
@@ -393,12 +384,10 @@ class PdfService {
     );
   }
 
-  pw.Widget _buildComplianceSummary(ComplianceResponse compliance) {
-    final totalUsers = compliance.totalUsers;
-    final submitted = compliance.submitted.length;
-    final notSubmitted = compliance.notSubmitted.length;
-    final compliancePercent =
-        totalUsers == 0 ? 0 : (submitted / totalUsers) * 100;
+  pw.Widget _buildEngagementSummary(EngagementSummary summary) {
+    final participationPercent = summary.totalUsers == 0
+        ? 0
+        : (summary.activeUsers / summary.totalUsers) * 100;
 
     return pw.Container(
       padding: const pw.EdgeInsets.all(16),
@@ -410,12 +399,12 @@ class PdfService {
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
         children: [
-          _buildStatColumn('Total Usuarios', totalUsers.toString()),
-          _buildStatColumn('Han Reportado', submitted.toString()),
-          _buildStatColumn('Pendientes', notSubmitted.toString()),
+          _buildStatColumn('Total Usuarios', summary.totalUsers.toString()),
+          _buildStatColumn('Activos', summary.activeUsers.toString()),
+          _buildStatColumn('Inactivos', summary.inactiveUsers.toString()),
           _buildStatColumn(
-            'Cumplimiento',
-            '${compliancePercent.toStringAsFixed(0)}%',
+            'Participacion %',
+            '${participationPercent.toStringAsFixed(0)}%',
           ),
         ],
       ),
@@ -489,7 +478,7 @@ class PdfService {
             _buildTableCell('Tipo', isHeader: true),
             _buildTableCell('Actividades', isHeader: true),
             _buildTableCell('Gastos', isHeader: true),
-            _buildTableCell('Cumplimiento', isHeader: true),
+            _buildTableCell('Participacion', isHeader: true),
           ],
         ),
         ...breakdown.map(
@@ -501,7 +490,7 @@ class PdfService {
               _buildTableCell(
                 _formatCurrency(item.expenses, currencySymbol),
               ),
-              _buildTableCell(item.complianceDisplay),
+              _buildTableCell(item.activeDisplay),
             ],
           ),
         ),
@@ -544,59 +533,42 @@ class PdfService {
     );
   }
 
-  pw.Widget _buildSubmittedUsersTable(List<SubmittedUser> users) {
-    return pw.Table(
-      border: pw.TableBorder.all(color: PdfColors.grey400),
-      columnWidths: {
-        0: const pw.FlexColumnWidth(2.2),
-        1: const pw.FlexColumnWidth(1),
-        2: const pw.FlexColumnWidth(1.8),
-      },
-      children: [
-        pw.TableRow(
-          decoration: const pw.BoxDecoration(color: PdfColors.grey200),
-          children: [
-            _buildTableCell('Usuario', isHeader: true),
-            _buildTableCell('Actividades', isHeader: true),
-            _buildTableCell('Ultima Actividad', isHeader: true),
-          ],
-        ),
-        ...users.map(
-          (user) => pw.TableRow(
-            children: [
-              _buildTableCell(user.name),
-              _buildTableCell(user.count.toString()),
-              _buildTableCell(_formatDateString(user.lastActivity)),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  pw.Widget _buildNotSubmittedUsersTable(List<NotSubmittedUser> users) {
+  pw.Widget _buildEngagementUsersTable(List<EngagementUser> users) {
     return pw.Table(
       border: pw.TableBorder.all(color: PdfColors.grey400),
       columnWidths: {
         0: const pw.FlexColumnWidth(2),
-        1: const pw.FlexColumnWidth(2.2),
-        2: const pw.FlexColumnWidth(2.2),
+        1: const pw.FlexColumnWidth(1.8),
+        2: const pw.FlexColumnWidth(1.5),
+        3: const pw.FlexColumnWidth(1),
+        4: const pw.FlexColumnWidth(1.5),
+        5: const pw.FlexColumnWidth(1),
       },
       children: [
         pw.TableRow(
           decoration: const pw.BoxDecoration(color: PdfColors.grey200),
           children: [
-            _buildTableCell('Usuario', isHeader: true),
-            _buildTableCell('Roles', isHeader: true),
+            _buildTableCell('Nombre', isHeader: true),
             _buildTableCell('Entidad', isHeader: true),
+            _buildTableCell('Roles', isHeader: true),
+            _buildTableCell('Actividades', isHeader: true),
+            _buildTableCell('Ultima Actividad', isHeader: true),
+            _buildTableCell('Tendencia', isHeader: true),
           ],
         ),
         ...users.map(
           (user) => pw.TableRow(
             children: [
               _buildTableCell(user.name),
-              _buildTableCell(user.roles.join(', ')),
               _buildTableCell(user.entity),
+              _buildTableCell(user.roles.join(', ')),
+              _buildTableCell(user.activityCount.toString()),
+              _buildTableCell(_formatDateString(user.lastActivityDate)),
+              _buildTableCell(
+                user.trend != null
+                    ? '${user.trend! >= 0 ? '+' : ''}${user.trend!.toStringAsFixed(0)}%'
+                    : '-',
+              ),
             ],
           ),
         ),
