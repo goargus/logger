@@ -88,12 +88,9 @@ export class HierarchyBreakdownCalculator {
         expenses: Math.round(expenses * 100) / 100,
         totalUsers,
         activeUsers,
-        activeRate:
-          totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) / 100 : 0,
+        activeRate: totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) / 100 : 0,
         avgActivitiesPerUser:
-          totalUsers > 0
-            ? Math.round((entityActivities.length / totalUsers) * 100) / 100
-            : 0,
+          totalUsers > 0 ? Math.round((entityActivities.length / totalUsers) * 100) / 100 : 0,
       };
     });
   }

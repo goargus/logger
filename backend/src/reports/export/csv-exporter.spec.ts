@@ -70,7 +70,7 @@ describe('CsvExporter', () => {
 
     it('handles formula char combined with comma (both protections)', () => {
       // Starts with = → gets ' prepended → then has comma → gets quoted
-      expect(exporter.escapeValue('=1,2')).toBe("\"'=1,2\"");
+      expect(exporter.escapeValue('=1,2')).toBe('"\'=1,2"');
     });
 
     it('does not alter values starting with other special chars', () => {

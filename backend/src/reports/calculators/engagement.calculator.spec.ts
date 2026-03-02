@@ -5,8 +5,7 @@ describe('EngagementCalculator', () => {
   let calculator: EngagementCalculator;
   let userRepo: any;
 
-  const createActivity = (userId: string, date: string) =>
-    ({ userId, activityDate: date } as any);
+  const createActivity = (userId: string, date: string) => ({ userId, activityDate: date }) as any;
 
   const createUser = (id: string, name: string, entityName: string, roleName: string | null) => ({
     id,
@@ -34,15 +33,9 @@ describe('EngagementCalculator', () => {
       createActivity('u1', '2026-02-10'),
       createActivity('u1', '2026-02-15'),
     ];
-    const previousActivities = [
-      createActivity('u1', '2026-01-10'),
-    ];
+    const previousActivities = [createActivity('u1', '2026-01-10')];
 
-    const result = await calculator.calculate(
-      currentActivities,
-      previousActivities,
-      ['entity-1'],
-    );
+    const result = await calculator.calculate(currentActivities, previousActivities, ['entity-1']);
 
     expect(result.users).toHaveLength(2);
 
