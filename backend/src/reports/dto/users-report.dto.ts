@@ -17,10 +17,10 @@ export enum SortOrder {
   DESC = 'desc',
 }
 
-export enum ComplianceFilter {
+export enum EngagementFilter {
   ALL = 'all',
-  SUBMITTED = 'submitted',
-  NOT_SUBMITTED = 'notSubmitted',
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
 }
 
 export class UsersReportQueryDto {
@@ -63,10 +63,10 @@ export class UsersReportQueryDto {
   @IsEnum(SortOrder)
   sortOrder?: SortOrder = SortOrder.ASC;
 
-  @ApiPropertyOptional({ description: 'Filter by compliance status', enum: ComplianceFilter })
+  @ApiPropertyOptional({ description: 'Filter by engagement status', enum: EngagementFilter })
   @IsOptional()
-  @IsEnum(ComplianceFilter)
-  compliance?: ComplianceFilter = ComplianceFilter.ALL;
+  @IsEnum(EngagementFilter)
+  engagement?: EngagementFilter = EngagementFilter.ALL;
 
   @ApiPropertyOptional({ description: 'Search by name or email' })
   @IsOptional()
@@ -97,7 +97,7 @@ export interface UserReportItem {
   activitiesCount: number;
   totalExpenses: number;
   lastActivityDate: string | null;
-  hasSubmitted: boolean;
+  trend: number | null;
 }
 
 export interface UsersReportResponse {
@@ -110,9 +110,10 @@ export interface UsersReportResponse {
   };
   summary: {
     totalUsers: number;
-    usersSubmitted: number;
-    usersNotSubmitted: number;
+    activeUsers: number;
+    inactiveUsers: number;
     totalActivities: number;
     totalExpenses: number;
+    avgActivitiesPerUser: number;
   };
 }

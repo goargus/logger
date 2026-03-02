@@ -23,12 +23,15 @@ export interface HierarchicalEntityBreakdown {
   /** Total expenses from activities in this entity */
   expenses: number;
 
-  /** Number of active users expected to submit */
-  usersExpected: number;
+  /** Total number of active users in this entity */
+  totalUsers: number;
 
-  /** Number of users who submitted at least one activity */
-  usersSubmitted: number;
+  /** Number of users who logged at least one activity */
+  activeUsers: number;
 
-  /** Compliance rate (usersSubmitted / usersExpected), 0-1 */
-  complianceRate: number;
+  /** Active rate (activeUsers / totalUsers), 0-1 */
+  activeRate: number;
+
+  /** Average number of activities per user */
+  avgActivitiesPerUser: number;
 }

@@ -10,7 +10,7 @@ export enum ExportFormat {
 export enum ExportReportType {
   SUMMARY = 'summary',
   ACTIVITIES = 'activities',
-  COMPLIANCE = 'compliance',
+  ENGAGEMENT = 'engagement',
 }
 
 export class ExportReportQueryDto {
