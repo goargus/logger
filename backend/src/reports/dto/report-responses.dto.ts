@@ -14,9 +14,10 @@ export interface EntityInfo {
 export interface SummaryTotals {
   activities: number;
   expenses: number;
-  usersExpected: number;
-  usersSubmitted: number;
-  complianceRate: number;
+  totalUsers: number;
+  activeUsers: number;
+  activeRate: number;
+  avgActivitiesPerUser: number;
 }
 
 export interface HierarchicalEntityBreakdownItem {
@@ -26,9 +27,10 @@ export interface HierarchicalEntityBreakdownItem {
   parentId: string | null;
   activities: number;
   expenses: number;
-  usersExpected: number;
-  usersSubmitted: number;
-  complianceRate: number;
+  totalUsers: number;
+  activeUsers: number;
+  activeRate: number;
+  avgActivitiesPerUser: number;
 }
 
 export interface SummaryResponse {
@@ -71,23 +73,26 @@ export interface BreakdownsResponse {
   byUser: UserBreakdown[];
 }
 
-export interface SubmittedUser {
-  userId: string;
-  name: string;
-  count: number;
-  lastActivity: string;
-}
-
-export interface NotSubmittedUser {
+export interface EngagementUserItem {
   userId: string;
   name: string;
   roles: string[];
   entity: string;
+  activityCount: number;
+  lastActivityDate: string | null;
+  trend: number | null;
 }
 
-export interface ComplianceResponse {
-  submitted: SubmittedUser[];
-  notSubmitted: NotSubmittedUser[];
+export interface EngagementSummary {
+  totalUsers: number;
+  activeUsers: number;
+  inactiveUsers: number;
+  avgActivitiesPerUser: number;
+}
+
+export interface EngagementResponse {
+  users: EngagementUserItem[];
+  summary: EngagementSummary;
 }
 
 export interface TrendPeriod {
@@ -96,9 +101,9 @@ export interface TrendPeriod {
   endDate: string;
   activities: number;
   expenses: number;
-  complianceRate: number;
-  usersSubmitted: number;
-  usersExpected: number;
+  activeRate: number;
+  activeUsers: number;
+  totalUsers: number;
 }
 
 export interface TrendsResponse {
@@ -110,7 +115,7 @@ export interface PeriodSummary {
   dates: string;
   activities: number;
   expenses: number;
-  complianceRate: number;
+  activeRate: number;
   usersActive: number;
 }
 
@@ -122,7 +127,7 @@ export interface Change {
 export interface ComparisonChanges {
   activities: Change;
   expenses: Change;
-  complianceRate: Change;
+  activeRate: Change;
   usersActive: Change;
 }
 
@@ -140,7 +145,7 @@ export interface TopPerformer {
   expenses: number;
 }
 
-export interface LowCompliance {
+export interface LowEngagement {
   entityId: string;
   name: string;
   rate: number;
@@ -156,7 +161,7 @@ export interface InactiveUser {
 
 export interface RankingsResponse {
   topPerformers: TopPerformer[];
-  lowestCompliance: LowCompliance[];
+  lowestEngagement: LowEngagement[];
   inactiveUsers: InactiveUser[];
 }
 

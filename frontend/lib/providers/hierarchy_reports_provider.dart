@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/entity_hierarchy.dart';
 import '../models/hierarchy_breakdown.dart';
-import '../models/compliance_report.dart';
+import '../models/engagement_report.dart';
 import '../models/users_report.dart';
 import '../models/report_period_type.dart';
 import '../models/report_breakdown.dart';
@@ -18,13 +18,13 @@ class HierarchyReportsState {
   final String? selectedEntityId;
   final List<EntityInfo> navigationPath;
   final HierarchySummaryResponse? summary;
-  final ComplianceResponse? compliance;
+  final EngagementResponse? engagement;
   final UsersReportResponse? usersReport;
   final List<ReportBreakdown> activityBreakdown;
   final bool isLoadingUsers;
   final int usersPage;
   final String? usersSearch;
-  final ComplianceFilter usersComplianceFilter;
+  final EngagementFilter usersEngagementFilter;
   final String? usersSortBy;
   final String? usersSortOrder;
   final String? error;
@@ -40,13 +40,13 @@ class HierarchyReportsState {
     this.selectedEntityId,
     required this.navigationPath,
     this.summary,
-    this.compliance,
+    this.engagement,
     this.usersReport,
     this.activityBreakdown = const [],
     this.isLoadingUsers = false,
     this.usersPage = 1,
     this.usersSearch,
-    this.usersComplianceFilter = ComplianceFilter.all,
+    this.usersEngagementFilter = EngagementFilter.all,
     this.usersSortBy,
     this.usersSortOrder,
     this.error,
@@ -70,13 +70,13 @@ class HierarchyReportsState {
       selectedEntityId: null,
       navigationPath: const [],
       summary: null,
-      compliance: null,
+      engagement: null,
       usersReport: null,
       activityBreakdown: const [],
       isLoadingUsers: false,
       usersPage: 1,
       usersSearch: null,
-      usersComplianceFilter: ComplianceFilter.all,
+      usersEngagementFilter: EngagementFilter.all,
       usersSortBy: null,
       usersSortOrder: null,
       error: null,
@@ -127,13 +127,13 @@ class HierarchyReportsState {
     String? selectedEntityId,
     List<EntityInfo>? navigationPath,
     HierarchySummaryResponse? summary,
-    ComplianceResponse? compliance,
+    EngagementResponse? engagement,
     UsersReportResponse? usersReport,
     List<ReportBreakdown>? activityBreakdown,
     bool? isLoadingUsers,
     int? usersPage,
     String? usersSearch,
-    ComplianceFilter? usersComplianceFilter,
+    EngagementFilter? usersEngagementFilter,
     String? usersSortBy,
     String? usersSortOrder,
     String? error,
@@ -149,14 +149,14 @@ class HierarchyReportsState {
       selectedEntityId: selectedEntityId ?? this.selectedEntityId,
       navigationPath: navigationPath ?? this.navigationPath,
       summary: summary ?? this.summary,
-      compliance: compliance ?? this.compliance,
+      engagement: engagement ?? this.engagement,
       usersReport: usersReport ?? this.usersReport,
       activityBreakdown: activityBreakdown ?? this.activityBreakdown,
       isLoadingUsers: isLoadingUsers ?? this.isLoadingUsers,
       usersPage: usersPage ?? this.usersPage,
       usersSearch: usersSearch ?? this.usersSearch,
-      usersComplianceFilter:
-          usersComplianceFilter ?? this.usersComplianceFilter,
+      usersEngagementFilter:
+          usersEngagementFilter ?? this.usersEngagementFilter,
       usersSortBy: usersSortBy ?? this.usersSortBy,
       usersSortOrder: usersSortOrder ?? this.usersSortOrder,
       error: error,
@@ -213,7 +213,7 @@ class HierarchyReportsNotifier extends Notifier<HierarchyReportsState> {
           periodEnd: _formatDate(state.periodEnd),
           includeHierarchyBreakdown: true,
         ),
-        reportsService.getCompliance(
+        reportsService.getEngagement(
           entityId: state.selectedEntityId,
           dateFrom: _formatDate(state.periodStart),
           dateTo: _formatDate(state.periodEnd),
@@ -225,7 +225,7 @@ class HierarchyReportsNotifier extends Notifier<HierarchyReportsState> {
           page: 1,
           limit: 20,
           search: null,
-          compliance: ComplianceFilter.all,
+          engagement: EngagementFilter.all,
           sortBy: null,
           sortOrder: null,
         ),
@@ -240,12 +240,12 @@ class HierarchyReportsNotifier extends Notifier<HierarchyReportsState> {
         isLoading: false,
         isLoadingUsers: false,
         summary: results[0] as HierarchySummaryResponse,
-        compliance: results[1] as ComplianceResponse,
+        engagement: results[1] as EngagementResponse,
         usersReport: results[2] as UsersReportResponse,
         activityBreakdown: results[3] as List<ReportBreakdown>,
         usersPage: 1,
         usersSearch: null,
-        usersComplianceFilter: ComplianceFilter.all,
+        usersEngagementFilter: EngagementFilter.all,
         usersSortBy: null,
         usersSortOrder: null,
       );
@@ -408,7 +408,7 @@ class HierarchyReportsNotifier extends Notifier<HierarchyReportsState> {
   Future<void> loadUsersReport({
     int? page,
     String? search,
-    ComplianceFilter? complianceFilter,
+    EngagementFilter? engagementFilter,
     String? sortBy,
     String? sortOrder,
   }) async {
@@ -418,7 +418,7 @@ class HierarchyReportsNotifier extends Notifier<HierarchyReportsState> {
       isLoadingUsers: true,
       usersPage: page ?? state.usersPage,
       usersSearch: search ?? state.usersSearch,
-      usersComplianceFilter: complianceFilter ?? state.usersComplianceFilter,
+      usersEngagementFilter: engagementFilter ?? state.usersEngagementFilter,
       usersSortBy: sortBy ?? state.usersSortBy,
       usersSortOrder: sortOrder ?? state.usersSortOrder,
     );
@@ -431,7 +431,7 @@ class HierarchyReportsNotifier extends Notifier<HierarchyReportsState> {
         page: state.usersPage,
         limit: 20,
         search: state.usersSearch,
-        compliance: state.usersComplianceFilter,
+        engagement: state.usersEngagementFilter,
         sortBy: state.usersSortBy,
         sortOrder: state.usersSortOrder,
       );
@@ -458,9 +458,9 @@ class HierarchyReportsNotifier extends Notifier<HierarchyReportsState> {
     await loadUsersReport(page: 1, search: search);
   }
 
-  /// Filter users by compliance
-  Future<void> filterUsersByCompliance(ComplianceFilter filter) async {
-    await loadUsersReport(page: 1, complianceFilter: filter);
+  /// Filter users by engagement
+  Future<void> filterUsersByEngagement(EngagementFilter filter) async {
+    await loadUsersReport(page: 1, engagementFilter: filter);
   }
 
   /// Sort users

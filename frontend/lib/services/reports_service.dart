@@ -5,7 +5,7 @@ import '../models/report_breakdown.dart';
 import '../models/report_period_type.dart';
 import '../models/hierarchy_breakdown.dart';
 import '../models/user_activities.dart';
-import '../models/compliance_report.dart';
+import '../models/engagement_report.dart';
 import '../models/users_report.dart';
 import '../models/leadership_reports.dart';
 
@@ -155,8 +155,8 @@ class ReportsService {
     return UserActivitiesResponse.fromApi(data as Map<String, dynamic>);
   }
 
-  /// Get compliance report (submitted vs not submitted users)
-  Future<ComplianceResponse> getCompliance({
+  /// Get engagement report (active vs inactive users)
+  Future<EngagementResponse> getEngagement({
     String? entityId,
     String? dateFrom,
     String? dateTo,
@@ -168,11 +168,11 @@ class ReportsService {
     if (dateTo != null) queryParams['dateTo'] = dateTo;
 
     final data = await apiClient.get(
-      'reports/compliance',
+      'reports/engagement',
       queryParameters: queryParams,
     );
 
-    return ComplianceResponse.fromApi(data as Map<String, dynamic>);
+    return EngagementResponse.fromApi(data as Map<String, dynamic>);
   }
 
   /// Get paginated users report with activity metrics
@@ -184,7 +184,7 @@ class ReportsService {
     int limit = 20,
     String? sortBy,
     String? sortOrder,
-    ComplianceFilter? compliance,
+    EngagementFilter? engagement,
     String? search,
   }) async {
     final queryParams = <String, String>{
@@ -197,7 +197,7 @@ class ReportsService {
     if (dateTo != null) queryParams['dateTo'] = dateTo;
     if (sortBy != null) queryParams['sortBy'] = sortBy;
     if (sortOrder != null) queryParams['sortOrder'] = sortOrder;
-    if (compliance != null) queryParams['compliance'] = compliance.apiValue;
+    if (engagement != null) queryParams['engagement'] = engagement.apiValue;
     if (search != null && search.isNotEmpty) queryParams['search'] = search;
 
     final data = await apiClient.get(
@@ -326,7 +326,7 @@ class ReportsService {
     return ComparisonResponse.fromApi(data as Map<String, dynamic>);
   }
 
-  /// Get rankings: top performers, lowest compliance, inactive users
+  /// Get rankings: top performers, lowest engagement, inactive users
   /// Requires REPORT_VIEW_HIERARCHY permission
   Future<RankingsResponse> getRankings({
     String? entityId,

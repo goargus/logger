@@ -13,7 +13,7 @@ describe('ReportsController', () => {
   const mockReportsService = {
     getSummary: jest.fn(),
     getBreakdowns: jest.fn(),
-    getCompliance: jest.fn(),
+    getEngagement: jest.fn(),
     getTrends: jest.fn(),
     getComparison: jest.fn(),
     getRankings: jest.fn(),
@@ -82,9 +82,10 @@ describe('ReportsController', () => {
         totals: {
           activities: 71,
           expenses: 380.0,
-          usersExpected: 20,
-          usersSubmitted: 15,
-          complianceRate: 0.75,
+          totalUsers: 20,
+          activeUsers: 15,
+          activeRate: 0.75,
+          avgActivitiesPerUser: 3.55,
         },
       };
 
@@ -139,34 +140,44 @@ describe('ReportsController', () => {
     });
   });
 
-  describe('getCompliance', () => {
-    it('should return compliance data', async () => {
-      const mockCompliance = {
-        submitted: [
+  describe('getEngagement', () => {
+    it('should return engagement data', async () => {
+      const mockEngagement = {
+        users: [
           {
             userId: 'user-1',
             name: 'María García',
-            count: 12,
-            lastActivity: '2024-12-12',
+            roles: ['Misionero'],
+            entity: 'Campo Seattle',
+            activityCount: 12,
+            lastActivityDate: '2024-12-12',
+            trend: null,
           },
-        ],
-        notSubmitted: [
           {
             userId: 'user-2',
             name: 'Carlos Ruiz',
             roles: ['Misionero'],
             entity: 'Campo Seattle',
+            activityCount: 0,
+            lastActivityDate: null,
+            trend: null,
           },
         ],
+        summary: {
+          totalUsers: 2,
+          activeUsers: 1,
+          inactiveUsers: 1,
+          avgActivitiesPerUser: 6,
+        },
       };
 
       mockIdentityService.resolveUserBySubAndIssuer.mockResolvedValue(mockUser);
-      mockReportsService.getCompliance.mockResolvedValue(mockCompliance);
+      mockReportsService.getEngagement.mockResolvedValue(mockEngagement);
 
-      const result = await controller.getCompliance(mockRequest as any, {});
+      const result = await controller.getEngagement(mockRequest as any, {});
 
-      expect(reportsService.getCompliance).toHaveBeenCalledWith('user-1', {});
-      expect(result).toEqual(mockCompliance);
+      expect(reportsService.getEngagement).toHaveBeenCalledWith('user-1', {});
+      expect(result).toEqual(mockEngagement);
     });
   });
 
@@ -180,9 +191,9 @@ describe('ReportsController', () => {
             endDate: '2024-12-14',
             activities: 71,
             expenses: 380.0,
-            complianceRate: 0.75,
-            usersSubmitted: 15,
-            usersExpected: 20,
+            activeRate: 0.75,
+            activeUsers: 15,
+            totalUsers: 20,
           },
         ],
       };
@@ -205,7 +216,7 @@ describe('ReportsController', () => {
           dates: 'Dic 1-14',
           activities: 71,
           expenses: 380.0,
-          complianceRate: 0.75,
+          activeRate: 0.75,
           usersActive: 15,
         },
         previous: {
@@ -213,13 +224,13 @@ describe('ReportsController', () => {
           dates: 'Nov 17-30',
           activities: 68,
           expenses: 320.0,
-          complianceRate: 0.8,
+          activeRate: 0.8,
           usersActive: 16,
         },
         changes: {
           activities: { value: 3, percent: 4.4 },
           expenses: { value: 60.0, percent: 18.75 },
-          complianceRate: { value: -0.05, percent: -6.25 },
+          activeRate: { value: -0.05, percent: -6.25 },
           usersActive: { value: -1, percent: -6.25 },
         },
       };
@@ -246,7 +257,7 @@ describe('ReportsController', () => {
             expenses: 150.0,
           },
         ],
-        lowestCompliance: [{ entityId: 'entity-2', name: 'Campo Tacoma', rate: 0.5, missing: 3 }],
+        lowestEngagement: [{ entityId: 'entity-2', name: 'Campo Tacoma', rate: 0.5, missing: 3 }],
         inactiveUsers: [
           {
             userId: 'user-3',

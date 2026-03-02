@@ -299,11 +299,11 @@ class _LeadershipDashboardContentState
     final hasNoComparisonData = comparison.current.activities == 0 &&
         comparison.current.expenses == 0 &&
         comparison.current.usersActive == 0 &&
-        comparison.current.complianceRate == 0 &&
+        comparison.current.activeRate == 0 &&
         comparison.changes.activities.value == 0 &&
         comparison.changes.expenses.value == 0 &&
         comparison.changes.usersActive.value == 0 &&
-        comparison.changes.complianceRate.value == 0;
+        comparison.changes.activeRate.value == 0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -358,9 +358,9 @@ class _LeadershipDashboardContentState
                     const SizedBox(width: 12),
                     Expanded(
                       child: _buildComparisonCard(
-                        'Cumplimiento',
-                        comparison.current.complianceRate,
-                        comparison.changes.complianceRate,
+                        'Participacion',
+                        comparison.current.activeRate,
+                        comparison.changes.activeRate,
                         Icons.check_circle,
                         theme,
                         isPercentage: true,
@@ -399,9 +399,9 @@ class _LeadershipDashboardContentState
                     ),
                     const SizedBox(height: 12),
                     _buildComparisonCard(
-                      'Cumplimiento',
-                      comparison.current.complianceRate,
-                      comparison.changes.complianceRate,
+                      'Participacion',
+                      comparison.current.activeRate,
+                      comparison.changes.activeRate,
                       Icons.check_circle,
                       theme,
                       isPercentage: true,
@@ -531,7 +531,7 @@ class _LeadershipDashboardContentState
                   DataColumn(label: Text('Per\u00edodo')),
                   DataColumn(label: Text('Actividades')),
                   DataColumn(label: Text('Gastos')),
-                  DataColumn(label: Text('Cumplimiento')),
+                  DataColumn(label: Text('Participacion')),
                   DataColumn(label: Text('Usuarios')),
                 ],
                 rows: trends.periods.map((period) {
@@ -543,10 +543,9 @@ class _LeadershipDashboardContentState
                     DataCell(Text(
                       CurrencyFormatter.format(period.expenses, 'L'),
                     )),
+                    DataCell(Text('${period.activeRate.toStringAsFixed(1)}%')),
                     DataCell(
-                        Text('${period.complianceRate.toStringAsFixed(1)}%')),
-                    DataCell(Text(
-                        '${period.usersSubmitted}/${period.usersExpected}')),
+                        Text('${period.activeUsers}/${period.totalUsers}')),
                   ]);
                 }).toList(),
               ),
@@ -615,11 +614,11 @@ class _LeadershipDashboardContentState
             ),
             const Divider(height: 32),
             _buildRankingSubsection(
-              'Bajo Cumplimiento',
+              'Baja Participacion',
               Icons.warning,
-              rankings.lowestCompliance.isEmpty
+              rankings.lowestEngagement.isEmpty
                   ? [const Text('Sin datos')]
-                  : rankings.lowestCompliance
+                  : rankings.lowestEngagement
                       .map((entity) => ListTile(
                             dense: true,
                             leading: Icon(
@@ -628,7 +627,7 @@ class _LeadershipDashboardContentState
                             ),
                             title: Text(entity.name),
                             subtitle: Text(
-                                '${entity.rate.toStringAsFixed(1)}% cumplimiento'),
+                                '${entity.rate.toStringAsFixed(1)}% participacion'),
                             trailing: Text(
                               '${entity.missing} faltantes',
                               style: theme.textTheme.bodySmall?.copyWith(

@@ -9,7 +9,7 @@ import { ReportsTimeScopeService } from './time/reports-time-scope.service';
 import { ReportsActivityQueryFactory } from './query/reports-activity-query.factory';
 import { SummaryCalculator } from './calculators/summary.calculator';
 import { BreakdownsCalculator } from './calculators/breakdowns.calculator';
-import { ComplianceCalculator } from './calculators/compliance.calculator';
+import { EngagementCalculator } from './calculators/engagement.calculator';
 import { TrendsCalculator } from './calculators/trends.calculator';
 import { ComparisonCalculator } from './calculators/comparison.calculator';
 import { RankingsCalculator } from './calculators/rankings.calculator';
@@ -20,7 +20,7 @@ import { HierarchyBreakdownCalculator } from './calculators/hierarchy-breakdown.
 import { CsvExporter } from './export/csv-exporter';
 import { ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PermissionsService } from '../auth/permissions/permissions.service';
-import { ComplianceFilter } from './dto/users-report.dto';
+import { EngagementFilter } from './dto/users-report.dto';
 
 describe('ReportsService - getUsersReport', () => {
   let service: ReportsService;
@@ -114,7 +114,7 @@ describe('ReportsService - getUsersReport', () => {
         },
         { provide: SummaryCalculator, useValue: {} },
         { provide: BreakdownsCalculator, useValue: {} },
-        { provide: ComplianceCalculator, useValue: {} },
+        { provide: EngagementCalculator, useValue: {} },
         { provide: TrendsCalculator, useValue: {} },
         { provide: ComparisonCalculator, useValue: {} },
         { provide: RankingsCalculator, useValue: {} },
@@ -231,8 +231,9 @@ describe('ReportsService - getUsersReport', () => {
         roleName: expect.any(String),
         activitiesCount: expect.any(Number),
         totalExpenses: expect.any(Number),
-        hasSubmitted: expect.any(Boolean),
       });
+      // trend is either number or null
+      expect(result.users[0]).toHaveProperty('trend');
     });
 
     it('should include summary with totals', async () => {
@@ -247,16 +248,17 @@ describe('ReportsService - getUsersReport', () => {
 
       expect(result.summary).toMatchObject({
         totalUsers: expect.any(Number),
-        usersSubmitted: expect.any(Number),
-        usersNotSubmitted: expect.any(Number),
+        activeUsers: expect.any(Number),
+        inactiveUsers: expect.any(Number),
         totalActivities: expect.any(Number),
         totalExpenses: expect.any(Number),
+        avgActivitiesPerUser: expect.any(Number),
       });
     });
   });
 
   describe('filtering', () => {
-    it('should filter by compliance status (submitted)', async () => {
+    it('should filter by engagement status (active)', async () => {
       userRepo.findOne.mockResolvedValue(mockLeader as any);
       accessService.getEntityHierarchy.mockResolvedValue(['entity-uuid']);
       accessService.getUsersInHierarchy.mockResolvedValue({
@@ -265,10 +267,10 @@ describe('ReportsService - getUsersReport', () => {
       } as any);
 
       const result = await service.getUsersReport('leader-uuid', {
-        compliance: ComplianceFilter.SUBMITTED,
+        engagement: EngagementFilter.ACTIVE,
       });
 
-      expect(result.users.every((u) => u.hasSubmitted === true)).toBe(true);
+      expect(result.users.every((u) => u.activitiesCount > 0)).toBe(true);
     });
 
     it('should filter by search term (name or email)', async () => {

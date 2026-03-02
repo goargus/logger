@@ -197,7 +197,7 @@ Then('I should see total hours worked', function (this: CustomWorld) {
 Then('I should see the number of active team members', function (this: CustomWorld) {
   expect(this.context.lastResponse?.status).toBe(200);
   const totals = this.context.lastResponse?.data?.totals;
-  expect(totals?.usersSubmitted !== undefined || totals?.usersExpected !== undefined).toBe(true);
+  expect(totals?.activeUsers !== undefined || totals?.totalUsers !== undefined).toBe(true);
 });
 
 Then('I should see activities grouped by activity type', function (this: CustomWorld) {
@@ -218,24 +218,18 @@ Then('I should see activities grouped by user', function (this: CustomWorld) {
   expect(Array.isArray(this.context.lastResponse?.data?.byUser)).toBe(true);
 });
 
-Then('I should see which team members have submitted activities', function (this: CustomWorld) {
+Then('I should see the list of users with engagement data', function (this: CustomWorld) {
   expect(this.context.lastResponse?.status).toBe(200);
-  expect(this.context.lastResponse?.data?.submitted).toBeDefined();
-  expect(Array.isArray(this.context.lastResponse?.data?.submitted)).toBe(true);
+  expect(this.context.lastResponse?.data?.users).toBeDefined();
+  expect(Array.isArray(this.context.lastResponse?.data?.users)).toBe(true);
 });
 
-Then('I should see which team members have not submitted', function (this: CustomWorld) {
+Then('I should see the engagement summary', function (this: CustomWorld) {
   expect(this.context.lastResponse?.status).toBe(200);
-  expect(this.context.lastResponse?.data?.notSubmitted).toBeDefined();
-  expect(Array.isArray(this.context.lastResponse?.data?.notSubmitted)).toBe(true);
-});
-
-Then('I should see the overall compliance percentage', function (this: CustomWorld) {
-  expect(this.context.lastResponse?.status).toBe(200);
-  // Compliance rate may be in the summary or calculated from submitted/notSubmitted
   const data = this.context.lastResponse?.data;
-  const hasComplianceData = data?.submitted !== undefined && data?.notSubmitted !== undefined;
-  expect(hasComplianceData).toBe(true);
+  expect(data?.summary).toBeDefined();
+  expect(typeof data?.summary?.activeUsers).toBe('number');
+  expect(typeof data?.summary?.totalUsers).toBe('number');
 });
 
 Then('I should see how activity counts changed over periods', function (this: CustomWorld) {
@@ -274,10 +268,10 @@ Then('I should see the top performing team members', function (this: CustomWorld
   expect(Array.isArray(this.context.lastResponse?.data?.topPerformers)).toBe(true);
 });
 
-Then('I should see team members with lowest compliance', function (this: CustomWorld) {
+Then('I should see team members with lowest engagement', function (this: CustomWorld) {
   expect(this.context.lastResponse?.status).toBe(200);
-  expect(this.context.lastResponse?.data?.lowestCompliance).toBeDefined();
-  expect(Array.isArray(this.context.lastResponse?.data?.lowestCompliance)).toBe(true);
+  expect(this.context.lastResponse?.data?.lowestEngagement).toBeDefined();
+  expect(Array.isArray(this.context.lastResponse?.data?.lowestEngagement)).toBe(true);
 });
 
 Then('I should see inactive users who need follow-up', function (this: CustomWorld) {

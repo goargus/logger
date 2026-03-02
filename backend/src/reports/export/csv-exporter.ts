@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Activity } from '../../activity/activity.entity';
-import { SummaryResponse, ComplianceResponse } from '../dto/report-responses.dto';
+import { SummaryResponse, EngagementResponse } from '../dto/report-responses.dto';
 
 export interface CsvExportOptions {
   includeHeaders?: boolean;
@@ -134,15 +134,16 @@ export class CsvExporter {
     lines.push('Metrica,Valor');
     lines.push(`Total Actividades,${summary.totals.activities}`);
     lines.push(`Total Gastos,${summary.totals.expenses}`);
-    lines.push(`Usuarios que Reportaron,${summary.totals.usersSubmitted}`);
-    lines.push(`Usuarios Esperados,${summary.totals.usersExpected}`);
-    lines.push(`Tasa de Cumplimiento,${(summary.totals.complianceRate * 100).toFixed(1)}%`);
+    lines.push(`Usuarios Activos,${summary.totals.activeUsers}`);
+    lines.push(`Total Usuarios,${summary.totals.totalUsers}`);
+    lines.push(`Tasa de Participacion,${(summary.totals.activeRate * 100).toFixed(1)}%`);
+    lines.push(`Promedio Actividades por Usuario,${summary.totals.avgActivitiesPerUser}`);
     lines.push('');
 
     // Add hierarchy breakdown if available
     if (summary.hierarchyBreakdown && summary.hierarchyBreakdown.length > 0) {
       lines.push('Desglose por Entidad');
-      lines.push('Entidad,Tipo,Actividades,Gastos,Usuarios,Cumplimiento');
+      lines.push('Entidad,Tipo,Actividades,Gastos,Usuarios Activos,Participacion');
 
       for (const entity of summary.hierarchyBreakdown) {
         lines.push(
@@ -151,8 +152,8 @@ export class CsvExporter {
             this.escapeValue(entity.entityType),
             entity.activities,
             entity.expenses,
-            entity.usersSubmitted,
-            `${(entity.complianceRate * 100).toFixed(1)}%`,
+            entity.activeUsers,
+            `${(entity.activeRate * 100).toFixed(1)}%`,
           ].join(','),
         );
       }
@@ -162,50 +163,36 @@ export class CsvExporter {
   }
 
   /**
-   * Export compliance report to CSV
+   * Export engagement report to CSV
    */
-  exportCompliance(compliance: ComplianceResponse): string {
+  exportEngagement(engagement: EngagementResponse): string {
     const lines: string[] = [];
 
-    // Add title section
-    lines.push('Reporte de Cumplimiento');
+    lines.push('Reporte de Participacion');
     lines.push('');
 
     // Summary
-    const total = compliance.submitted.length + compliance.notSubmitted.length;
-    const complianceRate = total > 0 ? (compliance.submitted.length / total) * 100 : 0;
     lines.push('Resumen');
-    lines.push(`Total Usuarios,${total}`);
-    lines.push(`Han Reportado,${compliance.submitted.length}`);
-    lines.push(`Sin Reportar,${compliance.notSubmitted.length}`);
-    lines.push(`Tasa de Cumplimiento,${complianceRate.toFixed(1)}%`);
+    lines.push(`Total Usuarios,${engagement.summary.totalUsers}`);
+    lines.push(`Usuarios Activos,${engagement.summary.activeUsers}`);
+    lines.push(`Usuarios Inactivos,${engagement.summary.inactiveUsers}`);
+    lines.push(`Promedio Actividades por Usuario,${engagement.summary.avgActivitiesPerUser}`);
     lines.push('');
 
-    // Submitted users
-    if (compliance.submitted.length > 0) {
-      lines.push('Usuarios que Han Reportado');
-      lines.push('Nombre,ID Usuario,Cantidad de Actividades,Ultima Actividad');
+    // Unified user table
+    if (engagement.users.length > 0) {
+      lines.push('Detalle por Usuario');
+      lines.push('Nombre,Entidad,Roles,Actividades,Ultima Actividad,Tendencia');
 
-      for (const user of compliance.submitted) {
-        lines.push(
-          [this.escapeValue(user.name), user.userId, user.count, user.lastActivity || ''].join(','),
-        );
-      }
-      lines.push('');
-    }
-
-    // Not submitted users
-    if (compliance.notSubmitted.length > 0) {
-      lines.push('Usuarios Sin Reportar');
-      lines.push('Nombre,ID Usuario,Entidad,Roles');
-
-      for (const user of compliance.notSubmitted) {
+      for (const user of engagement.users) {
         lines.push(
           [
             this.escapeValue(user.name),
-            user.userId,
             this.escapeValue(user.entity),
             this.escapeValue(user.roles.join('; ')),
+            user.activityCount,
+            user.lastActivityDate || '',
+            user.trend !== null ? `${user.trend}%` : '',
           ].join(','),
         );
       }

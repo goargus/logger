@@ -9,11 +9,11 @@ class UsersReportTable extends StatefulWidget {
     required this.onPageChange,
     required this.onUserTap,
     this.onSortChange,
-    this.onComplianceFilterChange,
+    this.onEngagementFilterChange,
     this.onSearchChange,
     this.currentSort,
     this.currentSortOrder,
-    this.currentComplianceFilter,
+    this.currentEngagementFilter,
     this.isLoading = false,
     this.currencySymbol = '\$',
   });
@@ -22,11 +22,11 @@ class UsersReportTable extends StatefulWidget {
   final void Function(int page) onPageChange;
   final void Function(String userId, String userName) onUserTap;
   final void Function(String sortBy, String sortOrder)? onSortChange;
-  final void Function(ComplianceFilter filter)? onComplianceFilterChange;
+  final void Function(EngagementFilter filter)? onEngagementFilterChange;
   final void Function(String search)? onSearchChange;
   final String? currentSort;
   final String? currentSortOrder;
-  final ComplianceFilter? currentComplianceFilter;
+  final EngagementFilter? currentEngagementFilter;
   final bool isLoading;
   final String currencySymbol;
 
@@ -144,14 +144,15 @@ class _UsersReportTableState extends State<UsersReportTable> {
       children: [
         Chip(
           avatar: Icon(Icons.check, size: 16, color: Colors.green.shade700),
-          label: Text('${summary.usersSubmitted}'),
+          label: Text('${summary.activeUsers} activos'),
           backgroundColor: Colors.green.shade50,
           visualDensity: VisualDensity.compact,
         ),
         const SizedBox(width: 8),
         Chip(
-          avatar: Icon(Icons.close, size: 16, color: Colors.orange.shade700),
-          label: Text('${summary.usersNotSubmitted}'),
+          avatar: Icon(Icons.remove_circle_outline,
+              size: 16, color: Colors.orange.shade700),
+          label: Text('${summary.inactiveUsers} inactivos'),
           backgroundColor: Colors.orange.shade50,
           visualDensity: VisualDensity.compact,
         ),
@@ -186,10 +187,10 @@ class _UsersReportTableState extends State<UsersReportTable> {
         ),
         const SizedBox(width: 16),
 
-        // Compliance filter
-        DropdownButton<ComplianceFilter>(
-          value: widget.currentComplianceFilter ?? ComplianceFilter.all,
-          items: ComplianceFilter.values.map((filter) {
+        // Engagement filter
+        DropdownButton<EngagementFilter>(
+          value: widget.currentEngagementFilter ?? EngagementFilter.all,
+          items: EngagementFilter.values.map((filter) {
             return DropdownMenuItem(
               value: filter,
               child: Text(filter.label),
@@ -197,7 +198,7 @@ class _UsersReportTableState extends State<UsersReportTable> {
           }).toList(),
           onChanged: (value) {
             if (value != null) {
-              widget.onComplianceFilterChange?.call(value);
+              widget.onEngagementFilterChange?.call(value);
             }
           },
         ),
@@ -243,7 +244,8 @@ class _UsersReportTableState extends State<UsersReportTable> {
             label: Text('Ultima Actividad'),
           ),
           const DataColumn(
-            label: Text('Estado'),
+            label: Text('Tendencia'),
+            numeric: true,
           ),
         ],
         rows: widget.response.users.map((user) {
@@ -280,7 +282,7 @@ class _UsersReportTableState extends State<UsersReportTable> {
                   style: theme.textTheme.bodySmall,
                 ),
               ),
-              DataCell(_buildStatusChip(theme, user.hasSubmitted)),
+              DataCell(_buildTrendCell(theme, user.trend)),
             ],
           );
         }).toList(),
@@ -356,19 +358,38 @@ class _UsersReportTableState extends State<UsersReportTable> {
     );
   }
 
-  Widget _buildStatusChip(ThemeData theme, bool hasSubmitted) {
-    return Chip(
-      label: Text(
-        hasSubmitted ? 'Reportado' : 'Pendiente',
-        style: TextStyle(
-          fontSize: 12,
-          color: hasSubmitted ? Colors.green.shade700 : Colors.orange.shade700,
+  Widget _buildTrendCell(ThemeData theme, double? trend) {
+    if (trend == null) {
+      return Text('-', style: theme.textTheme.bodySmall);
+    }
+
+    final isPositive = trend > 0;
+    final isNeutral = trend == 0;
+    final color = isPositive
+        ? Colors.green.shade700
+        : isNeutral
+            ? Colors.grey.shade600
+            : Colors.red.shade700;
+    final icon = isPositive
+        ? Icons.trending_up
+        : isNeutral
+            ? Icons.trending_flat
+            : Icons.trending_down;
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 16, color: color),
+        const SizedBox(width: 4),
+        Text(
+          '${trend > 0 ? '+' : ''}${trend.toStringAsFixed(0)}%',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: color,
+          ),
         ),
-      ),
-      backgroundColor:
-          hasSubmitted ? Colors.green.shade50 : Colors.orange.shade50,
-      visualDensity: VisualDensity.compact,
-      padding: EdgeInsets.zero,
+      ],
     );
   }
 

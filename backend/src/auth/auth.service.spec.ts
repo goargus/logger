@@ -103,15 +103,15 @@ describe('AuthService', () => {
     });
 
     it('throws UnauthorizedException when iss is missing', async () => {
-      await expect(
-        service.resolveUserFromJwt({ ...baseClaims, iss: undefined }),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.resolveUserFromJwt({ ...baseClaims, iss: undefined })).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('throws UnauthorizedException when sub is missing', async () => {
-      await expect(
-        service.resolveUserFromJwt({ ...baseClaims, sub: undefined }),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(service.resolveUserFromJwt({ ...baseClaims, sub: undefined })).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('auto-links by verified email when single active user matches', async () => {
@@ -151,11 +151,9 @@ describe('AuthService', () => {
       idpIdentitiesService.findByIssuerAndSubject.mockResolvedValue(null);
 
       await expect(
-        service.resolveUserFromJwt(
-          { ...baseClaims, email_verified: false },
-          'auth0',
-          { allowAutoLinkByVerifiedEmail: true },
-        ),
+        service.resolveUserFromJwt({ ...baseClaims, email_verified: false }, 'auth0', {
+          allowAutoLinkByVerifiedEmail: true,
+        }),
       ).rejects.toThrow(ForbiddenException);
     });
 

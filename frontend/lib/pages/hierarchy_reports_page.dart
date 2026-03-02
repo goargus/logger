@@ -11,7 +11,7 @@ import '../widgets/reports/enhanced_time_selector.dart';
 import '../widgets/reports/users_report_table.dart';
 import '../widgets/reports/activity_distribution_chart.dart';
 import '../models/users_report.dart';
-import '../models/compliance_report.dart';
+import '../models/engagement_report.dart';
 import '../providers/hierarchy_reports_provider.dart';
 import '../providers/auth.dart';
 import '../services/pdf_service.dart';
@@ -242,7 +242,7 @@ class _HierarchyReportsContentState
               isLoading: state.isLoadingUsers,
               currentSort: state.usersSortBy,
               currentSortOrder: state.usersSortOrder,
-              currentComplianceFilter: state.usersComplianceFilter,
+              currentEngagementFilter: state.usersEngagementFilter,
               currencySymbol: ref.watch(currencySymbolProvider),
               onPageChange: (page) {
                 ref.read(hierarchyReportsProvider.notifier).setUsersPage(page);
@@ -255,10 +255,10 @@ class _HierarchyReportsContentState
                     .read(hierarchyReportsProvider.notifier)
                     .sortUsers(sortBy, sortOrder);
               },
-              onComplianceFilterChange: (filter) {
+              onEngagementFilterChange: (filter) {
                 ref
                     .read(hierarchyReportsProvider.notifier)
-                    .filterUsersByCompliance(filter);
+                    .filterUsersByEngagement(filter);
               },
               onSearchChange: (search) {
                 ref.read(hierarchyReportsProvider.notifier).searchUsers(search);
@@ -398,10 +398,10 @@ class _HierarchyReportsContentState
             'reporte_resumen_$dateStamp.pdf',
             'application/pdf',
           );
-        case 'compliance':
-          final compliance = state.compliance ?? ComplianceResponse.empty();
-          final bytes = await pdfService.generateComplianceReport(
-            compliance: compliance,
+        case 'engagement':
+          final engagement = state.engagement ?? EngagementResponse.empty();
+          final bytes = await pdfService.generateEngagementReport(
+            engagement: engagement,
             entityName: state.summary!.entityName,
             periodStart: state.periodStart,
             periodEnd: state.periodEnd,
@@ -409,7 +409,7 @@ class _HierarchyReportsContentState
           );
           return ExportData.fromBytes(
             bytes,
-            'reporte_cumplimiento_$dateStamp.pdf',
+            'reporte_participacion_$dateStamp.pdf',
             'application/pdf',
           );
         default:
@@ -487,18 +487,18 @@ class _HierarchyReportsContentState
                   icon: Icons.attach_money,
                 ),
                 _StatCard(
-                  label: 'Cumplimiento',
-                  value: '${summary.compliancePercent.toStringAsFixed(0)}%',
+                  label: 'Participacion',
+                  value: '${summary.activePercent.toStringAsFixed(0)}%',
                   icon: Icons.check_circle,
-                  color: summary.complianceRate >= 0.8
+                  color: summary.activeRate >= 0.8
                       ? Colors.green
-                      : summary.complianceRate >= 0.5
+                      : summary.activeRate >= 0.5
                           ? Colors.orange
                           : Colors.red,
                 ),
                 _StatCard(
                   label: 'Usuarios',
-                  value: '${summary.usersSubmitted}/${summary.usersExpected}',
+                  value: '${summary.activeUsers}/${summary.totalUsers}',
                   icon: Icons.people,
                 ),
               ],

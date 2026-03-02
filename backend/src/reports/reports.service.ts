@@ -15,7 +15,7 @@ import { Permission } from '../auth/permissions/permission.enum';
 import {
   SummaryResponse,
   BreakdownsResponse,
-  ComplianceResponse,
+  EngagementResponse,
   TrendsResponse,
   ComparisonResponse,
   RankingsResponse,
@@ -28,7 +28,7 @@ import { ReportsTimeScopeService } from './time/reports-time-scope.service';
 import { ReportsActivityQueryFactory } from './query/reports-activity-query.factory';
 import { SummaryCalculator } from './calculators/summary.calculator';
 import { BreakdownsCalculator } from './calculators/breakdowns.calculator';
-import { ComplianceCalculator } from './calculators/compliance.calculator';
+import { EngagementCalculator } from './calculators/engagement.calculator';
 import { TrendsCalculator } from './calculators/trends.calculator';
 import { ComparisonCalculator } from './calculators/comparison.calculator';
 import { RankingsCalculator } from './calculators/rankings.calculator';
@@ -47,7 +47,7 @@ import {
   UsersReportQueryDto,
   UsersReportResponse,
   UserReportItem,
-  ComplianceFilter,
+  EngagementFilter,
 } from './dto/users-report.dto';
 import { CsvExporter } from './export/csv-exporter';
 
@@ -62,7 +62,7 @@ export class ReportsService {
     private readonly queryFactory: ReportsActivityQueryFactory,
     private readonly summaryCalculator: SummaryCalculator,
     private readonly breakdownsCalculator: BreakdownsCalculator,
-    private readonly complianceCalculator: ComplianceCalculator,
+    private readonly engagementCalculator: EngagementCalculator,
     private readonly trendsCalculator: TrendsCalculator,
     private readonly comparisonCalculator: ComparisonCalculator,
     private readonly rankingsCalculator: RankingsCalculator,
@@ -108,7 +108,7 @@ export class ReportsService {
         dates: '',
         activities: 0,
         expenses: 0,
-        complianceRate: 0,
+        activeRate: 0,
         usersActive: 0,
       },
       previous: {
@@ -116,13 +116,13 @@ export class ReportsService {
         dates: '',
         activities: 0,
         expenses: 0,
-        complianceRate: 0,
+        activeRate: 0,
         usersActive: 0,
       },
       changes: {
         activities: { value: 0, percent: 0 },
         expenses: { value: 0, percent: 0 },
-        complianceRate: { value: 0, percent: 0 },
+        activeRate: { value: 0, percent: 0 },
         usersActive: { value: 0, percent: 0 },
       },
     };
@@ -344,7 +344,7 @@ export class ReportsService {
     return this.breakdownsCalculator.calculate(activities, canViewReports, isUserFiltered);
   }
 
-  async getCompliance(actorUserId: string, query: ReportQueryDto): Promise<ComplianceResponse> {
+  async getEngagement(actorUserId: string, query: ReportQueryDto): Promise<EngagementResponse> {
     const actor = await this.userRepo.findOne({
       where: { id: actorUserId },
       relations: ['entity'],
@@ -356,7 +356,7 @@ export class ReportsService {
 
     const canViewReports = await this.canViewReports(actorUserId);
     if (!canViewReports) {
-      throw new ForbiddenException('You do not have permission to view compliance reports');
+      throw new ForbiddenException('You do not have permission to view engagement reports');
     }
 
     const targetEntityId = query.entityId || actor.entity_id;
@@ -374,9 +374,22 @@ export class ReportsService {
     const timeScope = this.timeScopeService.getOrDetermineTimeScope(query, actor.entity_id);
 
     const qb = this.queryFactory.buildActivityQuery(actorUserId, entityIds, timeScope);
-    const activities = await qb.getMany();
+    const currentActivities = await qb.getMany();
 
-    return this.complianceCalculator.calculate(activities, entityIds);
+    // Get previous period activities for trend calculation
+    const previousPeriods = this.periodCalculator.getPreviousPeriods(1);
+    let previousActivities: Activity[] = [];
+
+    if (previousPeriods.length > 0) {
+      const prevPeriod = previousPeriods[0];
+      const prevQb = this.queryFactory.buildActivityQuery(actorUserId, entityIds, {
+        dateFrom: prevPeriod.startDate,
+        dateTo: prevPeriod.endDate,
+      });
+      previousActivities = await prevQb.getMany();
+    }
+
+    return this.engagementCalculator.calculate(currentActivities, previousActivities, entityIds);
   }
 
   async getTrends(actorUserId: string, query: ReportQueryDto): Promise<TrendsResponse> {
@@ -964,25 +977,25 @@ export class ReportsService {
         break;
       }
 
-      case ExportReportType.COMPLIANCE: {
+      case ExportReportType.ENGAGEMENT: {
         if (!canViewReports) {
-          throw new ForbiddenException('You do not have permission to export compliance reports');
+          throw new ForbiddenException('You do not have permission to export engagement reports');
         }
 
-        const complianceQuery = {
+        const engagementQuery = {
           entityId: query.entityId,
           dateFrom: query.dateFrom,
           dateTo: query.dateTo,
         };
-        const compliance = await this.getCompliance(actorUserId, complianceQuery);
+        const engagement = await this.getEngagement(actorUserId, engagementQuery);
 
         if (query.format === ExportFormat.CSV) {
-          data = this.csvExporter.exportCompliance(compliance);
-          filename = `cumplimiento-${dateStr}.csv`;
+          data = this.csvExporter.exportEngagement(engagement);
+          filename = `participacion-${dateStr}.csv`;
           contentType = 'text/csv; charset=utf-8';
         } else {
-          data = compliance;
-          filename = `cumplimiento-${dateStr}.json`;
+          data = engagement;
+          filename = `participacion-${dateStr}.json`;
           contentType = 'application/json; charset=utf-8';
         }
         break;
@@ -1048,6 +1061,25 @@ export class ReportsService {
     const activitiesQb = this.queryFactory.buildActivityQuery(actorUserId, entityIds, timeScope);
     const allActivities = await activitiesQb.getMany();
 
+    // Get previous period activities for trend calculation
+    const previousPeriods = this.periodCalculator.getPreviousPeriods(1);
+    let previousActivities: Activity[] = [];
+
+    if (previousPeriods.length > 0) {
+      const prevPeriod = previousPeriods[0];
+      const prevQb = this.queryFactory.buildActivityQuery(actorUserId, entityIds, {
+        dateFrom: prevPeriod.startDate,
+        dateTo: prevPeriod.endDate,
+      });
+      previousActivities = await prevQb.getMany();
+    }
+
+    // Build per-user previous period counts for trend
+    const previousCounts = new Map<string, number>();
+    for (const activity of previousActivities) {
+      previousCounts.set(activity.userId, (previousCounts.get(activity.userId) || 0) + 1);
+    }
+
     // Calculate per-user metrics
     const userMetrics = new Map<
       string,
@@ -1077,6 +1109,12 @@ export class ReportsService {
     let userItems: UserReportItem[] = users.map((user) => {
       const metrics = userMetrics.get(user.id) || { count: 0, expenses: 0, lastDate: null };
       const assignments = roleAssignmentsMap.get(user.id) || [];
+      const previousCount = previousCounts.get(user.id) || 0;
+
+      let trend: number | null = null;
+      if (previousCount > 0) {
+        trend = Math.round(((metrics.count - previousCount) / previousCount) * 100);
+      }
 
       return {
         userId: user.id,
@@ -1102,20 +1140,23 @@ export class ReportsService {
         activitiesCount: metrics.count,
         totalExpenses: metrics.expenses,
         lastActivityDate: metrics.lastDate,
-        hasSubmitted: metrics.count > 0,
+        trend,
       };
     });
 
-    // Apply compliance filter
-    if (query.compliance === ComplianceFilter.SUBMITTED) {
-      userItems = userItems.filter((u) => u.hasSubmitted);
-    } else if (query.compliance === ComplianceFilter.NOT_SUBMITTED) {
-      userItems = userItems.filter((u) => !u.hasSubmitted);
+    // Apply engagement filter
+    if (query.engagement === EngagementFilter.ACTIVE) {
+      userItems = userItems.filter((u) => u.activitiesCount > 0);
+    } else if (query.engagement === EngagementFilter.INACTIVE) {
+      userItems = userItems.filter((u) => u.activitiesCount === 0);
     }
 
     // Calculate summary from all users (before pagination filtering)
     const allUsersMetrics = Array.from(userMetrics.values());
-    const usersWithSubmissions = allUsersMetrics.filter((m) => m.count > 0).length;
+    const activeUsersCount = allUsersMetrics.filter((m) => m.count > 0).length;
+    const totalExpenses = allActivities.reduce((sum, a) => {
+      return sum + (a.hasExpense && a.expenseAmount ? parseFloat(a.expenseAmount) : 0);
+    }, 0);
 
     return {
       users: userItems,
@@ -1127,12 +1168,12 @@ export class ReportsService {
       },
       summary: {
         totalUsers: total,
-        usersSubmitted: usersWithSubmissions,
-        usersNotSubmitted: total - usersWithSubmissions,
+        activeUsers: activeUsersCount,
+        inactiveUsers: total - activeUsersCount,
         totalActivities: allActivities.length,
-        totalExpenses: allActivities.reduce((sum, a) => {
-          return sum + (a.hasExpense && a.expenseAmount ? parseFloat(a.expenseAmount) : 0);
-        }, 0),
+        totalExpenses,
+        avgActivitiesPerUser:
+          total > 0 ? Math.round((allActivities.length / total) * 100) / 100 : 0,
       },
     };
   }

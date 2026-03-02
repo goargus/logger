@@ -35,23 +35,23 @@ export class SummaryCalculator {
       return sum + (a.expenseAmount ? parseFloat(a.expenseAmount) : 0);
     }, 0);
 
-    let usersExpected = 0;
-    let usersSubmitted = 0;
-    let complianceRate = 0;
+    let totalUsers = 0;
+    let activeUsers = 0;
+    let activeRate = 0;
 
     if (canViewReports && !isUserFiltered) {
       const usersInScope = await this.userRepo.find({
         where: { entity_id: In(entityIds), status: UserStatus.ACTIVE },
       });
-      usersExpected = usersInScope.length;
+      totalUsers = usersInScope.length;
 
       const userIdsWithActivities = new Set(activities.map((a) => a.userId));
-      usersSubmitted = userIdsWithActivities.size;
-      complianceRate = usersExpected > 0 ? usersSubmitted / usersExpected : 0;
+      activeUsers = userIdsWithActivities.size;
+      activeRate = totalUsers > 0 ? activeUsers / totalUsers : 0;
     } else {
-      usersExpected = 1;
-      usersSubmitted = totalActivities > 0 ? 1 : 0;
-      complianceRate = usersSubmitted;
+      totalUsers = 1;
+      activeUsers = totalActivities > 0 ? 1 : 0;
+      activeRate = activeUsers;
     }
 
     const entity = await this.entityRepo.findOne({ where: { id: targetEntityId } });
@@ -75,9 +75,11 @@ export class SummaryCalculator {
       totals: {
         activities: totalActivities,
         expenses: Math.round(totalExpenses * 100) / 100,
-        usersExpected,
-        usersSubmitted,
-        complianceRate: Math.round(complianceRate * 100) / 100,
+        totalUsers,
+        activeUsers,
+        activeRate: Math.round(activeRate * 100) / 100,
+        avgActivitiesPerUser:
+          totalUsers > 0 ? Math.round((totalActivities / totalUsers) * 100) / 100 : 0,
       },
     };
   }

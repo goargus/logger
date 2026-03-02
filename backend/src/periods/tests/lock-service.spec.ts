@@ -178,7 +178,12 @@ describe('LockService', () => {
 
   describe('setAdminLock', () => {
     it('upserts lock entry for entity', async () => {
-      const expected = { id: 'lock-1', entityId: 'entity-1', lockDate: '2026-03-15', lockedBy: 'admin-1' };
+      const expected = {
+        id: 'lock-1',
+        entityId: 'entity-1',
+        lockDate: '2026-03-15',
+        lockedBy: 'admin-1',
+      };
       adminLockRepo.upsert.mockResolvedValue(undefined);
       adminLockRepo.findOneByOrFail.mockResolvedValue(expected);
 
@@ -192,7 +197,12 @@ describe('LockService', () => {
     });
 
     it('returns the persisted lock after upsert', async () => {
-      const persisted = { id: 'lock-1', entityId: 'entity-1', lockDate: '2026-03-20', lockedBy: 'admin-1' };
+      const persisted = {
+        id: 'lock-1',
+        entityId: 'entity-1',
+        lockDate: '2026-03-20',
+        lockedBy: 'admin-1',
+      };
       adminLockRepo.upsert.mockResolvedValue(undefined);
       adminLockRepo.findOneByOrFail.mockResolvedValue(persisted);
 

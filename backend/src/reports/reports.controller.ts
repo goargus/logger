@@ -12,7 +12,7 @@ import { ReportQueryDto, RankingsQueryDto } from './dto/report-query.dto';
 import {
   SummaryResponse,
   BreakdownsResponse,
-  ComplianceResponse,
+  EngagementResponse,
   TrendsResponse,
   ComparisonResponse,
   RankingsResponse,
@@ -67,15 +67,15 @@ export class ReportsController {
     return this.reportsService.getBreakdowns(userId, query);
   }
 
-  @Get('compliance')
-  @ApiOperation({ summary: 'Get compliance report (submitted vs not submitted users)' })
-  @ApiResponse({ status: 200, description: 'Compliance statistics' })
-  async getCompliance(
+  @Get('engagement')
+  @ApiOperation({ summary: 'Get engagement report (active vs inactive users)' })
+  @ApiResponse({ status: 200, description: 'Engagement statistics' })
+  async getEngagement(
     @Req() req: Request,
     @Query() query: ReportQueryDto,
-  ): Promise<ComplianceResponse> {
+  ): Promise<EngagementResponse> {
     const userId = await this.getUserIdFromRequest(req);
-    return this.reportsService.getCompliance(userId, query);
+    return this.reportsService.getEngagement(userId, query);
   }
 
   @Get('trends')

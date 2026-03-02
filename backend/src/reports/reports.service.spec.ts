@@ -13,7 +13,7 @@ import { ReportsTimeScopeService } from './time/reports-time-scope.service';
 import { ReportsActivityQueryFactory } from './query/reports-activity-query.factory';
 import { SummaryCalculator } from './calculators/summary.calculator';
 import { BreakdownsCalculator } from './calculators/breakdowns.calculator';
-import { ComplianceCalculator } from './calculators/compliance.calculator';
+import { EngagementCalculator } from './calculators/engagement.calculator';
 import { TrendsCalculator } from './calculators/trends.calculator';
 import { ComparisonCalculator } from './calculators/comparison.calculator';
 import { RankingsCalculator } from './calculators/rankings.calculator';
@@ -75,7 +75,7 @@ describe('ReportsService', () => {
         },
         SummaryCalculator,
         BreakdownsCalculator,
-        ComplianceCalculator,
+        EngagementCalculator,
         TrendsCalculator,
         ComparisonCalculator,
         RankingsCalculator,
@@ -208,9 +208,9 @@ describe('ReportsService', () => {
       expect(result.scope).toBe('personal');
       expect(result.totals.activities).toBe(2);
       expect(result.totals.expenses).toBe(80);
-      expect(result.totals.usersExpected).toBe(1);
-      expect(result.totals.usersSubmitted).toBe(1);
-      expect(result.totals.complianceRate).toBe(1);
+      expect(result.totals.totalUsers).toBe(1);
+      expect(result.totals.activeUsers).toBe(1);
+      expect(result.totals.activeRate).toBe(1);
     });
 
     it('should return entity summary for user with canViewReports permission', async () => {
@@ -258,9 +258,9 @@ describe('ReportsService', () => {
       expect(result.scope).toBe('entity');
       expect(result.totals.activities).toBe(2);
       expect(result.totals.expenses).toBe(80);
-      expect(result.totals.usersExpected).toBe(3);
-      expect(result.totals.usersSubmitted).toBe(2);
-      expect(result.totals.complianceRate).toBe(0.67);
+      expect(result.totals.totalUsers).toBe(3);
+      expect(result.totals.activeUsers).toBe(2);
+      expect(result.totals.activeRate).toBe(0.67);
     });
 
     it('should default to personal summary when canViewReports has no entityId filter', async () => {
@@ -301,9 +301,9 @@ describe('ReportsService', () => {
       expect(result.scope).toBe('personal');
       expect(result.totals.activities).toBe(2);
       expect(result.totals.expenses).toBe(80);
-      expect(result.totals.usersExpected).toBe(1);
-      expect(result.totals.usersSubmitted).toBe(1);
-      expect(result.totals.complianceRate).toBe(1);
+      expect(result.totals.totalUsers).toBe(1);
+      expect(result.totals.activeUsers).toBe(1);
+      expect(result.totals.activeRate).toBe(1);
     });
 
     it('should throw ForbiddenException when regular user tries to view entity report', async () => {
@@ -442,7 +442,7 @@ describe('ReportsService', () => {
     });
   });
 
-  describe('getCompliance', () => {
+  describe('getEngagement', () => {
     it('should throw ForbiddenException for users without canViewReports', async () => {
       const mockUser = {
         id: 'user-1',
@@ -456,10 +456,10 @@ describe('ReportsService', () => {
       jest.spyOn(userRepo, 'findOne').mockResolvedValue(mockUser as any);
       jest.spyOn(permissionsService, 'userHasPermission').mockResolvedValue(false);
 
-      await expect(service.getCompliance('user-1', {})).rejects.toThrow(ForbiddenException);
+      await expect(service.getEngagement('user-1', {})).rejects.toThrow(ForbiddenException);
     });
 
-    it('should return submitted and not submitted user lists', async () => {
+    it('should return users list with engagement metrics', async () => {
       const mockUser = {
         id: 'user-1',
         entity_id: 'entity-1',
@@ -502,15 +502,18 @@ describe('ReportsService', () => {
       jest.spyOn(userRepo, 'find').mockResolvedValue(mockUsersInScope as any);
       mockQueryBuilder.getMany.mockResolvedValue(mockActivities);
 
-      const result = await service.getCompliance('user-1', {});
+      const result = await service.getEngagement('user-1', {});
 
-      expect(result.submitted).toHaveLength(1);
-      expect(result.submitted[0].userId).toBe('user-1');
-      expect(result.submitted[0].count).toBe(1);
+      expect(result.users).toBeDefined();
+      expect(result.summary).toBeDefined();
+      expect(result.summary.totalUsers).toBe(2);
+      expect(result.summary.activeUsers).toBe(1);
+      expect(result.summary.inactiveUsers).toBe(1);
 
-      expect(result.notSubmitted).toHaveLength(1);
-      expect(result.notSubmitted[0].userId).toBe('user-2');
-      expect(result.notSubmitted[0].roles).toEqual(['Misionero']);
+      const activeUser = result.users.find((u) => u.userId === 'user-1');
+      expect(activeUser).toBeDefined();
+      expect(activeUser!.activityCount).toBe(1);
+      expect(activeUser!.roles).toEqual(['Misionero']);
     });
   });
 
@@ -741,7 +744,7 @@ describe('ReportsService', () => {
       const result = await service.getRankings('user-1', { limit: 5 });
 
       expect(result.topPerformers).toBeDefined();
-      expect(result.lowestCompliance).toBeDefined();
+      expect(result.lowestEngagement).toBeDefined();
       expect(result.inactiveUsers).toBeDefined();
     });
   });

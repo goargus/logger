@@ -106,10 +106,10 @@ When('I request the entity comparison report', async function (this: CustomWorld
   this.context.lastResponse = await this.apiClient.get(ENDPOINTS.REPORTS_COMPARISON);
 });
 
-// === COMPLIANCE REPORT STEPS ===
+// === ENGAGEMENT REPORT STEPS ===
 
-When('I request the compliance report', async function (this: CustomWorld) {
-  this.context.lastResponse = await this.apiClient.get(ENDPOINTS.REPORTS_COMPLIANCE);
+When('I request the engagement report', async function (this: CustomWorld) {
+  this.context.lastResponse = await this.apiClient.get(ENDPOINTS.REPORTS_ENGAGEMENT);
 });
 
 // === RANKINGS REPORT STEPS ===

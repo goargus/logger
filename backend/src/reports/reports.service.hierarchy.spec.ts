@@ -10,7 +10,7 @@ import { ReportsTimeScopeService } from './time/reports-time-scope.service';
 import { ReportsActivityQueryFactory } from './query/reports-activity-query.factory';
 import { SummaryCalculator } from './calculators/summary.calculator';
 import { BreakdownsCalculator } from './calculators/breakdowns.calculator';
-import { ComplianceCalculator } from './calculators/compliance.calculator';
+import { EngagementCalculator } from './calculators/engagement.calculator';
 import { TrendsCalculator } from './calculators/trends.calculator';
 import { ComparisonCalculator } from './calculators/comparison.calculator';
 import { RankingsCalculator } from './calculators/rankings.calculator';
@@ -69,9 +69,10 @@ describe('ReportsService - Hierarchy Features', () => {
     totals: {
       activities: 5,
       expenses: 100,
-      usersExpected: 10,
-      usersSubmitted: 7,
-      complianceRate: 0.7,
+      totalUsers: 10,
+      activeUsers: 7,
+      activeRate: 0.7,
+      avgActivitiesPerUser: 0.5,
     },
   };
 
@@ -83,9 +84,10 @@ describe('ReportsService - Hierarchy Features', () => {
       parentId: null,
       activities: 3,
       expenses: 60,
-      usersExpected: 5,
-      usersSubmitted: 3,
-      complianceRate: 0.6,
+      totalUsers: 5,
+      activeUsers: 3,
+      activeRate: 0.6,
+      avgActivitiesPerUser: 0.6,
     },
     {
       entityId: 'entity-2',
@@ -94,9 +96,10 @@ describe('ReportsService - Hierarchy Features', () => {
       parentId: 'entity-1',
       activities: 2,
       expenses: 40,
-      usersExpected: 5,
-      usersSubmitted: 4,
-      complianceRate: 0.8,
+      totalUsers: 5,
+      activeUsers: 4,
+      activeRate: 0.8,
+      avgActivitiesPerUser: 0.4,
     },
   ];
 
@@ -160,7 +163,7 @@ describe('ReportsService - Hierarchy Features', () => {
           useValue: { calculate: jest.fn() },
         },
         {
-          provide: ComplianceCalculator,
+          provide: EngagementCalculator,
           useValue: { calculate: jest.fn() },
         },
         {

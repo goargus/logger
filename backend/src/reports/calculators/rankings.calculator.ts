@@ -91,7 +91,7 @@ export class RankingsCalculator {
       };
     });
 
-    const lowestCompliance = entityCompliance
+    const lowestEngagement = entityCompliance
       .filter((e) => e.missing > 0)
       .sort((a, b) => a.rate - b.rate)
       .slice(0, limit);
@@ -162,7 +162,7 @@ export class RankingsCalculator {
 
     return {
       topPerformers,
-      lowestCompliance,
+      lowestEngagement,
       inactiveUsers: sortedInactiveUsers,
     };
   }

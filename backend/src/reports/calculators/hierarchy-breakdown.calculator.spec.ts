@@ -130,8 +130,8 @@ describe('HierarchyBreakdownCalculator', () => {
       expect(result.map((r) => r.entityId)).toContain('entity-2');
     });
 
-    it('should calculate compliance rate per entity', async () => {
-      // Setup: Entity with 2 users, 1 submitted (50% compliance)
+    it('should calculate active rate per entity', async () => {
+      // Setup: Entity with 2 users, 1 active (50% active rate)
       const activities = [createActivity('a1', 'user-1', 'entity-1')] as Activity[];
 
       entityRepo.find = jest.fn().mockResolvedValue([entity1]);
@@ -143,7 +143,7 @@ describe('HierarchyBreakdownCalculator', () => {
         andWhere: jest.fn().mockReturnThis(),
         groupBy: jest.fn().mockReturnThis(),
         getRawMany: jest.fn().mockResolvedValue([
-          { entityId: 'entity-1', count: '2' }, // 2 users expected
+          { entityId: 'entity-1', count: '2' }, // 2 total users
         ]),
       };
       userRepo.createQueryBuilder = jest.fn().mockReturnValue(qbMock);
@@ -152,9 +152,9 @@ describe('HierarchyBreakdownCalculator', () => {
 
       expect(result.length).toBe(1);
       expect(result[0].entityId).toBe('entity-1');
-      expect(result[0].usersExpected).toBe(2);
-      expect(result[0].usersSubmitted).toBe(1);
-      expect(result[0].complianceRate).toBe(0.5);
+      expect(result[0].totalUsers).toBe(2);
+      expect(result[0].activeUsers).toBe(1);
+      expect(result[0].activeRate).toBe(0.5);
     });
 
     it('should sum expenses per entity', async () => {

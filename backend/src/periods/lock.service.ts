@@ -129,7 +129,10 @@ export class LockService {
   }
 
   async setAdminLock(entityId: string, lockDate: string, lockedBy: string): Promise<AdminLock> {
-    await this.adminLockRepo.upsert({ entityId, lockDate, lockedBy }, { conflictPaths: ['entityId'] });
+    await this.adminLockRepo.upsert(
+      { entityId, lockDate, lockedBy },
+      { conflictPaths: ['entityId'] },
+    );
     return this.adminLockRepo.findOneByOrFail({ entityId });
   }
 

@@ -61,7 +61,7 @@ import { configValidationSchema } from './config/config.validation';
         genReqId: (req: any) => {
           if (req.correlationId) return req.correlationId;
           const header = req.headers['x-request-id'] as string | undefined;
-          const id = header && /^[\w.:\-]{1,128}$/.test(header) ? header : randomUUID();
+          const id = header && /^[\w.:-]{1,128}$/.test(header) ? header : randomUUID();
           req.correlationId = id;
           return id;
         },

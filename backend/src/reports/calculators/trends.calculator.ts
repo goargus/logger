@@ -32,18 +32,18 @@ export class TrendsCalculator {
         return sum + (a.expenseAmount ? parseFloat(a.expenseAmount) : 0);
       }, 0);
 
-      let usersExpected = 0;
-      let usersSubmitted = 0;
+      let totalUsers = 0;
+      let activeUsers = 0;
 
       if (canViewReports && !isUserFiltered) {
-        usersExpected = usersInScope.length;
-        usersSubmitted = new Set(activities.map((a) => a.userId)).size;
+        totalUsers = usersInScope.length;
+        activeUsers = new Set(activities.map((a) => a.userId)).size;
       } else {
-        usersExpected = 1;
-        usersSubmitted = activities.length > 0 ? 1 : 0;
+        totalUsers = 1;
+        activeUsers = activities.length > 0 ? 1 : 0;
       }
 
-      const complianceRate = usersExpected > 0 ? usersSubmitted / usersExpected : 0;
+      const activeRate = totalUsers > 0 ? activeUsers / totalUsers : 0;
 
       return {
         periodId: period.label,
@@ -51,9 +51,9 @@ export class TrendsCalculator {
         endDate: period.endDate,
         activities: activities.length,
         expenses: Math.round(totalExpenses * 100) / 100,
-        complianceRate: Math.round(complianceRate * 100) / 100,
-        usersSubmitted,
-        usersExpected,
+        activeRate: Math.round(activeRate * 100) / 100,
+        activeUsers,
+        totalUsers,
       };
     });
 

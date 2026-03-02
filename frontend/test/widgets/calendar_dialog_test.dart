@@ -47,8 +47,8 @@ void main() {
     await initializeDateFormatting('es_ES');
   });
 
-  testWidgets('unavailable date shows styling and feedback',
-      skip: _skipLocally, (tester) async {
+  testWidgets('unavailable date shows styling and feedback', skip: _skipLocally,
+      (tester) async {
     // Jan 5 is NOT in available dates, so it should be unavailable
     final service = FakePeriodsService(
       availability: AvailabilityResponse(

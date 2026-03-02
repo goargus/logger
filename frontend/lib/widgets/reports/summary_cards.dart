@@ -4,19 +4,34 @@ import '../../utils/currency_formatter.dart';
 class SummaryCards extends StatelessWidget {
   final int activitiesCount;
   final double expenses;
-  final bool isReported;
+  final String? lastActivityDate;
   final String currencySymbol;
 
   const SummaryCards({
     super.key,
     required this.activitiesCount,
     required this.expenses,
-    required this.isReported,
+    this.lastActivityDate,
     this.currencySymbol = '\$',
   });
 
+  String _formatLastActivity() {
+    if (lastActivityDate == null || lastActivityDate!.isEmpty) {
+      return 'Sin actividad';
+    }
+    try {
+      final date = DateTime.parse(lastActivityDate!);
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (_) {
+      return lastActivityDate!;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final hasActivity =
+        lastActivityDate != null && lastActivityDate!.isNotEmpty;
+
     return Row(
       children: [
         Expanded(
@@ -35,9 +50,9 @@ class SummaryCards extends StatelessWidget {
         const SizedBox(width: 16),
         Expanded(
           child: _SummaryCard(
-            title: 'Reportado',
-            value: isReported ? '✓' : '✗',
-            valueColor: isReported ? Colors.green : Colors.orange,
+            title: 'Ultima Actividad',
+            value: _formatLastActivity(),
+            valueColor: hasActivity ? Colors.green : Colors.grey,
           ),
         ),
       ],
