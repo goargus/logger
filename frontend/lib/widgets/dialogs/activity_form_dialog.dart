@@ -111,7 +111,7 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
               break;
             }
           }
-          if (found != null) {
+          if (found != null && mounted) {
             setState(() => _selectedType = found);
           }
         }
@@ -149,6 +149,7 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
       }
 
       if (matchingRole != null) {
+        if (!mounted) return roles;
         setState(() {
           _selectedRole = matchingRole;
           _selectedType = foundType;
@@ -162,13 +163,16 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
                   break;
                 }
               }
-              _selectedType = matched;
+              if (mounted) {
+                setState(() => _selectedType = matched);
+              }
             }
             return filtered;
           });
         });
       } else if (activeRoles.length == 1) {
         final fallbackRole = activeRoles.first;
+        if (!mounted) return roles;
         setState(() {
           _selectedRole = fallbackRole;
           _typesFuture =
@@ -181,7 +185,9 @@ class _ActivityFormDialogState extends State<ActivityFormDialog> {
                   break;
                 }
               }
-              _selectedType = matched;
+              if (mounted) {
+                setState(() => _selectedType = matched);
+              }
             }
             return filtered;
           });
