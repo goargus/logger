@@ -232,20 +232,24 @@ class _UsersReportTableState extends State<UsersReportTable> {
             label: const Text('Rol'),
             onSort: (_, __) => _handleSort('role'),
           ),
-          const DataColumn(
-            label: Text('Actividades'),
+          DataColumn(
+            label: const Text('Actividades'),
             numeric: true,
+            onSort: (_, __) => _handleSort('activities'),
           ),
-          const DataColumn(
-            label: Text('Gastos'),
+          DataColumn(
+            label: const Text('Gastos'),
             numeric: true,
+            onSort: (_, __) => _handleSort('expenses'),
           ),
-          const DataColumn(
-            label: Text('Ultima Actividad'),
+          DataColumn(
+            label: const Text('Ultima Actividad'),
+            onSort: (_, __) => _handleSort('lastActivity'),
           ),
-          const DataColumn(
-            label: Text('Tendencia'),
+          DataColumn(
+            label: const Text('Tendencia'),
             numeric: true,
+            onSort: (_, __) => _handleSort('trend'),
           ),
         ],
         rows: widget.response.users.map((user) {
@@ -529,6 +533,14 @@ class _UsersReportTableState extends State<UsersReportTable> {
         return 2;
       case 'role':
         return 3;
+      case 'activities':
+        return 4;
+      case 'expenses':
+        return 5;
+      case 'lastActivity':
+        return 6;
+      case 'trend':
+        return 7;
       default:
         return null;
     }

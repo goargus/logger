@@ -10,6 +10,7 @@ export enum UsersSortField {
   ACTIVITIES = 'activities',
   EXPENSES = 'expenses',
   LAST_ACTIVITY = 'lastActivity',
+  TREND = 'trend',
 }
 
 export enum SortOrder {
