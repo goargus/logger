@@ -47,6 +47,8 @@ import {
   UsersReportQueryDto,
   UsersReportResponse,
   UserReportItem,
+  UsersSortField,
+  SortOrder,
   EngagementFilter,
 } from './dto/users-report.dto';
 import { CsvExporter } from './export/csv-exporter';
@@ -1042,13 +1044,20 @@ export class ReportsService {
     // Get entity hierarchy
     const entityIds = await this.accessService.getEntityHierarchy(targetEntityId);
 
-    // Get users in hierarchy with pagination
-    const { users, total } = await this.accessService.getUsersInHierarchy(entityIds, {
-      page: query.page || 1,
-      limit: query.limit || 20,
+    // Determine if sorting by a computed field (requires in-memory sort)
+    const computedSortFields = ['activities', 'expenses', 'lastActivity', 'trend'];
+    const isComputedSort = computedSortFields.includes(query.sortBy);
+
+    // For computed sort fields, fetch all users (no pagination) so we can sort in-memory
+    // For DB-sortable fields, use efficient DB-level sort + pagination
+    const page = query.page || 1;
+    const limit = query.limit || 20;
+    const { users, total: dbTotal } = await this.accessService.getUsersInHierarchy(entityIds, {
+      page: isComputedSort ? 1 : page,
+      limit: isComputedSort ? Number.MAX_SAFE_INTEGER : limit,
       search: query.search,
-      sortBy: query.sortBy,
-      sortOrder: query.sortOrder,
+      sortBy: isComputedSort ? undefined : query.sortBy,
+      sortOrder: isComputedSort ? undefined : query.sortOrder,
     });
 
     // Determine time scope
@@ -1151,6 +1160,35 @@ export class ReportsService {
       userItems = userItems.filter((u) => u.activitiesCount === 0);
     }
 
+    // For computed sort fields, sort in-memory and paginate the result
+    let total = dbTotal;
+    if (isComputedSort) {
+      const sortOrder = query.sortOrder === SortOrder.DESC ? -1 : 1;
+      userItems.sort((a, b) => {
+        switch (query.sortBy) {
+          case UsersSortField.ACTIVITIES:
+            return (a.activitiesCount - b.activitiesCount) * sortOrder;
+          case UsersSortField.EXPENSES:
+            return (a.totalExpenses - b.totalExpenses) * sortOrder;
+          case UsersSortField.LAST_ACTIVITY: {
+            const dateA = a.lastActivityDate || '';
+            const dateB = b.lastActivityDate || '';
+            return dateA.localeCompare(dateB) * sortOrder;
+          }
+          case UsersSortField.TREND: {
+            const trendA = a.trend ?? -Infinity;
+            const trendB = b.trend ?? -Infinity;
+            return (trendA - trendB) * sortOrder;
+          }
+          default:
+            return 0;
+        }
+      });
+      total = userItems.length;
+      const offset = (page - 1) * limit;
+      userItems = userItems.slice(offset, offset + limit);
+    }
+
     // Calculate summary from all users (before pagination filtering)
     const allUsersMetrics = Array.from(userMetrics.values());
     const activeUsersCount = allUsersMetrics.filter((m) => m.count > 0).length;
@@ -1161,10 +1199,10 @@ export class ReportsService {
     return {
       users: userItems,
       pagination: {
-        page: query.page || 1,
-        limit: query.limit || 20,
+        page,
+        limit,
         total,
-        totalPages: Math.ceil(total / (query.limit || 20)),
+        totalPages: Math.ceil(total / limit),
       },
       summary: {
         totalUsers: total,
