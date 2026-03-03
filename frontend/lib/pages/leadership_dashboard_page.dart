@@ -24,14 +24,6 @@ class LeadershipDashboardContent extends ConsumerStatefulWidget {
 
 class _LeadershipDashboardContentState
     extends ConsumerState<LeadershipDashboardContent> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadDashboard();
-    });
-  }
-
   void _loadDashboard() {
     final authState = ref.read(authNotifierProvider);
     final primaryEntity =

@@ -27,8 +27,11 @@ class LeadershipDashboardNotifier
     Future<String> getAccessToken() async => authState.accessToken ?? '';
     reportsService = ReportsService.localhost(getAccessToken);
 
-    // Start in loading state; callers use loadDashboard() to fetch
-    throw UnimplementedError('Call loadDashboard() to load data');
+    final primaryEntity =
+        authState.user?['primary_entity'] as Map<String, dynamic>?;
+    final entityId = primaryEntity?['id'] as String?;
+
+    return _fetchDashboardData(entityId: entityId);
   }
 
   Map<String, String> _calculatePeriodBounds() {
@@ -64,49 +67,55 @@ class LeadershipDashboardNotifier
 
   Future<void> loadDashboard({String? entityId}) async {
     state = const AsyncValue.loading();
+    try {
+      state = AsyncValue.data(await _fetchDashboardData(entityId: entityId));
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+    }
+  }
+
+  Future<LeadershipDashboardData> _fetchDashboardData({
+    String? entityId,
+  }) async {
     final bounds = _calculatePeriodBounds();
     final dateFrom = bounds['dateFrom']!;
     final dateTo = bounds['dateTo']!;
 
-    try {
-      final results = await Future.wait([
-        reportsService.getTrends(
-          entityId: entityId,
-          dateFrom: dateFrom,
-          dateTo: dateTo,
-        ),
-        reportsService.getComparison(
-          entityId: entityId,
-          dateFrom: dateFrom,
-          dateTo: dateTo,
-          periodType: _periodType,
-          year: _year,
-          month: _periodType == ReportPeriodType.monthly ? _periodIndex : null,
-          quarter:
-              _periodType == ReportPeriodType.quarterly ? _periodIndex : null,
-          half: _periodType == ReportPeriodType.biannual ? _periodIndex : null,
-        ),
-        reportsService.getRankings(
-          entityId: entityId,
-          dateFrom: dateFrom,
-          dateTo: dateTo,
-        ),
-        reportsService.getExpenses(
-          entityId: entityId,
-          dateFrom: dateFrom,
-          dateTo: dateTo,
-        ),
-      ]);
+    final results = await Future.wait([
+      reportsService.getTrends(
+        entityId: entityId,
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+      ),
+      reportsService.getComparison(
+        entityId: entityId,
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+        periodType: _periodType,
+        year: _year,
+        month: _periodType == ReportPeriodType.monthly ? _periodIndex : null,
+        quarter:
+            _periodType == ReportPeriodType.quarterly ? _periodIndex : null,
+        half: _periodType == ReportPeriodType.biannual ? _periodIndex : null,
+      ),
+      reportsService.getRankings(
+        entityId: entityId,
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+      ),
+      reportsService.getExpenses(
+        entityId: entityId,
+        dateFrom: dateFrom,
+        dateTo: dateTo,
+      ),
+    ]);
 
-      state = AsyncValue.data(LeadershipDashboardData(
-        trends: results[0] as TrendsResponse,
-        comparison: results[1] as ComparisonResponse,
-        rankings: results[2] as RankingsResponse,
-        expenses: results[3] as ExpensesResponse,
-      ));
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
-    }
+    return LeadershipDashboardData(
+      trends: results[0] as TrendsResponse,
+      comparison: results[1] as ComparisonResponse,
+      rankings: results[2] as RankingsResponse,
+      expenses: results[3] as ExpensesResponse,
+    );
   }
 
   Future<void> updatePeriodType(ReportPeriodType newType) async {
