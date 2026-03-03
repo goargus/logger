@@ -27,11 +27,56 @@ class LeadershipDashboardNotifier
     Future<String> getAccessToken() async => authState.accessToken ?? '';
     reportsService = ReportsService.localhost(getAccessToken);
 
-    // Load initial data
     final primaryEntity =
         authState.user?['primary_entity'] as Map<String, dynamic>?;
     final entityId = primaryEntity?['id'] as String?;
-    
+
+    return _fetchDashboardData(entityId: entityId);
+  }
+
+  Map<String, String> _calculatePeriodBounds() {
+    DateTime start;
+    DateTime end;
+
+    switch (_periodType) {
+      case ReportPeriodType.monthly:
+        start = DateTime(_year, _periodIndex, 1);
+        end = DateTime(_year, _periodIndex + 1, 0, 23, 59, 59);
+        break;
+      case ReportPeriodType.quarterly:
+        final startMonth = (_periodIndex - 1) * 3 + 1;
+        start = DateTime(_year, startMonth, 1);
+        end = DateTime(_year, startMonth + 3, 0, 23, 59, 59);
+        break;
+      case ReportPeriodType.biannual:
+        final startMonth = (_periodIndex - 1) * 6 + 1;
+        start = DateTime(_year, startMonth, 1);
+        end = DateTime(_year, startMonth + 6, 0, 23, 59, 59);
+        break;
+      case ReportPeriodType.annual:
+        start = DateTime(_year, 1, 1);
+        end = DateTime(_year, 12, 31, 23, 59, 59);
+        break;
+    }
+
+    String format(DateTime d) =>
+        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+    return {'dateFrom': format(start), 'dateTo': format(end)};
+  }
+
+  Future<void> loadDashboard({String? entityId}) async {
+    state = const AsyncValue.loading();
+    try {
+      state = AsyncValue.data(await _fetchDashboardData(entityId: entityId));
+    } catch (e, stack) {
+      state = AsyncValue.error(e, stack);
+    }
+  }
+
+  Future<LeadershipDashboardData> _fetchDashboardData({
+    String? entityId,
+  }) async {
     final bounds = _calculatePeriodBounds();
     final dateFrom = bounds['dateFrom']!;
     final dateTo = bounds['dateTo']!;
@@ -71,84 +116,6 @@ class LeadershipDashboardNotifier
       rankings: results[2] as RankingsResponse,
       expenses: results[3] as ExpensesResponse,
     );
-  }
-
-  Map<String, String> _calculatePeriodBounds() {
-    DateTime start;
-    DateTime end;
-
-    switch (_periodType) {
-      case ReportPeriodType.monthly:
-        start = DateTime(_year, _periodIndex, 1);
-        end = DateTime(_year, _periodIndex + 1, 0, 23, 59, 59);
-        break;
-      case ReportPeriodType.quarterly:
-        final startMonth = (_periodIndex - 1) * 3 + 1;
-        start = DateTime(_year, startMonth, 1);
-        end = DateTime(_year, startMonth + 3, 0, 23, 59, 59);
-        break;
-      case ReportPeriodType.biannual:
-        final startMonth = (_periodIndex - 1) * 6 + 1;
-        start = DateTime(_year, startMonth, 1);
-        end = DateTime(_year, startMonth + 6, 0, 23, 59, 59);
-        break;
-      case ReportPeriodType.annual:
-        start = DateTime(_year, 1, 1);
-        end = DateTime(_year, 12, 31, 23, 59, 59);
-        break;
-    }
-
-    String format(DateTime d) =>
-        '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
-
-    return {'dateFrom': format(start), 'dateTo': format(end)};
-  }
-
-  Future<void> loadDashboard({String? entityId}) async {
-    state = const AsyncValue.loading();
-    final bounds = _calculatePeriodBounds();
-    final dateFrom = bounds['dateFrom']!;
-    final dateTo = bounds['dateTo']!;
-
-    try {
-      final results = await Future.wait([
-        reportsService.getTrends(
-          entityId: entityId,
-          dateFrom: dateFrom,
-          dateTo: dateTo,
-        ),
-        reportsService.getComparison(
-          entityId: entityId,
-          dateFrom: dateFrom,
-          dateTo: dateTo,
-          periodType: _periodType,
-          year: _year,
-          month: _periodType == ReportPeriodType.monthly ? _periodIndex : null,
-          quarter:
-              _periodType == ReportPeriodType.quarterly ? _periodIndex : null,
-          half: _periodType == ReportPeriodType.biannual ? _periodIndex : null,
-        ),
-        reportsService.getRankings(
-          entityId: entityId,
-          dateFrom: dateFrom,
-          dateTo: dateTo,
-        ),
-        reportsService.getExpenses(
-          entityId: entityId,
-          dateFrom: dateFrom,
-          dateTo: dateTo,
-        ),
-      ]);
-
-      state = AsyncValue.data(LeadershipDashboardData(
-        trends: results[0] as TrendsResponse,
-        comparison: results[1] as ComparisonResponse,
-        rankings: results[2] as RankingsResponse,
-        expenses: results[3] as ExpensesResponse,
-      ));
-    } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
-    }
   }
 
   Future<void> updatePeriodType(ReportPeriodType newType) async {
