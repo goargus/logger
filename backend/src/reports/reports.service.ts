@@ -1046,7 +1046,7 @@ export class ReportsService {
 
     // Determine if sorting by a computed field (requires in-memory sort)
     const computedSortFields = ['activities', 'expenses', 'lastActivity', 'trend'];
-    const isComputedSort = computedSortFields.includes(query.sortBy);
+    const isComputedSort = query.sortBy != null && computedSortFields.includes(query.sortBy);
 
     // For computed sort fields, fetch all users (no pagination) so we can sort in-memory
     // For DB-sortable fields, use efficient DB-level sort + pagination
