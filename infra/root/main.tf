@@ -1,3 +1,9 @@
+resource "random_password" "postgres" {
+  length           = 32
+  special          = true
+  override_special = "!#$%&*()-_=+[]{}<>:?"
+}
+
 resource "azurerm_resource_group" "main" {
   name     = "${local.name_prefix}-rg"
   location = var.location
@@ -32,7 +38,7 @@ module "postgres" {
   location            = var.location
   rg_name             = azurerm_resource_group.main.name
   admin_username      = var.postgres_admin_username
-  admin_password      = var.postgres_admin_password
+  admin_password      = random_password.postgres.result
   data_subnet_id      = module.network.data_subnet_id
   private_dns_zone_id = module.network.postgres_private_dns_zone_id
   tags                = local.tags
@@ -53,7 +59,7 @@ module "container_apps" {
   db_host                    = module.postgres.fqdn
   db_name                    = module.postgres.db_name
   db_username                = module.postgres.admin_username
-  db_password                = var.postgres_admin_password
+  db_password                = random_password.postgres.result
   auth0_domain               = var.auth0_domain
   auth0_audience             = var.auth0_audience
   auth0_issuer               = var.auth0_issuer

@@ -15,12 +15,6 @@ variable "postgres_admin_username" {
   description = "Admin username for PostgreSQL Flexible Server."
 }
 
-variable "postgres_admin_password" {
-  type        = string
-  description = "Admin password for PostgreSQL Flexible Server."
-  sensitive   = true
-}
-
 variable "container_image" {
   type        = string
   description = "Full container image reference (e.g. ghcr.io/goargus/logger:latest)."
