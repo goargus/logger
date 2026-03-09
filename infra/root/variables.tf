@@ -1,7 +1,7 @@
 variable "project_name" {
   type        = string
   description = "Project name prefix for all resources."
-  default     = "secretary"
+  default     = "logger"
 }
 
 variable "location" {
@@ -77,4 +77,21 @@ variable "tags" {
   type        = map(string)
   description = "Tags to apply to all resources."
   default     = {}
+}
+
+# ── Cloudflare ──────────────────────────────────────────────
+variable "cloudflare_api_key" {
+  type        = string
+  description = "Cloudflare Global API Key."
+  sensitive   = true
+}
+
+variable "cloudflare_email" {
+  type        = string
+  description = "Cloudflare account email address."
+}
+
+variable "cloudflare_zone_id" {
+  type        = string
+  description = "Cloudflare Zone ID for the domain."
 }

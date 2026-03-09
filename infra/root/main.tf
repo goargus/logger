@@ -5,7 +5,7 @@ resource "random_password" "postgres" {
 }
 
 resource "azurerm_resource_group" "main" {
-  name     = "${local.name_prefix}-rg"
+  name     = local.caf.rg
   location = var.location
   tags     = local.tags
 }
@@ -13,28 +13,25 @@ resource "azurerm_resource_group" "main" {
 module "network" {
   source = "../modules/network"
 
-  project_name = var.project_name
-  env          = local.env
-  location     = var.location
-  rg_name      = azurerm_resource_group.main.name
-  tags         = local.tags
+  vnet_name = local.caf.vnet
+  location  = var.location
+  rg_name   = azurerm_resource_group.main.name
+  tags      = local.tags
 }
 
 module "monitoring" {
   source = "../modules/monitoring"
 
-  project_name = var.project_name
-  env          = local.env
-  location     = var.location
-  rg_name      = azurerm_resource_group.main.name
-  tags         = local.tags
+  name     = local.caf.law
+  location = var.location
+  rg_name  = azurerm_resource_group.main.name
+  tags     = local.tags
 }
 
 module "postgres" {
   source = "../modules/postgres"
 
-  project_name        = var.project_name
-  env                 = local.env
+  name                = local.caf.psql
   location            = var.location
   rg_name             = azurerm_resource_group.main.name
   admin_username      = var.postgres_admin_username
@@ -47,8 +44,8 @@ module "postgres" {
 module "container_apps" {
   source = "../modules/container_apps"
 
-  project_name               = var.project_name
-  env                        = local.env
+  environment_name           = local.caf.cae
+  app_name                   = local.caf.ca
   location                   = var.location
   rg_name                    = azurerm_resource_group.main.name
   container_apps_subnet_id   = module.network.container_apps_subnet_id
@@ -69,4 +66,32 @@ module "container_apps" {
   admin_idp_issuer           = var.admin_idp_issuer
   admin_idp_subject          = var.admin_idp_subject
   tags                       = local.tags
+}
+
+# ── Cloudflare DNS ──────────────────────────────────────────
+module "cloudflare" {
+  source = "../modules/cloudflare"
+
+  zone_id                    = var.cloudflare_zone_id
+  api_subdomain              = "logger-api"
+  frontend_subdomain         = "logger"
+  domain                     = "asdmr.org.hn"
+  api_static_ip              = module.container_apps.static_ip
+  api_domain_verification_id = module.container_apps.domain_verification_id
+  pages_cname_target         = "secretary-frontend.pages.dev"
+}
+
+# Custom domain binding lives at root to avoid circular dependency:
+# cloudflare needs container_apps outputs, and the binding needs cloudflare to finish first.
+resource "azurerm_container_app_custom_domain" "api" {
+  name             = "logger-api.asdmr.org.hn"
+  container_app_id = module.container_apps.container_app_id
+
+  # Azure provisions the managed certificate asynchronously after domain validation.
+  # These values are populated by Azure and must be ignored to prevent resource recreation.
+  lifecycle {
+    ignore_changes = [certificate_binding_type, container_app_environment_certificate_id]
+  }
+
+  depends_on = [module.cloudflare]
 }

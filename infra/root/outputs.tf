@@ -18,3 +18,11 @@ output "postgres_fqdn" {
 output "postgres_db_name" {
   value = module.postgres.db_name
 }
+
+output "api_custom_url" {
+  value = "https://${module.cloudflare.api_fqdn}"
+}
+
+output "frontend_custom_url" {
+  value = "https://${module.cloudflare.frontend_fqdn}"
+}
