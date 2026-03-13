@@ -157,6 +157,37 @@ describe('AuthService', () => {
       ).rejects.toThrow(ForbiddenException);
     });
 
+    it('auto-links Entra ID user by email when emailVerified is set by caller', async () => {
+      const entraClaims: JwtClaims = {
+        iss: 'https://login.microsoftonline.com/test-tenant-id/v2.0',
+        sub: '00000000-0000-0000-0000-000000000abc', // oid value
+        aud: '00000000-0000-0000-0000-000000000001',
+        email: 'jdoe@example.com',
+        email_verified: true, // Set by JWT strategy for trusted tenant
+        name: 'John Doe',
+      };
+      idpIdentitiesService.findByIssuerAndSubject.mockResolvedValue(null);
+      userRepo.find.mockResolvedValue([activeUser]);
+      idpIdentitiesService.create.mockResolvedValue({
+        user_id: 'user-1',
+        user: activeUser,
+      });
+
+      const result = await service.resolveUserFromJwt(entraClaims, 'azuread', {
+        allowAutoLinkByVerifiedEmail: true,
+      });
+
+      expect(result.user).toEqual(activeUser);
+      expect(idpIdentitiesService.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_id: 'user-1',
+          provider: 'azuread',
+          issuer: 'https://login.microsoftonline.com/test-tenant-id/v2.0',
+          subject: '00000000-0000-0000-0000-000000000abc',
+        }),
+      );
+    });
+
     it('throws ForbiddenException when no identity and auto-link disabled', async () => {
       idpIdentitiesService.findByIssuerAndSubject.mockResolvedValue(null);
 
