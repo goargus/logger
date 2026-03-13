@@ -40,6 +40,8 @@ services:
       AUTH0_DOMAIN: dev-ohuspam6fnmh4tgt.us.auth0.com
       AUTH0_AUDIENCE: logger
       AUTH0_ISSUER: https://dev-ohuspam6fnmh4tgt.us.auth0.com/
+      ENTRA_TENANT_ID: ${ENTRA_TENANT_ID:-00000000-0000-0000-0000-000000000000}
+      ENTRA_CLIENT_ID: ${ENTRA_CLIENT_ID:-00000000-0000-0000-0000-000000000001}
       CORS_ORIGINS: http://localhost:3000,http://localhost:8080
       ADMIN_EMAIL: hndoss@gmail.com
       ADMIN_USERNAME: "hndoss"
@@ -78,6 +80,8 @@ services:
       AUTH0_DOMAIN: dev-ohuspam6fnmh4tgt.us.auth0.com
       AUTH0_AUDIENCE: logger
       AUTH0_ISSUER: https://dev-ohuspam6fnmh4tgt.us.auth0.com/
+      ENTRA_TENANT_ID: ${ENTRA_TENANT_ID:-00000000-0000-0000-0000-000000000000}
+      ENTRA_CLIENT_ID: ${ENTRA_CLIENT_ID:-00000000-0000-0000-0000-000000000001}
       CORS_ORIGINS: http://localhost:3000,http://localhost:8080
       PERIOD_FREQUENCY: 2
       ADMIN_EMAIL: hndoss@gmail.com
@@ -112,33 +116,18 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        AUTH0_DOMAIN: dev-ohuspam6fnmh4tgt.us.auth0.com
+        AUTH0_CLIENT_ID: 2H45P97qEyC9HfiKFj8FOvb8DnSOgFwY
+        AUTH0_AUDIENCE: logger
+        ENTRA_TENANT_ID: ${ENTRA_TENANT_ID:-}
+        ENTRA_CLIENT_ID: ${ENTRA_CLIENT_ID:-}
+        REDIRECT_URI: http://localhost:8080
+        API_BASE_URL: http://localhost:3000
     container_name: frontend
     restart: always
-    stdin_open: true  # Allows attaching for hot reload (press 'r')
-    tty: true         # Allocates TTY for interactive commands
     ports:
       - "8080:8080"
-    environment:
-      - AUTH0_DOMAIN=dev-ohuspam6fnmh4tgt.us.auth0.com
-      - AUTH0_CLIENT_ID=2H45P97qEyC9HfiKFj8FOvb8DnSOgFwY
-      - AUTH0_REDIRECT_URI=http://localhost:8080
-      - AUTH0_AUDIENCE=logger
-      - API_BASE_URL=http://localhost:3000
-    volumes:
-      - ./frontend/lib:/app/lib
-      - ./frontend/web:/app/web
-      - ./frontend/assets:/app/assets
-      - ./frontend/pubspec.yaml:/app/pubspec.yaml
-    develop:
-      watch:
-        - action: sync
-          path: ./frontend/lib
-          target: /app/lib
-        - action: sync
-          path: ./frontend/web
-          target: /app/web
-        - action: rebuild
-          path: ./frontend/pubspec.yaml
 
 volumes:
   postgres_data:
