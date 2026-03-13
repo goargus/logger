@@ -23,6 +23,14 @@ Thumbs.db
 .playwright-mcp/
 
 .env
+*.tfvars
+*.tfplan
+tfplan
+
+# Database dumps
+*.bak
+*.dump
+*.sql.gz
 
 # Worktrees
 .worktrees/
