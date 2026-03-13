@@ -18,7 +18,9 @@ import '../utils/url_utils.dart';
 import 'auth_state.dart';
 export 'auth_state.dart';
 
-const bool kAutoRedirectOnBoot = true;
+enum IdpType { entra, auth0 }
+
+const bool kAutoRedirectOnBoot = false;
 
 final authNotifierProvider =
     NotifierProvider<AuthNotifier, AuthState>(AuthNotifier.new);
@@ -45,8 +47,7 @@ class AuthNotifier extends Notifier<AuthState> {
       return 'No pudimos iniciar sesión. Por favor, inténtalo de nuevo.';
     }
 
-    if (message.contains('auth0') ||
-        message.contains('not configured') ||
+    if (message.contains('not configured') ||
         message.contains('dart-define')) {
       return 'La autenticación no está disponible en este momento.';
     }
@@ -82,6 +83,35 @@ class AuthNotifier extends Notifier<AuthState> {
     return base64Url.encode(digest.bytes).replaceAll('=', '');
   }
 
+  Map<String, dynamic> _parseIdToken(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return {};
+      final normalized = base64Url.normalize(parts[1]);
+      final decoded = utf8.decode(base64Url.decode(normalized));
+      return jsonDecode(decoded) as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('[AuthNotifier] Failed to parse token: $e');
+      return {};
+    }
+  }
+
+  IdpType? _getSavedIdpType() {
+    final saved = web.window.localStorage.getItem('idp_type');
+    if (saved == 'entra') return IdpType.entra;
+    if (saved == 'auth0') return IdpType.auth0;
+    return null;
+  }
+
+  void _saveIdpType(IdpType type) {
+    web.window.localStorage.setItem('idp_type', type == IdpType.entra ? 'entra' : 'auth0');
+  }
+
+  String _generateState() {
+    final bytes = List<int>.generate(32, (_) => Random.secure().nextInt(256));
+    return base64Url.encode(bytes).replaceAll('=', '');
+  }
+
   Future<void> _bootstrap() async {
     if (_bootstrapped) return;
     _bootstrapped = true;
@@ -90,7 +120,7 @@ class AuthNotifier extends Notifier<AuthState> {
       state = state.copyWith(
         isLoading: false,
         lastError: _friendlyAuthError(
-            'Auth0 no está configurado. Revisa tus --dart-define en auth_config.dart'),
+            'La autenticacion no esta configurada. Contacte al administrador.'),
       );
       return;
     }
@@ -120,6 +150,7 @@ class AuthNotifier extends Notifier<AuthState> {
       if (kAutoRedirectOnBoot && !_isRedirecting) {
         await login();
       } else {
+        await Future<void>.delayed(Duration.zero);
         state = state.copyWith(isLoading: false, isAuthenticated: false);
       }
     } catch (e) {
@@ -176,67 +207,100 @@ class AuthNotifier extends Notifier<AuthState> {
     try {
       final uri = Uri.parse(web.window.location.href);
       final code = uri.queryParameters['code'];
+      final returnedState = uri.queryParameters['state'];
 
       if (code == null || code.isEmpty) {
         throw Exception('No authorization code found in callback URL');
       }
 
+      // Validate CSRF state parameter
+      final savedState = web.window.localStorage.getItem('oauth_state');
+      if (savedState == null || savedState != returnedState) {
+        web.window.localStorage.removeItem('oauth_state');
+        throw Exception('Invalid state parameter');
+      }
+      web.window.localStorage.removeItem('oauth_state');
+
       final codeVerifier =
           web.window.localStorage.getItem('pkce_code_verifier');
       if (codeVerifier == null || codeVerifier.isEmpty) {
-        throw Exception(
-            'Missing PKCE verifier. Authentication flow may have been interrupted.');
+        throw Exception('Missing PKCE verifier');
       }
 
-      debugPrint(
-          '[AuthNotifier] Exchanging authorization code with PKCE verifier...');
+      final idpType = _getSavedIdpType() ?? IdpType.auth0;
 
-      final tokenResponse = await http.post(
-        Uri.parse('https://${AuthConfig.domain}/oauth/token'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
+      String tokenUrl;
+      Map<String, String> tokenBody;
+
+      if (idpType == IdpType.entra) {
+        tokenUrl = AuthConfig.entraTokenUrl;
+        tokenBody = {
           'grant_type': 'authorization_code',
-          'client_id': AuthConfig.clientId,
+          'client_id': AuthConfig.entraClientId,
           'code': code,
           'redirect_uri': AuthConfig.redirectUri,
           'code_verifier': codeVerifier,
-        }),
+          'scope': 'openid profile email ${AuthConfig.entraApiScope}',
+        };
+      } else {
+        tokenUrl = 'https://${AuthConfig.auth0Domain}/oauth/token';
+        tokenBody = {
+          'grant_type': 'authorization_code',
+          'client_id': AuthConfig.auth0ClientId,
+          'code': code,
+          'redirect_uri': AuthConfig.redirectUri,
+          'code_verifier': codeVerifier,
+        };
+      }
+
+      final tokenResponse = await http.post(
+        Uri.parse(tokenUrl),
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: tokenBody,
       );
 
-      if (tokenResponse.statusCode == 200) {
-        final tokens = jsonDecode(tokenResponse.body);
-        final accessToken = tokens['access_token'];
+      if (tokenResponse.statusCode != 200) {
+        throw Exception('Failed to exchange code for token: ${tokenResponse.statusCode}');
+      }
 
-        final userResponse = await http.get(
-          Uri.parse('https://${AuthConfig.domain}/userinfo'),
-          headers: {'Authorization': 'Bearer $accessToken'},
-        );
+      final tokens = jsonDecode(tokenResponse.body);
+      final accessToken = tokens['access_token'] as String;
 
-        if (userResponse.statusCode == 200) {
-          final userInfo =
-              jsonDecode(userResponse.body) as Map<String, dynamic>;
-
-          final backendProfile = await _fetchBackendUserProfile(accessToken);
-
-          final mergedUserInfo = {...userInfo, ...backendProfile};
-
-          web.window.localStorage.setItem('auth_token', accessToken);
-          web.window.localStorage.removeItem('pkce_code_verifier');
-          await _session.saveToken(accessToken);
-
-          _clearAuthCallbackParams(uri);
-
-          state = state.copyWith(
-            isLoading: false,
-            isAuthenticated: true,
-            user: mergedUserInfo,
-            accessToken: accessToken,
-            lastError: null,
-          );
+      // Get user info
+      Map<String, dynamic> userInfo = {};
+      if (idpType == IdpType.entra) {
+        // Parse ID token directly (Entra ID includes claims)
+        final idToken = tokens['id_token'] as String?;
+        if (idToken != null) {
+          userInfo = _parseIdToken(idToken);
         }
       } else {
-        throw Exception('Failed to exchange code for token');
+        // Auth0: fetch from /userinfo endpoint
+        final userResponse = await http.get(
+          Uri.parse('https://${AuthConfig.auth0Domain}/userinfo'),
+          headers: {'Authorization': 'Bearer $accessToken'},
+        );
+        if (userResponse.statusCode == 200) {
+          userInfo = jsonDecode(userResponse.body) as Map<String, dynamic>;
+        }
       }
+
+      final backendProfile = await _fetchBackendUserProfile(accessToken);
+      final mergedUserInfo = {...userInfo, ...backendProfile};
+
+      web.window.localStorage.setItem('auth_token', accessToken);
+      web.window.localStorage.removeItem('pkce_code_verifier');
+      await _session.saveToken(accessToken);
+
+      _clearAuthCallbackParams(uri);
+
+      state = state.copyWith(
+        isLoading: false,
+        isAuthenticated: true,
+        user: mergedUserInfo,
+        accessToken: accessToken,
+        lastError: null,
+      );
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -257,28 +321,12 @@ class AuthNotifier extends Notifier<AuthState> {
         throw Exception('No token found');
       }
 
-      final userResponse = await http.get(
-        Uri.parse('https://${AuthConfig.domain}/userinfo'),
-        headers: {'Authorization': 'Bearer $accessToken'},
-      );
+      final idpType = _getSavedIdpType();
 
-      if (userResponse.statusCode == 200) {
-        final userInfo = jsonDecode(userResponse.body) as Map<String, dynamic>;
+      // Validate token by calling backend profile
+      final backendProfile = await _fetchBackendUserProfile(accessToken);
 
-        final backendProfile = await _fetchBackendUserProfile(accessToken);
-
-        final mergedUserInfo = {...userInfo, ...backendProfile};
-
-        await _session.saveToken(accessToken);
-
-        state = state.copyWith(
-          isLoading: false,
-          isAuthenticated: true,
-          user: mergedUserInfo,
-          accessToken: accessToken,
-          lastError: null,
-        );
-      } else {
+      if (backendProfile.isEmpty) {
         web.window.localStorage.removeItem('auth_token');
         await _session.clear();
         state = state.copyWith(
@@ -287,11 +335,39 @@ class AuthNotifier extends Notifier<AuthState> {
           accessToken: null,
           user: null,
         );
-        if (!_isRedirecting) {
-          await login();
-        }
         return;
       }
+
+      // Get basic user info
+      Map<String, dynamic> tokenInfo = {};
+      if (idpType == IdpType.auth0) {
+        // Auth0: try /userinfo endpoint
+        try {
+          final userResponse = await http.get(
+            Uri.parse('https://${AuthConfig.auth0Domain}/userinfo'),
+            headers: {'Authorization': 'Bearer $accessToken'},
+          );
+          if (userResponse.statusCode == 200) {
+            tokenInfo = jsonDecode(userResponse.body) as Map<String, dynamic>;
+          }
+        } catch (_) {}
+      } else {
+        // Entra ID: parse claims from the access token JWT
+        try {
+          tokenInfo = _parseIdToken(accessToken);
+        } catch (_) {}
+      }
+
+      final mergedUserInfo = {...tokenInfo, ...backendProfile};
+      await _session.saveToken(accessToken);
+
+      state = state.copyWith(
+        isLoading: false,
+        isAuthenticated: true,
+        user: mergedUserInfo,
+        accessToken: accessToken,
+        lastError: null,
+      );
     } catch (e) {
       state = state.copyWith(
         isLoading: false,
@@ -301,26 +377,58 @@ class AuthNotifier extends Notifier<AuthState> {
     }
   }
 
-  Future<void> login() async {
+  Future<void> loginWithEntra() async {
     if (_isRedirecting) return;
     _isRedirecting = true;
 
     try {
       final codeVerifier = _generateCodeVerifier();
       final codeChallenge = _generateCodeChallenge(codeVerifier);
+      final stateValue = _generateState();
 
       web.window.localStorage.setItem('pkce_code_verifier', codeVerifier);
+      web.window.localStorage.setItem('oauth_state', stateValue);
+      _saveIdpType(IdpType.entra);
 
-      debugPrint(
-          '[AuthNotifier] Generated PKCE challenge, initiating Auth0 redirect...');
+      final authUrl = Uri.parse(AuthConfig.entraAuthorizeUrl).replace(
+        queryParameters: {
+          'response_type': 'code',
+          'client_id': AuthConfig.entraClientId,
+          'redirect_uri': AuthConfig.redirectUri,
+          'scope': 'openid profile email ${AuthConfig.entraApiScope}',
+          'state': stateValue,
+          'code_challenge': codeChallenge,
+          'code_challenge_method': 'S256',
+        },
+      );
 
-      final authUrl = Uri.https(AuthConfig.domain, '/authorize', {
+      web.window.location.assign(authUrl.toString());
+    } catch (e) {
+      _isRedirecting = false;
+      state = state.copyWith(lastError: _authError(e));
+    }
+  }
+
+  Future<void> loginWithAuth0() async {
+    if (_isRedirecting) return;
+    _isRedirecting = true;
+
+    try {
+      final codeVerifier = _generateCodeVerifier();
+      final codeChallenge = _generateCodeChallenge(codeVerifier);
+      final stateValue = _generateState();
+
+      web.window.localStorage.setItem('pkce_code_verifier', codeVerifier);
+      web.window.localStorage.setItem('oauth_state', stateValue);
+      _saveIdpType(IdpType.auth0);
+
+      final authUrl = Uri.https(AuthConfig.auth0Domain, '/authorize', {
         'response_type': 'code',
-        'client_id': AuthConfig.clientId,
+        'client_id': AuthConfig.auth0ClientId,
         'redirect_uri': AuthConfig.redirectUri,
         'scope': 'openid profile email',
-        'audience': AuthConfig.audience,
-        'state': DateTime.now().millisecondsSinceEpoch.toString(),
+        'audience': AuthConfig.auth0Audience,
+        'state': stateValue,
         'code_challenge': codeChallenge,
         'code_challenge_method': 'S256',
       });
@@ -329,6 +437,15 @@ class AuthNotifier extends Notifier<AuthState> {
     } catch (e) {
       _isRedirecting = false;
       state = state.copyWith(lastError: _authError(e));
+    }
+  }
+
+  // Default login — prefers Entra if configured
+  Future<void> login() async {
+    if (AuthConfig.isEntraConfigured) {
+      await loginWithEntra();
+    } else if (AuthConfig.isAuth0Configured) {
+      await loginWithAuth0();
     }
   }
 
@@ -353,8 +470,12 @@ class AuthNotifier extends Notifier<AuthState> {
 
   Future<void> logout() async {
     try {
+      final idpType = _getSavedIdpType();
+
       web.window.localStorage.removeItem('auth_token');
       web.window.localStorage.removeItem('pkce_code_verifier');
+      web.window.localStorage.removeItem('oauth_state');
+      web.window.localStorage.removeItem('idp_type');
 
       await _session.clear();
 
@@ -362,21 +483,30 @@ class AuthNotifier extends Notifier<AuthState> {
 
       var returnUrl = AuthConfig.redirectUri.replaceAll(RegExp(r'/$'), '');
 
-      final logoutUrl = Uri.https(AuthConfig.domain, '/v2/logout', {
-        'client_id': AuthConfig.clientId,
-        'returnTo': returnUrl,
-      });
-
-      debugPrint('[AuthNotifier] Logging out, redirecting to: $logoutUrl');
+      String logoutUrl;
+      if (idpType == IdpType.entra) {
+        logoutUrl = Uri.parse(AuthConfig.entraLogoutUrl).replace(
+          queryParameters: {
+            'client_id': AuthConfig.entraClientId,
+            'post_logout_redirect_uri': returnUrl,
+          },
+        ).toString();
+      } else {
+        logoutUrl = Uri.https(AuthConfig.auth0Domain, '/v2/logout', {
+          'client_id': AuthConfig.auth0ClientId,
+          'returnTo': returnUrl,
+        }).toString();
+      }
 
       await Future.delayed(const Duration(milliseconds: 100));
-
-      web.window.location.assign(logoutUrl.toString());
+      web.window.location.assign(logoutUrl);
     } catch (e) {
       debugPrint('[AuthNotifier] Error during logout: $e');
       try {
         web.window.localStorage.removeItem('auth_token');
         web.window.localStorage.removeItem('pkce_code_verifier');
+        web.window.localStorage.removeItem('oauth_state');
+        web.window.localStorage.removeItem('idp_type');
         await _session.clear();
       } catch (_) {}
       state = AuthState.initial();

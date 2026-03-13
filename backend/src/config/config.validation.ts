@@ -14,6 +14,9 @@ export const configValidationSchema = Joi.object({
 
   AUTH0_AUDIENCE: Joi.string().required(),
 
+  ENTRA_TENANT_ID: Joi.string().uuid().required(),
+  ENTRA_CLIENT_ID: Joi.string().uuid().required(),
+
   CORS_ORIGINS: Joi.string().optional(),
 
   DB_HOST: Joi.string().required(),
