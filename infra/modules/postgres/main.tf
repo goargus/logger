@@ -1,5 +1,5 @@
 resource "azurerm_postgresql_flexible_server" "main" {
-  name                          = "${var.project_name}-${var.env}-pg"
+  name                          = var.name
   resource_group_name           = var.rg_name
   location                      = var.location
   version                       = var.postgres_version
@@ -17,6 +17,12 @@ resource "azurerm_postgresql_flexible_server" "main" {
   lifecycle {
     ignore_changes = [zone]
   }
+}
+
+resource "azurerm_postgresql_flexible_server_configuration" "extensions" {
+  name      = "azure.extensions"
+  server_id = azurerm_postgresql_flexible_server.main.id
+  value     = "uuid-ossp,citext,pg_trgm"
 }
 
 resource "azurerm_postgresql_flexible_server_database" "main" {

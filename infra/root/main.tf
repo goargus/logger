@@ -10,6 +10,14 @@ resource "azurerm_resource_group" "main" {
   tags     = local.tags
 }
 
+module "identity" {
+  source = "../modules/identity"
+
+  project_name  = var.project_name
+  env           = local.env
+  redirect_uris = var.entra_redirect_uris
+}
+
 module "network" {
   source = "../modules/network"
 
@@ -60,6 +68,8 @@ module "container_apps" {
   auth0_domain               = var.auth0_domain
   auth0_audience             = var.auth0_audience
   auth0_issuer               = var.auth0_issuer
+  entra_tenant_id            = module.identity.tenant_id
+  entra_client_id            = module.identity.client_id
   cors_origins               = var.cors_origins
   admin_email                = var.admin_email
   admin_username             = var.admin_username

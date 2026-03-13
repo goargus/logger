@@ -26,3 +26,15 @@ output "api_custom_url" {
 output "frontend_custom_url" {
   value = "https://${module.cloudflare.frontend_fqdn}"
 }
+
+output "entra_client_id" {
+  value = module.identity.client_id
+}
+
+output "entra_tenant_id" {
+  value = module.identity.tenant_id
+}
+
+output "entra_api_scope" {
+  value = module.identity.api_scope
+}

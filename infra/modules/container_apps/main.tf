@@ -1,18 +1,26 @@
 resource "azurerm_container_app_environment" "main" {
-  name                       = "${var.project_name}-${var.env}-cae"
+  name                       = var.environment_name
   location                   = var.location
   resource_group_name        = var.rg_name
   log_analytics_workspace_id = var.log_analytics_workspace_id
   infrastructure_subnet_id   = var.container_apps_subnet_id
   tags                       = var.tags
+
+  lifecycle {
+    ignore_changes = [infrastructure_resource_group_name]
+  }
 }
 
 resource "azurerm_container_app" "api" {
-  name                         = "${var.project_name}-${var.env}-api"
+  name                         = var.app_name
   container_app_environment_id = azurerm_container_app_environment.main.id
   resource_group_name          = var.rg_name
   revision_mode                = "Single"
   tags                         = var.tags
+
+  lifecycle {
+    ignore_changes = [secret, template[0].container[0].image]
+  }
 
   registry {
     server               = "ghcr.io"
@@ -90,6 +98,14 @@ resource "azurerm_container_app" "api" {
       env {
         name  = "AUTH0_ISSUER"
         value = var.auth0_issuer
+      }
+      env {
+        name  = "ENTRA_TENANT_ID"
+        value = var.entra_tenant_id
+      }
+      env {
+        name  = "ENTRA_CLIENT_ID"
+        value = var.entra_client_id
       }
       env {
         name  = "CORS_ORIGINS"
