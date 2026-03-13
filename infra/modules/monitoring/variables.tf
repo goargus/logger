@@ -1,9 +1,6 @@
-variable "project_name" {
-  type = string
-}
-
-variable "env" {
-  type = string
+variable "name" {
+  type        = string
+  description = "Name for the Log Analytics workspace."
 }
 
 variable "location" {

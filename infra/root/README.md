@@ -1,146 +1,112 @@
-# Secretary Infrastructure -- Operations Guide
+# Logger Infrastructure — Operations Guide
 
-Infrastructure for the Secretary backend API on Azure Container Apps.
+Infrastructure for the Logger backend API on Azure Container Apps.
 
-For architecture decisions and rationale, see
-[`docs/plans/2026-02-18-azure-container-apps-infrastructure-design.md`](../../docs/plans/2026-02-18-azure-container-apps-infrastructure-design.md).
+## Architecture
 
-## Architecture (brief)
+| Layer | Resource | Name |
+|-------|----------|------|
+| Compute | Container Apps (Consumption) | `cae-logger-prod` / `ca-logger-prod-api` |
+| Database | PostgreSQL Flexible Server (B1ms) | `psql-logger-prod` |
+| Networking | VNet + private DNS | `vnet-logger-prod` |
+| Monitoring | Log Analytics | `law-logger-prod` |
+| State | Shared storage account | `sharedtfstate01` in `rg-shared` |
+| Registry | GHCR | `ghcr.io/goargus/logger` |
 
-- **Compute**: Azure Container Apps (Consumption plan) running NestJS API
-- **Database**: PostgreSQL Flexible Server (Burstable B1ms) with private endpoint via VNet
-- **Networking**: VNet with separate subnets for Container Apps and data
-- **Monitoring**: Log Analytics workspace
-- **Frontend**: GitHub Pages (deployed separately, not managed here)
-- **Registry**: GHCR (GitHub Container Registry)
+All application resources live in `rg-logger-prod`. State storage lives in the
+shared resource group `rg-shared` (org-wide, not per-project).
+
+**Naming convention:** Azure CAF — `{type}-{workload}-{env}` (e.g. `rg-logger-prod`).
 
 ## Prerequisites
 
-- Azure CLI authenticated: `az login`
+- Azure CLI authenticated (`az login`)
 - Terraform >= 1.6.0
-- Docker (for local image builds)
 - GitHub PAT with `read:packages` scope (for GHCR pull)
 
-## State Backend Setup (one-time)
+## Bootstrap State Backend (one-time)
 
-Create the remote state storage before first `terraform init`:
+Run the bootstrap script to create the shared remote state storage:
 
 ```bash
-az group create --name secretary-tfstate-rg --location eastus2
-az storage account create --name secretarytfstate --resource-group secretary-tfstate-rg --sku Standard_LRS
-az storage container create --name tfstate --account-name secretarytfstate
+bash infra/scripts/bootstrap-state.sh
 ```
 
-Then update `backend.tf` with the real values:
-
-```hcl
-terraform {
-  backend "azurerm" {
-    resource_group_name  = "secretary-tfstate-rg"
-    storage_account_name = "secretarytfstate"
-    container_name       = "tfstate"
-    key                  = "secretary.prod.tfstate"
-  }
-}
-```
+This creates `rg-shared` with a `CanNotDelete` lock, storage account `sharedtfstate01`
+(blob versioning + 7-day soft delete), and a `tfstate` container.
 
 ## Variables
 
-Create `terraform.tfvars` in this directory. **Never commit this file.**
+Production values live in `prod.tfvars`. Pass sensitive values at the command line:
 
-```hcl
-postgres_admin_username = "pgadmin"
-postgres_admin_password = ""
-container_image         = "ghcr.io/goargus/logger:latest"
-ghcr_token              = ""
-auth0_domain            = "dev-ohuspam6fnmh4tgt.us.auth0.com"
-auth0_audience          = "logger"
-auth0_issuer            = "https://dev-ohuspam6fnmh4tgt.us.auth0.com/"
-admin_email             = ""
-admin_username          = ""
-admin_idp_issuer        = ""
-admin_idp_subject       = ""
+```bash
+terraform plan -var-file=prod.tfvars -var "ghcr_token=$(gh auth token)"
 ```
-
-All sensitive values (`postgres_admin_password`, `ghcr_token`) are marked sensitive in Terraform and will not appear in plan output.
 
 ## First Deploy
 
-1. Create the state backend (see above)
-2. Update `backend.tf` with real storage account values
-3. Push the first container image to GHCR:
+1. Bootstrap the state backend (see above)
+2. Initialize Terraform:
    ```bash
-   docker build -t ghcr.io/goargus/logger:latest ./backend
-   docker push ghcr.io/goargus/logger:latest
-   ```
-4. Fill in `terraform.tfvars`
-5. Deploy:
-   ```bash
+   cd infra/root
    terraform init
-   terraform plan
-   terraform apply
    ```
-6. Note the `api_url` output -- update Auth0 allowed callback/logout URLs to include it
-7. Update the frontend's `API_BASE_URL` to match the `api_url` output
-8. Verify the API is reachable: `curl https://<api_fqdn>/health`
+3. Plan and apply:
+   ```bash
+   terraform plan -var-file=prod.tfvars -var "ghcr_token=$(gh auth token)"
+   terraform apply -var-file=prod.tfvars -var "ghcr_token=$(gh auth token)"
+   ```
+4. Note the `api_url` output — update Auth0 allowed callback/logout URLs
+5. Verify: `curl https://<api_fqdn>/health`
 
 ## Deploying Updates
 
-**Automated (preferred):** Merging to `main` triggers GitHub Actions, which builds the image, pushes to GHCR, and deploys to Container Apps.
+**Automated (preferred):** Creating a GitHub release with a semver tag triggers the
+deploy workflow, which builds the image, pushes to GHCR, and deploys.
 
 **Manual:**
 
 ```bash
 az containerapp update \
-  --name secretary-prod-api \
-  --resource-group secretary-prod-rg \
-  --image ghcr.io/goargus/logger:<sha>
+  --name ca-logger-prod-api \
+  --resource-group rg-logger-prod \
+  --image ghcr.io/goargus/logger:<tag>
 ```
 
 ## Monitoring
 
-Stream live logs:
-
 ```bash
 az containerapp logs show \
-  --name secretary-prod-api \
-  --resource-group secretary-prod-rg \
+  --name ca-logger-prod-api \
+  --resource-group rg-logger-prod \
   --follow
 ```
 
-For historical queries, use **Azure Portal > Log Analytics workspace** linked to the Container Apps environment. Example KQL:
+Log Analytics KQL:
 
 ```kql
 ContainerAppConsoleLogs_CL
-| where ContainerAppName_s == "secretary-prod-api"
+| where ContainerAppName_s == "ca-logger-prod-api"
 | order by TimeGenerated desc
 | take 100
 ```
 
-## Cost Overview
+## Cost Estimate (~$17-22/month)
 
-Estimated ~$28/month at minimal usage:
-
-| Resource | Estimated Cost |
-|----------|---------------|
-| PostgreSQL Flexible Server (B1ms) | ~$13/mo |
-| Container Apps (Consumption) | ~$5/mo |
-| VNet + Private DNS | ~$4/mo |
-| Log Analytics | ~$4/mo |
-| Storage (tfstate) | < $1/mo |
-
-**Biggest levers:** PostgreSQL SKU (B1ms vs higher) and Container App scaling (min/max replicas).
+| Resource | SKU | Cost |
+|----------|-----|------|
+| PostgreSQL Flexible Server | B1ms (1 vCore, 2 GiB) | ~$12.41 |
+| PostgreSQL Storage | 32 GiB | ~$3.68 |
+| Container Apps | Consumption (free grant) | ~$0-5 |
+| Log Analytics | First 5 GB free | ~$0 |
+| VNet | Free | $0 |
+| Private DNS Zone | | ~$0.50 |
+| State Storage (rg-shared) | Standard_LRS | ~$0.10 |
 
 ## Destroy
 
-Tear down all managed resources:
-
 ```bash
-terraform destroy
+terraform destroy -var-file=prod.tfvars -var "ghcr_token=$(gh auth token)"
 ```
 
-This does **not** remove the tfstate storage account (managed separately). Delete it manually if no longer needed:
-
-```bash
-az group delete --name secretary-tfstate-rg --yes
-```
+This does **not** remove `rg-shared` (managed separately, protected by delete lock).

@@ -1,5 +1,5 @@
 resource "azurerm_virtual_network" "main" {
-  name                = "${var.project_name}-${var.env}-vnet"
+  name                = var.vnet_name
   address_space       = [var.vnet_cidr]
   location            = var.location
   resource_group_name = var.rg_name
@@ -43,7 +43,7 @@ resource "azurerm_private_dns_zone" "postgres" {
 }
 
 resource "azurerm_private_dns_zone_virtual_network_link" "postgres" {
-  name                  = "${var.project_name}-${var.env}-pg-dns-link"
+  name                  = "link-${var.vnet_name}-pg"
   resource_group_name   = var.rg_name
   private_dns_zone_name = azurerm_private_dns_zone.postgres.name
   virtual_network_id    = azurerm_virtual_network.main.id

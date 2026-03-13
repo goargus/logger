@@ -1,9 +1,6 @@
-variable "project_name" {
-  type = string
-}
-
-variable "env" {
-  type = string
+variable "vnet_name" {
+  type        = string
+  description = "Name for the virtual network."
 }
 
 variable "location" {

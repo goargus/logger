@@ -1,9 +1,11 @@
-variable "project_name" {
-  type = string
+variable "environment_name" {
+  type        = string
+  description = "Name for the Container App Environment."
 }
 
-variable "env" {
-  type = string
+variable "app_name" {
+  type        = string
+  description = "Name for the Container App."
 }
 
 variable "location" {
@@ -62,6 +64,16 @@ variable "auth0_audience" {
 
 variable "auth0_issuer" {
   type = string
+}
+
+variable "entra_tenant_id" {
+  type        = string
+  description = "Entra ID tenant ID."
+}
+
+variable "entra_client_id" {
+  type        = string
+  description = "Entra ID App Registration client ID."
 }
 
 variable "cors_origins" {

@@ -73,6 +73,12 @@ variable "admin_idp_subject" {
   description = "Admin IDP subject identifier."
 }
 
+variable "entra_redirect_uris" {
+  type        = list(string)
+  description = "SPA redirect URIs for the Entra ID App Registration."
+  default     = ["https://logger.asdmr.org.hn/", "https://secretary-frontend.pages.dev/"]
+}
+
 variable "tags" {
   type        = map(string)
   description = "Tags to apply to all resources."
