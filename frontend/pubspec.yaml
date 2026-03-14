@@ -13,7 +13,7 @@ dependencies:
   flutter_localizations:
     sdk: flutter
 
-  auth0_flutter: ^1.6.0
+  auth0_flutter: ^1.14.0
   intl: any
   file_picker: ^10.3.10
   http: ^1.2.1
