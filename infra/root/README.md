@@ -37,10 +37,16 @@ This creates `rg-shared` with a `CanNotDelete` lock, storage account `sharedtfst
 
 ## Variables
 
-Production values live in `prod.tfvars`. Pass sensitive values at the command line:
+Environment-specific files live under `infra/envs/`.
+
+- Production Terraform values should be copied from `../envs/prod.tfvars.example`
+  into a private `../envs/prod.tfvars`.
+- Remote dev values for Render/Neon can be based on `../envs/dev.render.example.env`.
+
+Pass sensitive values at the command line:
 
 ```bash
-terraform plan -var-file=prod.tfvars -var "ghcr_token=$(gh auth token)"
+terraform plan -var-file=../envs/prod.tfvars -var "ghcr_token=$(gh auth token)"
 ```
 
 ## First Deploy
@@ -49,20 +55,23 @@ terraform plan -var-file=prod.tfvars -var "ghcr_token=$(gh auth token)"
 2. Initialize Terraform:
    ```bash
    cd infra/root
-   terraform init
+   terraform init -backend-config=../envs/prod.backend.hcl
    ```
 3. Plan and apply:
    ```bash
-   terraform plan -var-file=prod.tfvars -var "ghcr_token=$(gh auth token)"
-   terraform apply -var-file=prod.tfvars -var "ghcr_token=$(gh auth token)"
+   terraform plan -var-file=../envs/prod.tfvars -var "ghcr_token=$(gh auth token)"
+   terraform apply -var-file=../envs/prod.tfvars -var "ghcr_token=$(gh auth token)"
    ```
 4. Note the `api_url` output — update Auth0 allowed callback/logout URLs
 5. Verify: `curl https://<api_fqdn>/health`
 
 ## Deploying Updates
 
-**Automated (preferred):** Creating a GitHub release with a semver tag triggers the
-deploy workflow, which builds the image, pushes to GHCR, and deploys.
+**Automated (preferred):** Pushes to `main` trigger the production backend deploy
+workflow, and the frontend production deploy runs in its own workflow.
+
+For remote development, configure Render to track the `develop` branch and set
+its runtime variables from a private copy of `infra/envs/dev.render.example.env`.
 
 **Manual:**
 
@@ -106,7 +115,7 @@ ContainerAppConsoleLogs_CL
 ## Destroy
 
 ```bash
-terraform destroy -var-file=prod.tfvars -var "ghcr_token=$(gh auth token)"
+terraform destroy -var-file=../envs/prod.tfvars -var "ghcr_token=$(gh auth token)"
 ```
 
 This does **not** remove `rg-shared` (managed separately, protected by delete lock).

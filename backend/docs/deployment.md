@@ -1,6 +1,15 @@
 # Deployment Guide
 
-This guide covers production deployment of the Secretary backend.
+This guide covers production deployment of the Secretary backend and the
+recommended split between `dev` and `prod`.
+
+## Environment Strategy
+
+- `dev`: Render + Neon + Cloudflare Pages frontend
+- `prod`: Azure Container Apps + Azure PostgreSQL + Cloudflare DNS/Pages frontend
+
+Use separate Auth0 and Entra applications for each environment. Do not reuse
+callback URLs, logout URLs, allowed web origins, or audiences across `dev` and `prod`.
 
 ## Prerequisites
 
@@ -29,6 +38,12 @@ AUTH0_ISSUER=https://your-tenant.auth0.com/
 # Server
 PORT=3000
 NODE_ENV=production
+
+# Bootstrap admin
+ADMIN_EMAIL=admin@example.com
+ADMIN_USERNAME=admin
+ADMIN_IDP_ISSUER=https://your-tenant.auth0.com/
+ADMIN_IDP_SUBJECT=auth0|replace-me
 ```
 
 ### Optional Variables
@@ -143,12 +158,20 @@ npm run migration:generate -- MigrationName
 2. Configure allowed callback URLs
 3. Configure allowed logout URLs
 4. Configure allowed web origins
+5. Repeat with separate applications for `dev` and `prod`
 
 ### Required Scopes
 
 Ensure your Auth0 rules/actions include these claims in the JWT:
 - `sub` - User subject identifier
 - `iss` - Issuer URL
+
+### Environment-specific values
+
+- `dev` frontend origin: `https://secretary-frontend-dev.pages.dev`
+- `prod` frontend origin: `https://logger.asdmr.org.hn`
+- `dev` API audience: the Render URL actually serving the backend
+- `prod` API audience: `https://logger-api.asdmr.org.hn`
 
 ## Reverse Proxy Setup
 

@@ -1,5 +1,5 @@
 locals {
-  env = "prod"
+  env = var.env
 
   caf = {
     rg   = "rg-${var.project_name}-${local.env}"
@@ -18,4 +18,6 @@ locals {
     },
     var.tags
   )
+
+  api_custom_domain = "${var.api_subdomain}.${var.domain}"
 }
