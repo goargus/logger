@@ -83,18 +83,18 @@ module "cloudflare" {
   source = "../modules/cloudflare"
 
   zone_id                    = var.cloudflare_zone_id
-  api_subdomain              = "logger-api"
-  frontend_subdomain         = "logger"
-  domain                     = "asdmr.org.hn"
+  api_subdomain              = var.api_subdomain
+  frontend_subdomain         = var.frontend_subdomain
+  domain                     = var.domain
   api_static_ip              = module.container_apps.static_ip
   api_domain_verification_id = module.container_apps.domain_verification_id
-  pages_cname_target         = "secretary-frontend.pages.dev"
+  pages_cname_target         = var.pages_cname_target
 }
 
 # Custom domain binding lives at root to avoid circular dependency:
 # cloudflare needs container_apps outputs, and the binding needs cloudflare to finish first.
 resource "azurerm_container_app_custom_domain" "api" {
-  name             = "logger-api.asdmr.org.hn"
+  name             = local.api_custom_domain
   container_app_id = module.container_apps.container_app_id
 
   # Azure provisions the managed certificate asynchronously after domain validation.

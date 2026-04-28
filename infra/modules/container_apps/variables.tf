@@ -77,8 +77,7 @@ variable "entra_client_id" {
 }
 
 variable "cors_origins" {
-  type    = string
-  default = "https://secretary-backend.pages.dev"
+  type = string
 }
 
 variable "admin_email" {
