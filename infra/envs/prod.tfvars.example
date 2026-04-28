@@ -1,0 +1,33 @@
+env                     = "prod"
+project_name            = "logger"
+location                = "eastus2"
+postgres_admin_username = "logger_admin"
+container_image         = "ghcr.io/goargus/logger:prod-latest"
+ghcr_username           = "goargus"
+
+auth0_domain   = "your-prod-tenant.auth0.com"
+auth0_audience = "https://logger-api.asdmr.org.hn"
+auth0_issuer   = "https://your-prod-tenant.auth0.com/"
+
+domain             = "asdmr.org.hn"
+api_subdomain      = "logger-api"
+frontend_subdomain = "logger"
+pages_cname_target = "secretary-frontend-prod.pages.dev"
+
+cors_origins = "https://logger.asdmr.org.hn"
+
+admin_email       = "admin@example.com"
+admin_username    = "admin"
+admin_idp_issuer  = "https://your-prod-tenant.auth0.com/"
+admin_idp_subject = "auth0|replace-me"
+
+entra_redirect_uris = [
+  "https://logger.asdmr.org.hn/",
+]
+
+cloudflare_email   = "you@example.com"
+cloudflare_zone_id = "replace-with-zone-id"
+
+tags = {
+  owner = "platform"
+}

@@ -264,6 +264,26 @@ docker-compose up
 - `AUTH0_DOMAIN`, `AUTH0_AUDIENCE`, `AUTH0_ISSUER`
 - `ADMIN_EMAIL`, `ADMIN_USERNAME`, `ADMIN_IDP_ISSUER`, `ADMIN_IDP_SUBJECT`
 
+## Environment Split
+
+The repository now assumes two explicit remote environments:
+
+- `dev`: Render + Neon + Cloudflare Pages, deployed from `develop`
+- `prod`: Azure Container Apps + Terraform + Cloudflare DNS/Pages, deployed from `main`
+
+Rules for the split:
+
+- Use separate Auth0 and Entra applications for `dev` and `prod`
+- Use separate Cloudflare Pages projects for `dev` and `prod`
+- Do not reuse `API_BASE_URL`, `REDIRECT_URI`, or `CORS_ORIGINS` across environments
+- Keep production Terraform values in a private `infra/envs/prod.tfvars`
+
+Useful references:
+
+- `infra/envs/README.md`
+- `infra/root/README.md`
+- `backend/.env.example`
+
 ## Testing
 
 ```bash

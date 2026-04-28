@@ -4,6 +4,15 @@ variable "project_name" {
   default     = "logger"
 }
 
+variable "env" {
+  type        = string
+  description = "Deployment environment name."
+  validation {
+    condition     = contains(["dev", "prod"], var.env)
+    error_message = "env must be either \"dev\" or \"prod\"."
+  }
+}
+
 variable "location" {
   type        = string
   description = "Azure region."
@@ -50,7 +59,6 @@ variable "auth0_issuer" {
 variable "cors_origins" {
   type        = string
   description = "Comma-separated CORS origins for the API."
-  default     = "https://secretary-backend.pages.dev"
 }
 
 variable "admin_email" {
@@ -76,7 +84,26 @@ variable "admin_idp_subject" {
 variable "entra_redirect_uris" {
   type        = list(string)
   description = "SPA redirect URIs for the Entra ID App Registration."
-  default     = ["https://logger.asdmr.org.hn/", "https://secretary-frontend.pages.dev/"]
+}
+
+variable "domain" {
+  type        = string
+  description = "Root domain for the environment."
+}
+
+variable "api_subdomain" {
+  type        = string
+  description = "Subdomain used by the backend API."
+}
+
+variable "frontend_subdomain" {
+  type        = string
+  description = "Subdomain used by the frontend."
+}
+
+variable "pages_cname_target" {
+  type        = string
+  description = "Cloudflare Pages hostname for the frontend project."
 }
 
 variable "tags" {
