@@ -124,6 +124,44 @@ export class ActivitiesService {
     return this.repo.save(entity);
   }
 
+  async createForUserByAdmin(
+    dto: CreateActivityDto & { targetUserId: string },
+    adminUserId: string,
+  ): Promise<Activity> {
+    await this.ensureTypeOrThrow(dto.activityTypeId);
+
+    await this.getUserEntityId(dto.targetUserId);
+    const isAuthorizedForTarget = await this.canUserSubmitActivityType(
+      dto.targetUserId,
+      dto.activityTypeId,
+    );
+    if (!isAuthorizedForTarget) {
+      throw new ForbiddenException(
+        'Target user is not authorized to submit this activity type',
+      );
+    }
+
+    if (dto.hasExpense && (dto.expenseAmount == null || dto.expenseAmount === '')) {
+      throw new BadRequestException('expenseAmount is required when hasExpense is true.');
+    }
+
+    const activityDate = this.normalizeDateString(dto.activityDate);
+
+    const entity = this.repo.create({
+      activityTypeId: dto.activityTypeId,
+      activityDate,
+      description: dto.description ?? null,
+      hasExpense: dto.hasExpense,
+      expenseAmount: dto.hasExpense ? dto.expenseAmount : null,
+      userId: dto.targetUserId,
+      createdBy: adminUserId,
+      updatedBy: adminUserId,
+      status: ActivityStatus.ACTIVE,
+    });
+
+    return this.repo.save(entity);
+  }
+
   async findMine(
     userId: string,
     page = 1,
