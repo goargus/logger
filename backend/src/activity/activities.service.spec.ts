@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { In } from 'typeorm';
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 
 import { ActivitiesService } from './activities.service';
 import { Activity } from './activity.entity';
@@ -286,6 +286,138 @@ describe('ActivitiesService', () => {
       const result = await service.create(createActivityDto, userId);
 
       expect(result).toEqual(mockCreatedActivity);
+    });
+  });
+
+  describe('createForUserByAdmin', () => {
+    const dto = {
+      targetUserId: 'user-456',
+      activityTypeId: 'activity-type-456',
+      activityDate: '2027-01-15',
+      description: 'Admin created activity',
+      hasExpense: false,
+    };
+
+    beforeEach(() => {
+      mockUserRepo.findOne.mockImplementation(({ where }: any) => {
+        if (where?.id === 'user-456') {
+          return Promise.resolve({ id: 'user-456', entity_id: 'entity-2' });
+        }
+        return Promise.resolve({ id: 'user-123', entity_id: 'entity-1' });
+      });
+    });
+
+    it('creates an activity for the target user and records admin audit fields', async () => {
+      const mockActivityType = {
+        id: dto.activityTypeId,
+        name: 'Test Activity',
+        allowed_roles: [],
+      };
+      const mockCreatedActivity = {
+        id: 'activity-admin-1',
+        ...dto,
+        userId: dto.targetUserId,
+        createdBy: 'admin-1',
+        updatedBy: 'admin-1',
+      };
+
+      mockActivityTypeRepo.findOne
+        .mockResolvedValueOnce(mockActivityType)
+        .mockResolvedValueOnce(mockActivityType);
+      mockActivityRepo.create.mockReturnValue(mockCreatedActivity);
+      mockActivityRepo.save.mockResolvedValue(mockCreatedActivity);
+
+      const result = await service.createForUserByAdmin(dto, 'admin-1');
+
+      expect(result).toEqual(mockCreatedActivity);
+      expect(mockActivityRepo.create).toHaveBeenCalledWith({
+        activityTypeId: dto.activityTypeId,
+        activityDate: dto.activityDate,
+        description: dto.description,
+        hasExpense: false,
+        expenseAmount: null,
+        userId: dto.targetUserId,
+        createdBy: 'admin-1',
+        updatedBy: 'admin-1',
+        status: 'active',
+      });
+      expect(mockLockService.isDateAvailableForUser).not.toHaveBeenCalled();
+    });
+
+    it('accepts future dates without running the user lock check', async () => {
+      const futureDto = { ...dto, activityDate: '2030-05-20' };
+      const mockActivityType = {
+        id: dto.activityTypeId,
+        name: 'Test Activity',
+        allowed_roles: [],
+      };
+
+      mockActivityTypeRepo.findOne
+        .mockResolvedValueOnce(mockActivityType)
+        .mockResolvedValueOnce(mockActivityType);
+      mockActivityRepo.create.mockReturnValue({
+        id: 'activity-admin-2',
+        ...futureDto,
+        userId: dto.targetUserId,
+      });
+      mockActivityRepo.save.mockResolvedValue({
+        id: 'activity-admin-2',
+        ...futureDto,
+        userId: dto.targetUserId,
+      });
+
+      await expect(service.createForUserByAdmin(futureDto, 'admin-1')).resolves.toMatchObject({
+        activityDate: '2030-05-20',
+        userId: dto.targetUserId,
+      });
+      expect(mockLockService.isDateAvailableForUser).not.toHaveBeenCalled();
+    });
+
+    it('rejects when the target user is not authorized for the activity type', async () => {
+      const mockActivityType = {
+        id: dto.activityTypeId,
+        name: 'Restricted Activity',
+        allowed_roles: [{ id: 'role-789', name: 'Pastor' }],
+      };
+
+      mockActivityTypeRepo.findOne
+        .mockResolvedValueOnce(mockActivityType)
+        .mockResolvedValueOnce(mockActivityType);
+      mockUserRoleAssignmentRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.createForUserByAdmin(dto, 'admin-1')).rejects.toThrow(
+        new ForbiddenException('Target user is not authorized to submit this activity type'),
+      );
+    });
+
+    it('requires expenseAmount when hasExpense is true', async () => {
+      const expenseDto = {
+        ...dto,
+        hasExpense: true,
+        expenseAmount: '',
+      };
+      const mockActivityType = {
+        id: dto.activityTypeId,
+        name: 'Test Activity',
+        allowed_roles: [],
+      };
+
+      mockActivityTypeRepo.findOne
+        .mockResolvedValueOnce(mockActivityType)
+        .mockResolvedValueOnce(mockActivityType);
+
+      await expect(service.createForUserByAdmin(expenseDto, 'admin-1')).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('rejects when target user does not exist', async () => {
+      mockActivityTypeRepo.findOne.mockResolvedValue({ id: dto.activityTypeId, allowed_roles: [] });
+      mockUserRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.createForUserByAdmin(dto, 'admin-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });
