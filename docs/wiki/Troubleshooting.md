@@ -1,67 +1,76 @@
 # Troubleshooting
 
-## Backend fails to start
+This page collects common problems that can be diagnosed from the current repository setup.
+
+## Common issues
+
+| Problem | Possible cause | Solution |
+| --- | --- | --- |
+| Backend fails during startup | Missing required environment variables | Review [Configuration](Configuration) and ensure all required backend values are present |
+| Backend rejects `AUTH0_ISSUER` | Issuer URL missing trailing slash | Set `AUTH0_ISSUER` to a URL ending in `/` |
+| Backend exits even though Auth0 is configured | Entra variables are missing | Provide valid `ENTRA_TENANT_ID` and `ENTRA_CLIENT_ID` because current validation requires them |
+| `/api` does not show docs | Wrong Swagger path | Use `http://localhost:3000/api/docs` |
+| Frontend loads but cannot call API | `API_BASE_URL` is incorrect or backend is down | Verify frontend build-time values and test `GET /health` |
+| Frontend sign-in loop | Auth config mismatch | Recheck `AUTH0_*`, `REDIRECT_URI`, and any Entra values |
+| `docker-compose up` hangs or restarts | Dependency or health-check issue | Inspect logs for `db`, `init`, and `backend` containers |
+| Cannot create or edit an activity | Date is locked or exception is missing | Check `/periods/availability` and admin lock configuration |
+| Activity deletion fails | Missing confirmation query parameter | Call `DELETE /activities/:id?confirm=true` |
+| Reports return less data than expected | User lacks required role or hierarchy scope | Verify role assignments and entity scope |
+| CI fails on formatting | Local formatting drift | Run backend Prettier check or frontend `dart format` locally |
+| Frontend deploy fails | Missing Cloudflare secrets or bad build-time config | Review [CI/CD](CI-CD) secret requirements |
+| Backend deploy fails | Azure secrets or container deployment target mismatch | Review [CI/CD](CI-CD) backend deployment configuration |
+
+## Startup diagnostics
+
+### Backend
 
 Check:
 
-- database connection variables
-- Auth0 issuer includes a trailing slash
-- Entra tenant and client IDs are present and valid UUIDs
-- the database exists and migrations have run
+- database connectivity
+- env var completeness
+- migration status
+- auth issuer format
 
-The backend config validator is strict. Missing auth or database values will block startup early.
+Useful commands:
 
-## Swagger is missing
-
-Swagger is mounted at:
-
-```text
-/api/docs
+```bash
+cd backend
+npm run start:dev
+npm run migration:run
 ```
 
-If you are checking `/api`, you are using stale documentation.
-
-## Frontend loads but API calls fail
+### Frontend
 
 Check:
 
-- `API_BASE_URL`
-- CORS origins in backend env
-- whether the browser is using the expected auth configuration
-- whether the backend is reachable at `/health`
+- `flutter pub get` completed successfully
+- `API_BASE_URL` points to the backend
+- auth-related `--dart-define` values are correct
 
-## Authentication works but app access is wrong
+Useful commands:
 
-Check:
+```bash
+cd frontend
+flutter analyze
+flutter test
+```
 
-- whether the external identity is linked to the intended local user
-- role assignments for that user
-- entity scope of those assignments
-- whether the user is expecting hierarchy access without the corresponding permissions
+## Docker-specific issues
 
-## Activities appear locked unexpectedly
+If Docker is involved, also review [Docker](Docker).
 
-Check:
+Typical checks:
 
-- `GET /periods/availability?month=YYYY-MM`
-- entity admin lock settings
-- user-specific exceptions
-- the activity date being edited, not just the current date
+- confirm no port conflict on `3000`, `5433`, or `8080`
+- confirm PostgreSQL became healthy before backend startup
+- confirm the frontend image was built with the intended auth values
 
-The current implementation is date-availability based, so operator expectations from older “open/close reporting period” docs may not match the live behavior.
+## CI/CD-specific issues
 
-## Deployment succeeded but runtime is stale
+If a pipeline fails:
 
-Check:
+- confirm secrets exist
+- rerun the same validation locally if possible
+- verify whether the failure is in backend, frontend, or deployment logic
 
-- the image tag pushed to GHCR
-- the Azure Container Apps deployed revision
-- Cloudflare Pages branch and latest deployment
-- whether the change was in backend code, frontend code, or both
-
-## Naming confusion
-
-If you see both `Logger` and `Secretary`:
-
-- `Logger` is the canonical repository and product name
-- `Secretary` is legacy/internal naming still present in some paths and old docs
+See [CI/CD](CI-CD) for workflow-specific details.

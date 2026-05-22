@@ -1,22 +1,26 @@
-[Home](Home)
+# Logger Wiki
 
-### Overview
+## Overview
+- [Home](Home)
+- [Getting Started](Getting-Started)
+- [Installation](Installation)
 
-- [System Overview](System-Overview)
+## Usage
+- [Configuration](Configuration)
+- [Usage](Usage)
+- [API Reference](API-Reference)
+
+## Technical Documentation
 - [Architecture](Architecture)
-- [Local Development](Local-Development)
-- [Configuration and Secrets](Configuration-and-Secrets)
+- [Project Structure](Project-Structure)
+- [Development Guide](Development-Guide)
+- [Testing](Testing)
 
-### Operations
-
-- [Operational Workflows](Operational-Workflows)
-- [Roles and Permissions](Roles-and-Permissions)
-- [API Reference Guide](API-Reference-Guide)
-- [Data Seeding and Bootstrap](Data-Seeding-and-Bootstrap)
-- [Deployments and Environments](Deployments-and-Environments)
-- [Testing and Quality](Testing-and-Quality)
+## Operations
+- [Docker](Docker)
+- [CI/CD](CI-CD)
 - [Troubleshooting](Troubleshooting)
+- [Security](Security)
 
-### Maintenance
-
-- [How to Update the Wiki](How-to-Update-the-Wiki)
+## Help
+- [FAQ](FAQ)
